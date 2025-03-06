@@ -1,3 +1,6 @@
+## 4.1.1
+Nothing specifically changed, just merged from 3.2.x to 4.0.x to 4.1.1.
+
 ## 4.1.0
 * [Registry] require registry 4.1 in all bundles by @dpfaffenbauer in https://github.com/coreshop/CoreShop/pull/2748
 * Update CartController - remove Argument Injection by @steinerCors in https://github.com/coreshop/CoreShop/pull/2741

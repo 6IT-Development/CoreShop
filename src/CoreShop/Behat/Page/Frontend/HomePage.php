@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend;
 
 use Behat\Mink\Element\NodeElement;
+use CoreShop\Behat\Service\DriverHelper;
 
 class HomePage extends AbstractFrontendPage implements HomePageInterface
 {
@@ -35,6 +36,8 @@ class HomePage extends AbstractFrontendPage implements HomePageInterface
     public function logOut(): void
     {
         $this->getElement('logout_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function hasLogoutButton(): bool
@@ -57,6 +60,8 @@ class HomePage extends AbstractFrontendPage implements HomePageInterface
         $this->getElement('currency_selector')->click();
 
         $this->getElement('currency_selector_code', ['%code%' => $currencyCode])->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function getActiveLocale(): string

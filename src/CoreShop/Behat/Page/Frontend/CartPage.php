@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend;
 
 use Behat\Mink\Exception\ElementNotFoundException;
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 
@@ -94,17 +95,22 @@ class CartPage extends AbstractFrontendPage implements CartPageInterface
     {
         $this->getElement('item_quantity_input', ['%name%' => $productName])->setValue($quantity);
         $this->getElement('update_cart_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function removeProduct(string $productName): void
     {
         $this->getElement('delete_button', ['%name%' => $productName])->press();
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function applyVoucherCode(string $voucherCode): void
     {
         $this->getElement('voucher_code')->setValue($voucherCode);
         $this->getElement('apply_voucher_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function getTotal(): string
@@ -139,7 +145,7 @@ class CartPage extends AbstractFrontendPage implements CartPageInterface
         return array_merge(parent::getDefinedElements(), [
             'cart_empty' => '[data-test-cart-empty]',
             'cart_items' => '[data-test-cart-items]',
-            'item_unit_price' => '[data-test-cart-item-row="%name%"] [data-test-cart-item-unit-price]',
+            'item_unit_price' => '[data-test-cart-item-row="%name%"] [data-test-cart-item-unit-price="%name%"]',
             'item_unit_price_unit' => '[data-test-cart-item-row-unit-%unitId%="%name%"] [data-test-cart-item-unit-price]',
             'item_total_price' => '[data-test-cart-item-row="%name%"] [data-test-cart-item-total-price]',
             'item_total_price_unit' => '[data-test-cart-item-row-unit-%unitId%="%name%"] [data-test-cart-item-total-price]',

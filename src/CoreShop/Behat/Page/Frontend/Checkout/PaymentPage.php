@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 use CoreShop\Component\Core\Model\PaymentProviderInterface;
 
@@ -36,6 +37,8 @@ class PaymentPage extends AbstractFrontendPage implements PaymentPageInterface
     public function submitStep(): void
     {
         $this->getElement('submit_payment_step')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     protected function getAdditionalParameters(): array

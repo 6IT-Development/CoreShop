@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 
 class ShippingPage extends AbstractFrontendPage implements ShippingPageInterface
@@ -30,6 +31,8 @@ class ShippingPage extends AbstractFrontendPage implements ShippingPageInterface
     public function submitStep(): void
     {
         $this->getElement('submit_shipping_step')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function getCarriers(): array

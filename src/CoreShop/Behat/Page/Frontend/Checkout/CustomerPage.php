@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 
 class CustomerPage extends AbstractFrontendPage implements CustomerPageInterface
@@ -117,6 +118,7 @@ class CustomerPage extends AbstractFrontendPage implements CustomerPageInterface
     public function submitGuestCheckout(): void
     {
         $this->getElement('guest_submit')->press();
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     protected function getDefinedElements(): array

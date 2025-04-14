@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 
 class SummaryPage extends AbstractFrontendPage implements SummaryPageInterface
@@ -30,6 +31,8 @@ class SummaryPage extends AbstractFrontendPage implements SummaryPageInterface
     public function submitOrder(): void
     {
         $this->getElement('submit_order')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function acceptTermsOfService(): void
@@ -45,6 +48,8 @@ class SummaryPage extends AbstractFrontendPage implements SummaryPageInterface
     public function submitQuote(): void
     {
         $this->getElement('submit_quote')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     protected function getAdditionalParameters(): array

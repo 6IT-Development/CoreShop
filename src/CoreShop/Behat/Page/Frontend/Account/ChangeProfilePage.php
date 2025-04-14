@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend\Account;
 
 use Behat\Mink\Exception\ElementNotFoundException;
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
 
 class ChangeProfilePage extends AbstractFrontendPage implements ChangeProfilePageInterface
@@ -62,6 +63,8 @@ class ChangeProfilePage extends AbstractFrontendPage implements ChangeProfilePag
     public function save(): void
     {
         $this->getElement('save_changes')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     protected function getDefinedElements(): array

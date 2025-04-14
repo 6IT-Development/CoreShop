@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend\Account;
 
 use CoreShop\Behat\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Behat\Service\DriverHelper;
 
 class LoginPage extends AbstractFrontendPage implements LoginPageInterface
 {
@@ -35,6 +36,8 @@ class LoginPage extends AbstractFrontendPage implements LoginPageInterface
     public function logIn(): void
     {
         $this->getElement('login_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function specifyPassword(string $password): void

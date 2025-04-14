@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend;
 
 use Behat\Mink\Exception\ElementNotFoundException;
+use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 
 class CartPage extends AbstractFrontendPage implements CartPageInterface
@@ -93,17 +94,23 @@ class CartPage extends AbstractFrontendPage implements CartPageInterface
     {
         $this->getElement('item_quantity_input', ['%name%' => $productName])->setValue($quantity);
         $this->getElement('update_cart_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function removeProduct(string $productName): void
     {
         $this->getElement('delete_button', ['%name%' => $productName])->press();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function applyVoucherCode(string $voucherCode): void
     {
         $this->getElement('voucher_code')->setValue($voucherCode);
         $this->getElement('apply_voucher_button')->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function getTotal(): string

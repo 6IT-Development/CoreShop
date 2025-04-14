@@ -111,8 +111,8 @@
     "webmozart/assert": "^1.10"
   },
   "require-dev": {
-    "behat/behat": "^3.19",
-    "behat/mink": "^1.12",
+    "behat/behat": "^3.8",
+    "behat/mink": "^1.8",
     "dbrekelmans/bdi": "^1.0",
     "friends-of-behat/mink-debug-extension": "^2.0",
     "friends-of-behat/mink-extension": "^2.4",

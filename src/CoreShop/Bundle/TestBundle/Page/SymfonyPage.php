@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\TestBundle\Page;
 
 use Behat\Mink\Element\NodeElement;
-use CoreShop\Behat\Service\DriverHelper;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 use FriendsOfBehat\PageObjectExtension\Page\SymfonyPage as BaseSymfonyPage;
 
 abstract class SymfonyPage extends BaseSymfonyPage implements SymfonyPageInterface

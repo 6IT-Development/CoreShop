@@ -19,8 +19,8 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend;
 
 use Behat\Mink\Element\NodeElement;
-use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use CoreShop\Component\Product\Model\ProductUnitInterface;
 use CoreShop\Component\Variant\Model\AttributeInterface;

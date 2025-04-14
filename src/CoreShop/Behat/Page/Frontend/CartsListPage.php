@@ -18,8 +18,8 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend;
 
-use CoreShop\Behat\Service\DriverHelper;
 use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 
 class CartsListPage extends AbstractFrontendPage implements CartsListPageInterface
 {

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Element\Frontend\Account;
 
 use Behat\Mink\Exception\ElementNotFoundException;
+use CoreShop\Behat\Service\DriverHelper;
 use FriendsOfBehat\PageObjectExtension\Element\Element;
 
 final class RegisterElement extends Element implements RegisterElementInterface
@@ -44,6 +45,8 @@ final class RegisterElement extends Element implements RegisterElementInterface
     public function register(): void
     {
         $this->getElement('create_account_button')->press();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function getEmail(): string

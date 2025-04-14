@@ -29,6 +29,4 @@ interface PurchasableInterface extends ResourceInterface
     public function getWholesaleBuyingPrice(): ?Money;
 
     public function getTaxRule(): ?TaxRuleGroupInterface;
-
-    public function getDigitalProduct(): ?bool;
 }

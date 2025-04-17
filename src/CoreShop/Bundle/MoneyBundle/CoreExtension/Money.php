@@ -326,7 +326,7 @@ class Money extends DataObject\ClassDefinition\Data implements
         $code .= '* Get ' . str_replace(['/**', '*/', '//'], '', $this->getName()) . ' - ' . str_replace(['/**', '*/', '//'], '', $this->getTitle()) . "\n";
         $code .= '* @return ' . $this->getPhpdocReturnType() . "\n";
         $code .= '*/' . "\n";
-        $code .= 'public function get' . ucfirst($key) . ' (): ' . ($this->nullable ? '?' : '') . " {\n";
+        $code .= 'public function get' . ucfirst($key) . ' (): ' . ($this->nullable ? '?' : '') . "int {\n";
 
         if (method_exists($this, 'preGetData')) {
             $code .= "\t" . '$data = $this->getDefinition()->getFieldDefinition("' . $key . '")->preGetData($this);' . "\n";

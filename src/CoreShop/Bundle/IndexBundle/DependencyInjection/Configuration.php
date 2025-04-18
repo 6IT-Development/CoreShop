@@ -48,6 +48,7 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('autoconfigure_with_attributes')->defaultFalse()->end()
+                ->scalarNode('mysql_auto_generate_migrations')->defaultFalse()->end()
             ->end()
         ;
 

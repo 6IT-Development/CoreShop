@@ -18,9 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page;
 
+use Behat\Mink\Element\NodeElement;
 use CoreShop\Behat\Service\DriverHelper;
 use FriendsOfBehat\PageObjectExtension\Page\SymfonyPage as BaseSymfonyPage;
-use Behat\Mink\Element\NodeElement;
 
 abstract class SymfonyPage extends BaseSymfonyPage implements SymfonyPageInterface
 {

@@ -28,7 +28,8 @@
     "coreshop/registry": "^4.1",
     "coreshop/resource-bundle": "^4.0",
     "coreshop/menu-bundle": "^4.0",
-    "pimcore/pimcore": "^11.0"
+    "pimcore/pimcore": "^11.0",
+    "doctrine/migrations": "^3.9"
   },
   "conflict": {
     "dpfaffenbauer/process-manager": "<2.4"

@@ -36,6 +36,7 @@ use CoreShop\Bundle\IndexBundle\DependencyInjection\Compiler\RegisterGetterPass;
 use CoreShop\Bundle\IndexBundle\DependencyInjection\Compiler\RegisterIndexWorkerPass;
 use CoreShop\Bundle\IndexBundle\DependencyInjection\Compiler\RegisterInterpreterPass;
 use CoreShop\Bundle\IndexBundle\DependencyInjection\Compiler\RegisterOrderRendererTypesPass;
+use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 use CoreShop\Bundle\ResourceBundle\CoreShopResourceBundle;
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelExtension;
 use CoreShop\Component\Index\Condition\DynamicRendererInterface;
@@ -81,6 +82,10 @@ final class CoreShopIndexExtension extends AbstractModelExtension
         }
 
         $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
+
+        $container->getDefinition(MysqlWorker::class)->setArgument(
+            7, $configs['mysql_auto_generate_migrations']
+        );
 
         Autoconfiguration::registerForAutoConfiguration(
             $container,

@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\CoreBundle\Form\Extension;
 
 use CoreShop\Bundle\CoreBundle\Form\Type\AddressChoiceType;
 use CoreShop\Bundle\OrderBundle\Form\Type\CartCreationType;
+use CoreShop\Bundle\ShippingBundle\Form\Type\CarrierChoiceType;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\FormBuilderInterface;
 
@@ -34,6 +35,7 @@ final class CartCreationTypeExtension extends AbstractTypeExtension
         $builder->add('invoiceAddress', AddressChoiceType::class, [
             'customer' => $options['customer'],
         ]);
+        $builder->add('carrier', CarrierChoiceType::class);
     }
 
     public static function getExtendedTypes(): iterable

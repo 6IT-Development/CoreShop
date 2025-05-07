@@ -108,6 +108,14 @@ services:
     coreshop.form_registry.index.interpreter:
         class: CoreShop\Bundle\ResourceBundle\Form\Registry\FormTypeRegistry
 
+    # OpenSearch Client Registry
+    coreshop.registry.index.opensearch_client:
+        class: CoreShop\Component\Registry\ServiceRegistry
+        arguments:
+            - OpenSearch\Client
+            - opensearch-clients
+        tags:
+            - { name: coreshop.registry, type_hint: opensearchClients }
 
     # Filter Group Helper
     CoreShop\Component\Index\Worker\FilterGroupHelperInterface: '@CoreShop\Component\Index\Worker\FilterGroupHelper'
@@ -132,6 +140,25 @@ services:
             - { method: setLogger, arguments: ['@logger'] }
         tags:
             - { name: coreshop.index.worker, type: mysql, form-type: CoreShop\Bundle\IndexBundle\Form\Type\Worker\MysqlWorkerType}
+
+    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker:
+        arguments:
+            - '@coreshop.registry.index.extensions'
+            - '@coreshop.registry.index.getter'
+            - '@coreshop.registry.index.interpreter'
+            - '@CoreShop\Component\Index\Worker\FilterGroupHelper'
+            - '@CoreShop\Component\Index\Condition\ConditionRendererInterface'
+            - '@CoreShop\Component\Index\Order\OrderRendererInterface'
+            - '@Symfony\Contracts\EventDispatcher\EventDispatcherInterface'
+            - '@coreshop.registry.index.opensearch_client'
+            - '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder'
+            - '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder'
+            - '@Symfony\Component\String\Slugger\SluggerInterface'
+        shared: false
+        calls:
+            - { method: setLogger, arguments: ['@logger'] }
+        tags:
+            - { name: coreshop.index.worker, type: opensearch, form-type: CoreShop\Bundle\IndexBundle\Form\Type\Worker\OpenSearchWorkerType}
 
     # Index Getter
     CoreShop\Component\Index\Getter\BrickGetter:
@@ -295,7 +322,7 @@ services:
     CoreShop\Component\Index\Filter\CategorySelectConditionProcessor:
         tags:
             - { name: coreshop.filter.condition_type, type: category_select, form-type: CoreShop\Bundle\IndexBundle\Form\Type\Filter\FilterConditionCategorySelectType}
-              
+
     CoreShop\Component\Index\Filter\CategoryMultiSelectConditionProcessor:
         tags:
             - { name: coreshop.filter.condition_type, type: category_multiselect, form-type: CoreShop\Bundle\IndexBundle\Form\Type\Filter\FilterConditionCategoryMultiSelectType }
@@ -314,3 +341,7 @@ services:
     CoreShop\Component\Index\Extension\DecimalIndexColumnTypeConfigExtension:
         tags:
             - { name: coreshop.index.extension }
+
+    # OpenSearch Index Builder
+    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder: ~
+    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder: ~

@@ -26,7 +26,7 @@ use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
-readonly class ConcatRenderer implements DynamicRendererInterface
+class ConcatRenderer implements DynamicRendererInterface
 {
     public function __construct(private ConditionRendererInterface $renderer) {}
 

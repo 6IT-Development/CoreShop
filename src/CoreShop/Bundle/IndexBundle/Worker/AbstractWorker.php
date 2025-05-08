@@ -313,46 +313,4 @@ abstract class AbstractWorker implements WorkerInterface
     abstract public function getList(IndexInterface $index): ListingInterface;
 
     abstract public function renderFieldType(string $type);
-
-    protected function getSystemAttributes(): array
-    {
-        if ($this instanceof OpenSearchWorkerInterface) {
-            return [
-                'o_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
-                'oo_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
-                'o_key' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
-                'o_classId' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
-                'o_className' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
-                'o_virtualObjectId' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
-                'o_virtualObjectActive' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
-                'o_type' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
-                'active' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
-            ];
-        }
-
-        return [
-            'o_id' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
-            'oo_id' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
-            'o_key' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'o_classId' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'o_className' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'o_virtualObjectId' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
-            'o_virtualObjectActive' => MysqlWorkerInterface::FIELD_TYPE_BOOLEAN,
-            'o_type' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'active' => MysqlWorkerInterface::FIELD_TYPE_BOOLEAN,
-        ];
-    }
-
-    protected function getLocalizedSystemAttributes(): array
-    {
-        if ($this instanceof OpenSearchWorkerInterface) {
-            return [
-                'name' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
-            ];
-        }
-
-        return [
-            'name' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-        ];
-    }
 }

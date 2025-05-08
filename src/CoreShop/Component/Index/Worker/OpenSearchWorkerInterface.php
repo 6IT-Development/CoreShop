@@ -20,23 +20,23 @@ namespace CoreShop\Component\Index\Worker;
 
 interface OpenSearchWorkerInterface extends WorkerInterface
 {
-    public const string FIELD_TYPE_NULL = 'null';
+    public const FIELD_TYPE_NULL = 'null';
 
-    public const string FIELD_TYPE_BOOLEAN = 'boolean';
+    public const FIELD_TYPE_BOOLEAN = 'boolean';
 
-    public const string FIELD_TYPE_FLOAT = 'float';
+    public const FIELD_TYPE_FLOAT = 'float';
 
-    public const string FIELD_TYPE_DOUBLE = 'double';
+    public const FIELD_TYPE_DOUBLE = 'double';
 
-    public const string FIELD_TYPE_INTEGER = 'integer';
+    public const FIELD_TYPE_INTEGER = 'integer';
 
-    public const string FIELD_TYPE_OBJECT = 'object';
+    public const FIELD_TYPE_OBJECT = 'object';
 
-    public const string FIELD_TYPE_ARRAY = 'array';
+    public const FIELD_TYPE_ARRAY = 'array';
 
-    public const string FIELD_TYPE_TEXT = 'text';
+    public const FIELD_TYPE_TEXT = 'text';
 
-    public const string FIELD_TYPE_KEYWORD = 'keyword';
+    public const FIELD_TYPE_KEYWORD = 'keyword';
 
-    public const string FIELD_TYPE_DATE = 'date';
+    public const FIELD_TYPE_DATE = 'date';
 }

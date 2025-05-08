@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 
 use CoreShop\Bundle\IndexBundle\Extension\MysqlIndexQueryExtensionInterface;
 use CoreShop\Bundle\IndexBundle\Worker\AbstractListing;
+use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker\Listing\Dao;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\MatchCondition;
@@ -105,12 +106,12 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
     }
 
     /**
-     * @return MysqlWorkerInterface
+     * @return MysqlWorker
      */
-    public function getWorker()
+    public function getWorker(): MysqlWorker
     {
         /**
-         * @var MysqlWorkerInterface $worker
+         * @var MysqlWorker $worker
          */
         $worker = $this->worker;
 

@@ -40,7 +40,7 @@ use function Symfony\Component\String\u;
 
 class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterface, WorkerDeleteableByIdInterface
 {
-    private readonly string $defaultLocale;
+    private string $defaultLocale;
 
     public function __construct(
         ServiceRegistryInterface $extensions,
@@ -49,11 +49,11 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         FilterGroupHelperInterface $filterGroupHelper,
         ConditionRendererInterface $conditionRenderer,
         OrderRendererInterface $orderRenderer,
-        private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly ServiceRegistryInterface $clientRegistry,
-        private readonly MappingBuilder $mappingBuilder,
-        private readonly SettingsBuilder $settingsBuilder,
-        private readonly SluggerInterface $slugger
+        private EventDispatcherInterface $eventDispatcher,
+        private ServiceRegistryInterface $clientRegistry,
+        private MappingBuilder $mappingBuilder,
+        private SettingsBuilder $settingsBuilder,
+        private SluggerInterface $slugger
     ) {
         parent::__construct(
             $extensions,
@@ -290,5 +290,27 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         }
 
         return $preparedData['data'];
+    }
+
+    protected function getSystemAttributes(): array
+    {
+        return [
+            'o_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+            'oo_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+            'o_key' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+            'o_classId' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+            'o_className' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+            'o_virtualObjectId' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+            'o_virtualObjectActive' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
+            'o_type' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+            'active' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
+        ];
+    }
+
+    protected function getLocalizedSystemAttributes(): array
+    {
+        return [
+            'name' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+        ];
     }
 }

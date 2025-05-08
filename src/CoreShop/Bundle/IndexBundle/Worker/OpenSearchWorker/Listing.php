@@ -47,9 +47,6 @@ class Listing extends AbstractListing
 
     protected bool $enabled = true;
 
-    /**
-     * @var OpenSearchWorker
-     */
     protected WorkerInterface $worker;
 
     public function getObjects(): ?array
@@ -182,9 +179,9 @@ class Listing extends AbstractListing
             $params['size'] = $this->getLimit();
         }
 
-        $result = $this->worker->getClient($this->index)
+        $result = $this->getWorker()->getClient($this->index)
             ->search([
-                'index' => $this->worker->getIndexName($this->index->getName()),
+                'index' => $this->getWorker()->getIndexName($this->index->getName()),
                 'body' => $params,
             ]);
 
@@ -221,7 +218,12 @@ class Listing extends AbstractListing
 
     public function current(): Concrete|false
     {
-        return \current($this->getObjects());
+        /**
+         * @var Concrete|false $object
+         */
+        $object = $this->getObjects();
+
+        return $object;
     }
 
     public function next(): void
@@ -261,12 +263,14 @@ class Listing extends AbstractListing
         return $this->getObjects();
     }
 
-    /**
-     * @return OpenSearchWorker
-     */
-    public function getWorker(): WorkerInterface
+    public function getWorker(): OpenSearchWorker
     {
-        return $this->worker;
+        /**
+         * @var OpenSearchWorker $worker
+         */
+        $worker = $this->worker;
+
+        return $worker;
     }
 
     private function getSearchParams(string $excludedFieldName = null): array

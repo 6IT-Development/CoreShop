@@ -26,7 +26,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 
 final class OpenSearchWorkerType extends AbstractType
 {
-    public function __construct(private readonly ServiceRegistryInterface $clientRegistry) {}
+    public function __construct(private ServiceRegistryInterface $clientRegistry) {}
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {

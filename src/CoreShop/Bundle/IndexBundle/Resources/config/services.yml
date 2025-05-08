@@ -345,5 +345,7 @@ services:
             - { name: coreshop.index.extension }
 
     # OpenSearch Index Builder
-    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder: ~
+    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder:
+        arguments:
+            - '@coreshop.registry.index.interpreter'
     CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder: ~

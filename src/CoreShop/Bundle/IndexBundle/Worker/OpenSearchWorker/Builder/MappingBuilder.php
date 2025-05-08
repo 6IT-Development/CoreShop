@@ -19,13 +19,17 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder;
 
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Mapping\LanguageAnalyzer;
+use CoreShop\Component\Index\Interpreter\LocalizedInterpreterInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
+use CoreShop\Component\Registry\ServiceRegistryInterface;
 use Pimcore\Tool;
 
 class MappingBuilder
 {
     private array $properties = [];
+
+    public function __construct(private ServiceRegistryInterface $interpreterRegistry) {}
 
     public function build(IndexInterface $index, array $systemAttributes, array $localizedSystemAttributes): array
     {
@@ -44,7 +48,9 @@ class MappingBuilder
             $propertyName = $column->getName();
             $propertyType = $column->getColumnType();
 
-            if ($column->getInterpreter() === 'localeMapping') {
+            $interpreter = $this->interpreterRegistry->get($column->getInterpreter());
+
+            if ($interpreter instanceof LocalizedInterpreterInterface) {
                 $this->addLocalizedProperty($propertyName, $propertyType);
             } else {
                 $this->addSimpleProperty($propertyName, $propertyType);

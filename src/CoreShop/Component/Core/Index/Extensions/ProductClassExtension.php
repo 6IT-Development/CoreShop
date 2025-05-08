@@ -22,8 +22,8 @@ use CoreShop\Component\Core\Model\CategoryInterface;
 use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Index\Extension\IndexColumnsExtensionInterface;
 use CoreShop\Component\Index\Model\IndexableInterface;
-use CoreShop\Component\Index\Model\IndexColumnInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 
 final class ProductClassExtension implements IndexColumnsExtensionInterface
 {
@@ -34,15 +34,15 @@ final class ProductClassExtension implements IndexColumnsExtensionInterface
 
     public function supports(IndexInterface $index): bool
     {
-        return $this->productClassName === $index->getClass();
+        return $this->productClassName === $index->getClass() && $index->getWorker() === 'mysql';
     }
 
     public function getSystemColumns(): array
     {
         return [
-            'categoryIds' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'parentCategoryIds' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'stores' => IndexColumnInterface::FIELD_TYPE_STRING,
+            'categoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'parentCategoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'stores' => MysqlWorkerInterface::FIELD_TYPE_STRING,
         ];
     }
 

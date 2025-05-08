@@ -21,6 +21,14 @@ core_shop_index:
         TEXT: ~
         BOOLEAN: ~
         DATE: ~
+    worker_mapping_types:
+        mysql:
+            INTEGER: ~
+            DOUBLE: ~
+            STRING: ~
+            TEXT: ~
+            BOOLEAN: ~
+            DATE: ~
 
 jms_serializer:
     metadata:

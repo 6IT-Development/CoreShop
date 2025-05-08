@@ -76,16 +76,20 @@ class IndexController extends ResourceController
         }
 
         /**
-         * @var array $fieldTypes
+         * @var array $workerFieldTypes
          */
-        $fieldTypes = $this->getParameter('coreshop.index.mapping_types');
+        $workerFieldTypes = $this->getParameter('coreshop.index.worker_mapping_types');
         $fieldTypesResult = [];
 
-        foreach ($fieldTypes as $type) {
-            $fieldTypesResult[] = [
-                'type' => $type,
-                'name' => ucfirst(strtolower($type)),
-            ];
+        foreach ($workerFieldTypes as $workerType => $fieldTypes) {
+            $fieldTypesResult[$workerType] = [];
+
+            foreach ($fieldTypes as $type => $mapping) {
+                $fieldTypesResult[$workerType][] = [
+                    'type' => $type,
+                    'name' => ucfirst(strtolower($type)),
+                ];
+            }
         }
 
         $classes = new DataObject\ClassDefinition\Listing();
@@ -111,6 +115,7 @@ class IndexController extends ResourceController
                 'getters' => $gettersResult,
                 'fieldTypes' => $fieldTypesResult,
                 'classes' => $availableClasses,
+                'workerTypes' => $this->getWorkerTypes(),
             ],
         );
     }

@@ -300,28 +300,4 @@ abstract class AbstractWorker implements WorkerInterface
     abstract public function getList(IndexInterface $index): ListingInterface;
 
     abstract public function renderFieldType(string $type);
-
-    protected function getSystemAttributes(): array
-    {
-        return [
-            'o_id' => IndexColumnInterface::FIELD_TYPE_INTEGER,
-            'oo_id' => IndexColumnInterface::FIELD_TYPE_INTEGER,
-            'o_key' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'o_classId' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'o_className' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'o_virtualObjectId' => IndexColumnInterface::FIELD_TYPE_INTEGER,
-            'o_virtualObjectActive' => IndexColumnInterface::FIELD_TYPE_BOOLEAN,
-            'o_type' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'active' => IndexColumnInterface::FIELD_TYPE_BOOLEAN,
-        ];
-    }
-
-    protected function getLocalizedSystemAttributes(): array
-    {
-        return [
-            'o_id' => IndexColumnInterface::FIELD_TYPE_INTEGER,
-            'language' => IndexColumnInterface::FIELD_TYPE_STRING,
-            'name' => IndexColumnInterface::FIELD_TYPE_STRING,
-        ];
-    }
 }

@@ -31,11 +31,7 @@
     "pimcore/pimcore": "^11.0",
     "doctrine/migrations": "^3.9"
   },
-  "conflict": {
-    "dpfaffenbauer/process-manager": "<2.4"
-  },
   "suggest": {
-    "dpfaffenbauer/process-manager": "Allows to start Indexing from within Pimcore UI and also tracks the status.",
     "pimcore/opensearch-client": "Allows to use OpenSearch as your index engine."
   },
   "require-dev": {

@@ -21,6 +21,7 @@ namespace CoreShop\Behat\Service\Index;
 use CoreShop\Component\Index\Extension\IndexRelationalColumnsExtensionInterface;
 use CoreShop\Component\Index\Model\IndexColumnInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 
 class RelationalIndexExtension implements IndexRelationalColumnsExtensionInterface
 {
@@ -32,7 +33,7 @@ class RelationalIndexExtension implements IndexRelationalColumnsExtensionInterfa
     public function getRelationalColumns(): array
     {
         return [
-            'custom_col' => IndexColumnInterface::FIELD_TYPE_STRING,
+            'custom_col' => MysqlWorkerInterface::FIELD_TYPE_STRING,
         ];
     }
 }

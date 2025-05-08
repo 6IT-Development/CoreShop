@@ -181,7 +181,7 @@ coreshop.order.order.create.step.products = Class.create(coreshop.order.order.cr
                     menuDisabled: true,
                     sortable: false,
                     xtype: 'actioncolumn',
-                    width: 50,
+                    width: 56,
                     items: [
                         {
                             iconCls: 'pimcore_icon_open',

@@ -10,7 +10,7 @@
     "ecommerce",
     "pimcore-plugin"
   ],
-  "homepage": "https://www.coreshop.org",
+  "homepage": "https://www.coreshop.com",
   "authors": [
     {
       "name": "CoreShop Team",
@@ -110,7 +110,7 @@
     "stof/doctrine-extensions-bundle": "^1.6",
     "sylius/theme-bundle": "^2.2",
     "symfony/dotenv": "^6.3",
-    "symfony/http-client": "^6.3",
+    "symfony/http-client": "^ 6.3",
     "symfony/intl": "^6.3",
     "symfony/notifier": "^6.3",
     "symfony/serializer": "^6.3",

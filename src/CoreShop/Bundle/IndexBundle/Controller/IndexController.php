@@ -177,7 +177,7 @@ class IndexController extends ResourceController
 
         $result = [
             'clients' => \array_map(
-                static fn (string $client) => ['client' => $client],
+                static fn (string $client) => ['name' => $client],
                 \array_keys($clientRegistry->all())
             ),
         ];

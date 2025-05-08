@@ -16,35 +16,43 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
+namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 
 use CoreShop\Component\Index\Condition\ConditionInterface;
+use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\IsNotNullCondition;
 use CoreShop\Component\Index\Condition\IsNullCondition;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
-class IsNullRenderer extends AbstractMysqlDynamicRenderer
+class IsNullRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null)
+    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
     {
         /**
          * @var IsNullCondition $condition
          */
         Assert::isInstanceOf($condition, IsNullCondition::class);
 
-        $operator = 'IS NULL';
+        $fieldName = $condition->getFieldName();
+        $conditionType = $condition instanceof IsNotNullCondition ? 'must' : 'must_not';
 
-        if ($condition instanceof IsNotNullCondition) {
-            $operator = 'IS NOT NULL';
-        }
-
-        return sprintf('%s %s', $this->quoteFieldName($condition->getFieldName(), $prefix), $operator);
+        return [
+            'query' => [
+                'bool' => [
+                    $conditionType => [
+                        'exists' => [
+                             'field' => $fieldName,
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorkerInterface && $condition instanceof IsNullCondition;
+        return $worker instanceof OpenSearchWorkerInterface && $condition instanceof IsNullCondition;
     }
 }

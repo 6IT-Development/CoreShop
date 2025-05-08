@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\IndexBundle\Worker;
 
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder;
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder;
+use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Listing;
 use CoreShop\Component\Index\Condition\ConditionRendererInterface;
 use CoreShop\Component\Index\Listing\ListingInterface;
 use CoreShop\Component\Index\Model\IndexableInterface;
@@ -27,6 +28,7 @@ use CoreShop\Component\Index\Model\IndexColumnInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Order\OrderRendererInterface;
 use CoreShop\Component\Index\Worker\FilterGroupHelperInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerDeleteableByIdInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use OpenSearch\Client;
@@ -36,7 +38,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use function Symfony\Component\String\u;
 
-class OpenSearchWorker extends AbstractWorker implements WorkerDeleteableByIdInterface
+class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterface, WorkerDeleteableByIdInterface
 {
     private readonly string $defaultLocale;
 
@@ -79,7 +81,11 @@ class OpenSearchWorker extends AbstractWorker implements WorkerDeleteableByIdInt
 
         $body = [
             'settings' => $this->settingsBuilder->build($index),
-            'mappings' => $this->mappingBuilder->build($index),
+            'mappings' => $this->mappingBuilder->build(
+                $index,
+                $this->getSystemAttributes(),
+                $this->getLocalizedSystemAttributes()
+            ),
         ];
 
         $event = new GenericEvent($index);

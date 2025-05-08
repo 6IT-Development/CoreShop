@@ -29,6 +29,17 @@ core_shop_index:
             TEXT: ~
             BOOLEAN: ~
             DATE: ~
+        opensearch:
+            "null": ~
+            boolean: ~
+            float: ~
+            double: ~
+            integer: ~
+            object: ~
+            array: ~
+            text: ~
+            keyword: ~
+            date: ~
 
 jms_serializer:
     metadata:

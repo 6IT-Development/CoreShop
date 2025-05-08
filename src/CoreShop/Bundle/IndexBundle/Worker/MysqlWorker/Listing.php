@@ -20,7 +20,6 @@ namespace CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 
 use CoreShop\Bundle\IndexBundle\Extension\MysqlIndexQueryExtensionInterface;
 use CoreShop\Bundle\IndexBundle\Worker\AbstractListing;
-use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker\Listing\Dao;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\MatchCondition;
@@ -31,6 +30,7 @@ use CoreShop\Component\Index\Listing\RawResultListingInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Order\OrderInterface;
 use CoreShop\Component\Index\Order\SimpleOrder;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -97,7 +97,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
     ) {
         parent::__construct($index, $worker);
 
-        if (!$this->worker instanceof MysqlWorker) {
+        if (!$this->worker instanceof MysqlWorkerInterface) {
             throw new \InvalidArgumentException('Worker needs to be a MysqlWorker');
         }
 
@@ -105,12 +105,12 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
     }
 
     /**
-     * @return MysqlWorker
+     * @return MysqlWorkerInterface
      */
     public function getWorker()
     {
         /**
-         * @var MysqlWorker $worker
+         * @var MysqlWorkerInterface $worker
          */
         $worker = $this->worker;
 

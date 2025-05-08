@@ -16,58 +16,45 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
+namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 
 use CoreShop\Component\Index\Condition\ConditionInterface;
+use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\LikeCondition;
 use CoreShop\Component\Index\Condition\NotLikeCondition;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
-class LikeRenderer extends AbstractMysqlDynamicRenderer
+class LikeRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null)
+    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
     {
         /**
          * @var LikeCondition $condition
          */
         Assert::isInstanceOf($condition, LikeCondition::class);
 
+        $fieldName = $condition->getFieldName();
         $value = $condition->getValue();
+        $conditionType = $condition instanceof NotLikeCondition ? 'must_not' : 'must';
         $pattern = $condition->getPattern();
-        $operator = 'LIKE';
-        $patternValue = '';
 
-        switch ($pattern) {
-            case 'left':
-                $patternValue = '%' . $value;
-
-                break;
-            case 'right':
-                $patternValue = $value . '%';
-
-                break;
-            case 'both':
-                $patternValue = '%' . $value . '%';
-
-                break;
-        }
-
-        if ($condition instanceof NotLikeCondition) {
-            $operator = 'NOT LIKE';
-        }
-
-        return sprintf(
-            '%s %s %s',
-            $this->quoteFieldName($condition->getFieldName(), $prefix),
-            $operator,
-            $this->quote($patternValue),
-        );
+        return [
+            'query' => [
+                'bool' => [
+                    $conditionType => [
+                        $pattern => [
+                            $fieldName => $value,
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorkerInterface && $condition instanceof LikeCondition;
+        return $worker instanceof OpenSearchWorkerInterface && $condition instanceof LikeCondition;
     }
 }

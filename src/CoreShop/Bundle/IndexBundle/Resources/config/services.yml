@@ -124,6 +124,7 @@ services:
             - '@coreshop.registry.index.interpreter'
 
     # Index Workers
+    CoreShop\Bundle\IndexBundle\Worker\MysqlWorkerInterface: '@CoreShop\Bundle\IndexBundle\Worker\MysqlWorker'
     CoreShop\Bundle\IndexBundle\Worker\MysqlWorker:
         arguments:
             - '@coreshop.registry.index.extensions'
@@ -141,6 +142,7 @@ services:
         tags:
             - { name: coreshop.index.worker, type: mysql, form-type: CoreShop\Bundle\IndexBundle\Form\Type\Worker\MysqlWorkerType}
 
+    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorkerInterface: '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker'
     CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker:
         arguments:
             - '@coreshop.registry.index.extensions'

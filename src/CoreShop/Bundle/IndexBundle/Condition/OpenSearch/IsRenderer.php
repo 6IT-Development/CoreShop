@@ -16,30 +16,42 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
+namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 
+use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker;
 use CoreShop\Component\Index\Condition\ConditionInterface;
+use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\IsCondition;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
-class IsRenderer extends AbstractMysqlDynamicRenderer
+class IsRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
     {
         /**
          * @var IsCondition $condition
          */
         Assert::isInstanceOf($condition, IsCondition::class);
 
+        $fieldName = $condition->getFieldName();
         $value = $condition->getValue();
 
-        return '' . $this->quoteFieldName($condition->getFieldName(), $prefix) . ' IS ' . ($value ? '' : ' NOT ') . 'NULL';
+        return [
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        'term' => [
+                            $fieldName => $value,
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorkerInterface && $condition instanceof IsCondition;
+        return $worker instanceof OpenSearchWorker && $condition instanceof IsCondition;
     }
 }

@@ -54,3 +54,7 @@ services:
         parent: CoreShop\Bundle\IndexBundle\Condition\Mysql\AbstractMysqlDynamicRenderer
         tags:
             - { name: coreshop.index.condition.renderer, type: mysql_range }
+
+    CoreShop\Bundle\IndexBundle\Condition\OpenSearch\IsRenderer:
+        tags:
+            - { name: coreshop.index.condition.renderer, type: opensearch_is }

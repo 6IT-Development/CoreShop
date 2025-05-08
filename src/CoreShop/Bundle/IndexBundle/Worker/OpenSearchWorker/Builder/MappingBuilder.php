@@ -20,42 +20,68 @@ namespace CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder;
 
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Mapping\LanguageAnalyzer;
 use CoreShop\Component\Index\Model\IndexInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use Pimcore\Tool;
 
 class MappingBuilder
 {
-    public function build(IndexInterface $index): array
-    {
-        $properties = [];
+    private array $properties = [];
 
+    public function build(IndexInterface $index, array $systemAttributes, array $localizedSystemAttributes): array
+    {
+        // Add system attributes
+        foreach ($systemAttributes as $propertyName => $propertyType) {
+            $this->addSimpleProperty($propertyName, $propertyType);
+        }
+
+        // Add localized system attributes
+        foreach ($localizedSystemAttributes as $propertyName => $propertyType) {
+            $this->addLocalizedProperty($propertyName, $propertyType);
+        }
+
+        // Add index columns
         foreach ($index->getColumns() as $column) {
             $propertyName = $column->getName();
-            $propertySettings = [
-                'type' => $column->getColumnType(),
-            ];
+            $propertyType = $column->getColumnType();
 
-            // Localized properties
             if ($column->getInterpreter() === 'localeMapping') {
-                foreach (Tool::getValidLanguages() as $locale) {
-                    $localizedPropertyName = $propertyName . '.' . $locale;
-                    $analyzer = LanguageAnalyzer::fromLocale($locale);
-
-                    if ($analyzer instanceof LanguageAnalyzer) {
-                        $propertySettings['analyzer'] = $analyzer->value;
-                    }
-
-                    $properties[$localizedPropertyName] = $propertySettings;
-                }
-
-                continue;
+                $this->addLocalizedProperty($propertyName, $propertyType);
+            } else {
+                $this->addSimpleProperty($propertyName, $propertyType);
             }
-
-            // Simple properties
-            $properties[$propertyName] = $propertySettings;
         }
 
         return [
-            'properties' => $properties,
+            'properties' => $this->properties,
         ];
+    }
+
+    private function addSimpleProperty(string $name, string $type): void
+    {
+        $this->properties[$name] = [
+            'type' => $type,
+        ];
+    }
+
+    private function addLocalizedProperty(string $name, string $type): void
+    {
+        $this->addSimpleProperty($name, OpenSearchWorkerInterface::FIELD_TYPE_OBJECT);
+
+        foreach (Tool::getValidLanguages() as $locale) {
+            $propertySettings = [
+                'type' => $type,
+            ];
+
+            // Language analyzers are only supported for text fields
+            if ($type === OpenSearchWorkerInterface::FIELD_TYPE_TEXT) {
+                $analyzer = LanguageAnalyzer::fromLocale($locale);
+
+                if ($analyzer instanceof LanguageAnalyzer) {
+                    $propertySettings['analyzer'] = $analyzer->value;
+                }
+            }
+
+            $this->properties[$name]['properties'][$locale] = $propertySettings;
+        }
     }
 }

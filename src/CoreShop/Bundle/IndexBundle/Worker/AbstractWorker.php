@@ -34,6 +34,8 @@ use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Order\OrderInterface;
 use CoreShop\Component\Index\Order\OrderRendererInterface;
 use CoreShop\Component\Index\Worker\FilterGroupHelperInterface;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -80,6 +82,17 @@ abstract class AbstractWorker implements WorkerInterface
         return $this->orderRenderer->render($this, $condition, $prefix);
     }
 
+    public function getSupportedFieldTypes(): array
+    {
+        $reflection = new \ReflectionClass($this);
+
+        return \array_filter(
+            $reflection->getConstants(\ReflectionClassConstant::IS_PUBLIC),
+            static fn (string $name) => \str_starts_with($name, 'FIELD_TYPE_'),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
     protected function prepareData(IndexInterface $index, IndexableInterface $object): array
     {
         $inAdmin = \Pimcore::inAdmin();
@@ -118,7 +131,7 @@ abstract class AbstractWorker implements WorkerInterface
 
         foreach ($extensions as $extension) {
             if ($extension instanceof IndexColumnsExtensionInterface) {
-                $data = array_merge($data, $extension->getIndexColumns($object));
+                $data = [...$data, ...$extension->getIndexColumns($object)];
             }
         }
 
@@ -300,4 +313,46 @@ abstract class AbstractWorker implements WorkerInterface
     abstract public function getList(IndexInterface $index): ListingInterface;
 
     abstract public function renderFieldType(string $type);
+
+    protected function getSystemAttributes(): array
+    {
+        if ($this instanceof OpenSearchWorkerInterface) {
+            return [
+                'o_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+                'oo_id' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+                'o_key' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+                'o_classId' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+                'o_className' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+                'o_virtualObjectId' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+                'o_virtualObjectActive' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
+                'o_type' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+                'active' => OpenSearchWorkerInterface::FIELD_TYPE_BOOLEAN,
+            ];
+        }
+
+        return [
+            'o_id' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
+            'oo_id' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
+            'o_key' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'o_classId' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'o_className' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'o_virtualObjectId' => MysqlWorkerInterface::FIELD_TYPE_INTEGER,
+            'o_virtualObjectActive' => MysqlWorkerInterface::FIELD_TYPE_BOOLEAN,
+            'o_type' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'active' => MysqlWorkerInterface::FIELD_TYPE_BOOLEAN,
+        ];
+    }
+
+    protected function getLocalizedSystemAttributes(): array
+    {
+        if ($this instanceof OpenSearchWorkerInterface) {
+            return [
+                'name' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
+            ];
+        }
+
+        return [
+            'name' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+        ];
+    }
 }

@@ -82,4 +82,11 @@ interface WorkerInterface
     public function getFilterGroupHelper();
 
     public function renameIndexStructures(IndexInterface $index, string $oldName, string $newName): void;
+
+    /**
+     * Returns the list of supported field types.
+     *
+     * @return string[]
+     */
+    public function getSupportedFieldTypes(): array;
 }

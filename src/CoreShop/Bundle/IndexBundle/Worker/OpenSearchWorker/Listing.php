@@ -23,10 +23,13 @@ use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Listing\ListingInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
+use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 
 class Listing extends AbstractListing
 {
+    protected const int INTEGER_MAX_VALUE = 2147483647; // OpenSearch Integer.MAX_VALUE is 2^31 - 1
+
     protected ?array $objects = null;
 
     protected string $order;
@@ -48,6 +51,12 @@ class Listing extends AbstractListing
     protected bool $enabled = true;
 
     protected WorkerInterface $worker;
+
+    protected array $preparedGroupByValues = [];
+
+    protected array $preparedGroupByValuesResults = [];
+
+    protected bool $preparedGroupByValuesLoaded = false;
 
     public function getObjects(): ?array
     {
@@ -172,18 +181,15 @@ class Listing extends AbstractListing
         $params = $this->getSearchParams();
 
         if (null !== $this->getOffset()) {
-            $params['from'] = $this->getOffset();
+            $params['body']['from'] = $this->getOffset();
         }
 
         if (null !== $this->getLimit()) {
-            $params['size'] = $this->getLimit();
+            $params['body']['size'] = $this->getLimit();
         }
 
         $result = $this->getWorker()->getClient($this->index)
-            ->search([
-                'index' => $this->getWorker()->getIndexName($this->index->getName()),
-                'body' => $params,
-            ]);
+            ->search($params);
 
         foreach ($result['hits']['hits'] as $hit) {
             $object = Concrete::getById($hit['_source']['o_id']);
@@ -198,7 +204,21 @@ class Listing extends AbstractListing
 
     public function getGroupByValues($fieldName, $countValues = false, $fieldNameShouldBeExcluded = true): array
     {
-        throw new \BadMethodCallException('Not implemented');
+        if (!$this->preparedGroupByValuesLoaded) {
+            $this->doLoadGroupByValues();
+        }
+
+        $results = $this->preparedGroupByValuesResults[$fieldName] ?? null;
+
+        if (null === $results) {
+            return [];
+        }
+
+        if (true === $countValues) {
+            return $results;
+        }
+
+        return \array_column($results, 'value');
     }
 
     public function getGroupByRelationValues($fieldName, $countValues = false, $fieldNameShouldBeExcluded = true): array
@@ -221,7 +241,7 @@ class Listing extends AbstractListing
         /**
          * @var Concrete|false $object
          */
-        $object = $this->getObjects();
+        $object = \current($this->getObjects());
 
         return $object;
     }
@@ -273,9 +293,223 @@ class Listing extends AbstractListing
         return $worker;
     }
 
+    /**
+     * Loads all prepared "group by" values
+     */
+    private function doLoadGroupByValues(): void
+    {
+        // Create general filters and queries
+        $toExcludeFieldNames = [];
+
+        foreach ($this->preparedGroupByValues as $fieldName => $config) {
+            if (true === $config['fieldnameShouldBeExcluded']) {
+                $toExcludeFieldNames[] = $fieldName;
+            }
+        }
+
+        // Get base search parameters
+        $params = $this->getSearchParams();
+
+        // Reset size and remove existing aggregations if any
+        $params['body']['size'] = 0;
+        $params['body']['_source'] = false;
+        $params['body']['from'] = $this->getOffset();
+
+        // Initialize aggregations array
+        $aggregations = [];
+
+        // Calculate already filtered attributes to avoid duplicate filtering
+        $filteredFieldNames = [];
+
+        foreach ($this->conditions as $fieldName => $condition) {
+            if (! \in_array($fieldName, $toExcludeFieldNames, true)) {
+                $filteredFieldNames[$fieldName] = $fieldName;
+            }
+        }
+
+        foreach ($this->relationConditions as $fieldName => $condition) {
+            if (! \in_array($fieldName, $toExcludeFieldNames, true)) {
+                $filteredFieldNames[$fieldName] = $fieldName;
+            }
+        }
+
+        // Create aggregations for each prepared field
+        foreach ($this->preparedGroupByValues as $fieldName => $config) {
+            $specificFilters = [];
+            // User-specific filters
+            $specificFilters = $this->buildFilterConditions($specificFilters, [...$filteredFieldNames, $fieldName]);
+            // Relation conditions
+            $specificFilters = $this->buildRelationConditions($specificFilters, [...$filteredFieldNames, $fieldName]);
+
+            // Define the aggregation config
+            if (! empty($config['aggregationConfig'])) {
+                $aggregation = $config['aggregationConfig'];
+            } else {
+                $aggregation = [
+                    'terms' => [
+                        'field' => $fieldName,
+                        'size' => self::INTEGER_MAX_VALUE,
+                        'order' => ['o_key' => 'asc']
+                    ],
+                ];
+            }
+
+            // Add filters to the aggregation if needed
+            if ($specificFilters) {
+                $aggregations[$fieldName] = [
+                    'filter' => [
+                        'bool' => [
+                            'must' => $specificFilters,
+                        ],
+                    ],
+                    'aggs' => [
+                        $fieldName => $aggregation,
+                    ],
+                ];
+
+                // Add special handling for variant mode
+                if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
+                    $aggregations[$fieldName]['aggs'][$fieldName]['aggs'] = [
+                        'objectCount' => ['cardinality' => ['field' => 'o_virtualProductId']],
+                    ];
+                }
+            } else {
+                $aggregations[$fieldName] = $aggregation;
+
+                // Add special handling for variant mode
+                if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
+                    $aggregations[$fieldName]['aggs'] = [
+                        'objectCount' => ['cardinality' => ['field' => 'o_virtualProductId']],
+                    ];
+                }
+            }
+        }
+
+        // If we have aggregations, add them to the search params and execute the query
+        if ($aggregations) {
+            $params['body']['aggs'] = $aggregations;
+
+            // Modify variant mode for aggregations if needed
+            $variantModeForAggregations = $this->getVariantMode();
+            if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
+                $variantModeForAggregations = ListingInterface::VARIANT_MODE_VARIANTS_ONLY;
+
+                // Update the query to reflect the correct variant mode
+                $params = $this->updateQueryForVariantMode($params, $variantModeForAggregations);
+            }
+
+            // Send a request to OpenSearch
+            $result = $this->getWorker()->getClient($this->index)
+                ->search($params);
+
+            // Process result and extract aggregation values
+            $this->processAggregationResults($result);
+        } else {
+            $this->preparedGroupByValuesResults = [];
+        }
+
+        $this->preparedGroupByValuesLoaded = true;
+    }
+
+    /**
+     * Process the aggregation results from OpenSearch
+     */
+    private function processAggregationResults(array $result): void
+    {
+        if (isset($result['aggregations'])) {
+            foreach ($result['aggregations'] as $fieldName => $aggregation) {
+                $groupByValueResult = [];
+                $buckets = $this->extractBuckets($aggregation);
+
+                if ($buckets) {
+                    foreach ($buckets as $bucket) {
+                        if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
+                            $groupByValueResult[] = [
+                                'value' => $bucket['key'],
+                                'count' => $bucket['objectCount']['value']
+                            ];
+                        } else {
+                            $data = [
+                                'value' => $bucket['key'],
+                                'count' => $bucket['doc_count']
+                            ];
+
+                            // Handle sub-aggregations
+                            if (isset($bucket) && \is_array($bucket)) {
+                                foreach ($bucket as $key => $subAggregation) {
+                                    if ($key !== 'key' && $key !== 'doc_count' && $key !== 'key_as_string') {
+                                        $data[$key] = $subAggregation;
+                                    }
+                                }
+                            }
+
+                            $groupByValueResult[] = $data;
+                        }
+                    }
+                }
+
+                $this->preparedGroupByValuesResults[$fieldName] = $groupByValueResult;
+            }
+        }
+    }
+
+    /**
+     * Extract buckets from the aggregation result
+     */
+    private function extractBuckets(array $aggregation): array
+    {
+        if (isset($aggregation['buckets'])) {
+            return $aggregation['buckets'];
+        }
+
+        // Search for nested aggregations
+        foreach ($aggregation as $value) {
+            if (! \is_array($value)) {
+                continue;
+            }
+
+            if (isset($value['buckets'])) {
+                return $value['buckets'];
+            }
+
+            $nestedBuckets = $this->extractBuckets($value);
+
+            if (! empty($nestedBuckets)) {
+                return $nestedBuckets;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Update the query parameters for a specific variant mode
+     */
+    private function updateQueryForVariantMode(array $params, string $variantMode): array
+    {
+        // Extract the current bool query
+        $boolQuery = $params['body']['query']['bool'] ?? [];
+
+        // Apply the variant mode filter
+        if ($variantMode === ListingInterface::VARIANT_MODE_VARIANTS_ONLY) {
+            $boolQuery['filter']['bool']['must'][] = [
+                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_VARIANT]
+            ];
+        } elseif ($variantMode === ListingInterface::VARIANT_MODE_HIDE) {
+            $boolQuery['filter']['bool']['must'][] = [
+                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_OBJECT]
+            ];
+        }
+
+        // Update the query in the params
+        $params['body']['query']['bool'] = $boolQuery;
+
+        return $params;
+    }
+
     private function getSearchParams(string $excludedFieldName = null): array
     {
-        $params = [
+        $body = [
             'query' => [
                 'bool' => [
                     'filter' => [
@@ -284,6 +518,7 @@ class Listing extends AbstractListing
                 ],
             ],
         ];
+
         $renderConditions = [[]];
 
         foreach ($this->conditions as $fieldName => $condArray) {
@@ -296,6 +531,53 @@ class Listing extends AbstractListing
             }
         }
 
-        return \array_merge_recursive($params, ...$renderConditions);
+        return [
+            'index' => $this->getWorker()->getIndexName($this->index->getName()),
+            'body' => \array_merge_recursive($body, ...$renderConditions),
+        ];
+    }
+
+    /**
+     * Builds filter condition of user-specific conditions
+     */
+    private function buildFilterConditions(array $boolFilters, array $excludedFieldNames): array
+    {
+        foreach ($this->conditions as $fieldName => $conditions) {
+            if (\in_array($fieldName, $excludedFieldNames, true)) {
+                continue;
+            }
+
+            foreach ($conditions as $condition) {
+                if (\is_array($condition)) {
+                    $boolFilters[] = $condition;
+                } else {
+                    $boolFilters[] = ['term' => [$fieldName => $condition]];
+                }
+            }
+        }
+
+        return $boolFilters;
+    }
+
+    /**
+     * Builds relation conditions of user-specific query conditions
+     */
+    private function buildRelationConditions(array $boolFilters, array $excludedFieldNames): array
+    {
+        foreach ($this->relationConditions as $fieldName => $conditions) {
+            if (\in_array($fieldName, $excludedFieldNames, true)) {
+                continue;
+            }
+
+            foreach ($conditions as $condition) {
+                if (\is_array($condition)) {
+                    $boolFilters[] = $condition;
+                } else {
+                    $boolFilters[] = ['term' => [$fieldName => $condition]];
+                }
+            }
+        }
+
+        return $boolFilters;
     }
 }

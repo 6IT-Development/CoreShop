@@ -37,7 +37,6 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\Migrations\DependencyFactory;
-use Doctrine\Migrations\Generator\Generator;
 use Doctrine\Migrations\Version\Direction;
 use Doctrine\Migrations\Version\ExecutionResult;
 use Doctrine\Migrations\Version\Version;
@@ -120,6 +119,7 @@ class MysqlWorker extends AbstractWorker implements WorkerDeleteableByIdInterfac
             foreach ($migrationDirectories as $namespace => $directory) {
                 if (str_starts_with($namespace, 'App\\')) {
                     $appNamespace = $namespace;
+
                     break;
                 }
             }

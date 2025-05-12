@@ -28,7 +28,7 @@ use Pimcore\Model\DataObject\Concrete;
 
 class Listing extends AbstractListing
 {
-    protected const int INTEGER_MAX_VALUE = 2147483647; // OpenSearch Integer.MAX_VALUE is 2^31 - 1
+    protected const INTEGER_MAX_VALUE = 2147483647; // OpenSearch Integer.MAX_VALUE is 2^31 - 1
 
     protected ?array $objects = null;
 

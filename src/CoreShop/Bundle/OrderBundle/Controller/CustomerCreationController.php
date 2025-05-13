@@ -94,6 +94,27 @@ class CustomerCreationController extends PimcoreController
                     $customer->addAddress($address);
                 }
 
+                /**
+                 * @var AddressInterface $address
+                 */
+                $addressSecondary = $data['addressSecondary'];
+
+                if ($addressSecondary->getStreet() && $addressSecondary->getNumber() && $addressSecondary->getPostcode() && $addressSecondary->getCity() && $addressSecondary->getCountry()) {
+                    $addressSecondary->setPublished(true);
+                    $addressSecondary->setKey(uniqid());
+                    $addressSecondary->setParent(
+                        $folderCreationService->createFolderForResource(
+                            $address,
+                            ['prefix' => $customer->getFullPath()],
+                        ),
+                    );
+                    $addressSecondary->save();
+
+                    if ($customer instanceof AddressesAwareInterface) {
+                        $customer->addAddress($addressSecondary);
+                    }
+                }
+
                 $this->container->get('event_dispatcher')->dispatch(
                     new AdminCustomerCreationEvent($customer, $data),
                     Events::ADMIN_CUSTOMER_CREATION,

@@ -84,7 +84,8 @@ final class CoreShopIndexExtension extends AbstractModelExtension
         $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
 
         $container->getDefinition(MysqlWorker::class)->setArgument(
-            7, $configs['mysql_auto_generate_migrations']
+            7,
+            $configs['mysql_auto_generate_migrations'],
         );
 
         Autoconfiguration::registerForAutoConfiguration(

@@ -15,9 +15,24 @@ coreshop.order.order.create.address = Class.create(coreshop.resource.creation, {
     route: 'coreshop_admin_order_address_creation',
     type: 'address',
 
+    initialize: function(options, callback) {
+        coreshop.resource.creation.prototype.initialize.apply(this, arguments);
+
+        this.options = options;
+        this.mode = options?.params?.mode || null;
+    },
+
+
     getSettings: function() {
+        const mode = this.mode || this.options?.params?.mode || null;
+
+        if (mode === 'primary') {
+            return [this.getAddressSettings()];
+        }
+
         return [this.getAddressSettings(),this.getAddressSettingsSecondary()];
     },
+
 
     getAddressSettings: function () {
         this.addressForm = Ext.create('Ext.form.FieldSet', {

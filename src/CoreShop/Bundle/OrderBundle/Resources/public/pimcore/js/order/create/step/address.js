@@ -125,7 +125,8 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
                                 {
                                     prefix: 'address.',
                                     params: {
-                                        customer: this.creationPanel.customerId
+                                        customer: this.creationPanel.customerId,
+                                        mode: 'primary'
                                     }
                                 }, function(id) {
                                     this[key].down('#address').setValue(id);

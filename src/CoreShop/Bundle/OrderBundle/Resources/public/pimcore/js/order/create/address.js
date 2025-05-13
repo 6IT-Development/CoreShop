@@ -63,6 +63,10 @@ coreshop.order.order.create.address = Class.create(coreshop.resource.creation, {
                 fieldLabel: t('coreshop_address_create_city'),
                 allowBlank: false
             }, {
+                xtype: 'coreshop.state',
+                name: this.options.prefix + 'state',
+                allowBlank: false
+            },{
                 xtype: 'textfield',
                 name: this.options.prefix + 'phoneNumber',
                 fieldLabel: t('coreshop_address_create_phone_number')

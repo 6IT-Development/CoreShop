@@ -118,34 +118,26 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
     public function renameIndexStructures(IndexInterface $index, string $oldName, string $newName): void
     {
-        $client = $this->getClient($index);
+        $indices = $this->getClient($index)->indices();
         $oldIndex = $this->getIndexName($oldName);
         $newIndex = $this->getIndexName($newName);
 
         // First, check if the old index exists
-        if (! $client->indices()->exists(['index' => $oldIndex])) {
+        if (! $indices->exists(['index' => $oldIndex])) {
             return;
         }
 
-        // Then, reindex the data from the old index to the new one
-        $client
-            ->reindex([
-                'body' => [
-                    'source' => [
-                        'index' => $oldIndex,
-                    ],
-                    'dest' => [
-                        'index' => $newIndex,
-                    ],
-                ],
-            ]);
+        // Then, clone the whole index with the new name
+        $indices->clone([
+            'index' => $oldIndex,
+            'target' => $newIndex,
+            'wait_for_completion' => true,
+        ]);
 
         // Finally, delete the old index
-        $client
-            ->indices()
-            ->delete([
-                'index' => $oldIndex,
-            ]);
+        $indices->delete([
+            'index' => $oldIndex,
+        ]);
     }
 
     /**

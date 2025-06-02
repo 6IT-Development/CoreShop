@@ -31,8 +31,8 @@ use Webmozart\Assert\Assert;
 class CartItemQuantityModifier implements StorageListItemQuantityModifierInterface
 {
     public function __construct(
-        protected EventDispatcherInterface $eventDispatcher,
         protected bool $allowZeroQuantity = false,
+                protected ?EventDispatcherInterface $eventDispatcher = null,
     ) {
     }
 
@@ -50,7 +50,7 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
 
         $cleanTargetQuantity = $this->roundQuantity($item, $targetQuantity);
 
-        $this->eventDispatcher->dispatch(
+        $this->eventDispatcher?->dispatch(
             new GenericEvent($item, ['targetQuantity' => $cleanTargetQuantity]),
             CartEvents::PRE_UPDATE_ITEM,
         );
@@ -63,7 +63,7 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
             $item->setDefaultUnitQuantity($item->getQuantity() ?? 1.0);
         }
 
-        $this->eventDispatcher->dispatch(
+        $this->eventDispatcher?->dispatch(
             new GenericEvent($item, ['targetQuantity' => $cleanTargetQuantity]),
             CartEvents::POST_UPDATE_ITEM,
         );

@@ -69,17 +69,9 @@ class CartModifier implements CartModifierInterface
     {
         foreach ($storageList->getItems() as $item) {
             if ($this->cartItemResolver->equals($item, $storageListItem)) {
-                $this->eventDispatcher->dispatch(
-                    new GenericEvent($storageList, ['item' => $storageListItem, 'quantity' => $item->getQuantity()]),
-                    CartEvents::PRE_UPDATE_ITEM,
-                );
                 $this->cartItemQuantityModifier->modify(
                     $item,
                     $item->getQuantity() + $storageListItem->getQuantity(),
-                );
-                $this->eventDispatcher->dispatch(
-                    new GenericEvent($storageList, ['item' => $storageListItem, 'quantity' => $item->getQuantity()]),
-                    CartEvents::POST_UPDATE_ITEM,
                 );
 
                 return;

@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\OrderBundle\Form\Type;
 
-use CoreShop\Bundle\AddressBundle\Form\Type\AddressSecondaryType;
 use CoreShop\Bundle\AddressBundle\Form\Type\AddressType;
 use CoreShop\Bundle\CustomerBundle\Form\Type\CustomerType;
 use Symfony\Component\Form\AbstractType;
@@ -42,7 +41,6 @@ class AdminCustomerCreationType extends AbstractType
                     new Valid(['groups' => ['coreshop']]),
                 ],
             ])
-            ->add('addressSecondary', AddressSecondaryType::class)
         ;
     }
 

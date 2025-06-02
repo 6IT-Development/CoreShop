@@ -77,13 +77,6 @@ services:
         tags:
             - { name: form.type }
 
-    CoreShop\Bundle\AddressBundle\Form\Type\AddressSecondaryType:
-      arguments:
-        - '%coreshop.model.address.class%'
-        - '%coreshop.form.type.address.validation_groups%'
-      tags:
-        - { name: form.type }
-
     CoreShop\Bundle\AddressBundle\Form\Type\AddressIdentifierChoiceType:
         arguments:
             - '@coreshop.repository.address_identifier'

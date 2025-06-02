@@ -18,8 +18,7 @@ coreshop.order.order.create.customer = Class.create(coreshop.resource.creation, 
     getSettings: function() {
         return [
             this.getCustomerSettings(),
-            this.getAddressSettings(),
-            this.getAddressSettingsSecondary()
+            this.getAddressSettings()
         ];
     },
 
@@ -56,9 +55,5 @@ coreshop.order.order.create.customer = Class.create(coreshop.resource.creation, 
 
     getAddressSettings: function () {
         return new coreshop.order.order.create.address({prefix: 'address.'}).getAddressSettings();
-    },
-
-    getAddressSettingsSecondary: function () {
-        return new coreshop.order.order.create.address({prefix: 'addressSecondary.'}).getAddressSettingsSecondary();
     },
 });

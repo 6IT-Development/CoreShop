@@ -32,7 +32,7 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
 {
     public function __construct(
         protected bool $allowZeroQuantity = false,
-                protected ?EventDispatcherInterface $eventDispatcher = null,
+        protected ?EventDispatcherInterface $eventDispatcher = null,
     ) {
     }
 

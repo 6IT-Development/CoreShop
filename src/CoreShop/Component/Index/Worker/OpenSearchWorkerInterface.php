@@ -32,6 +32,8 @@ interface OpenSearchWorkerInterface extends WorkerInterface
 
     public const FIELD_TYPE_OBJECT = 'object';
 
+    public const FIELD_TYPE_NESTED = 'nested';
+
     public const FIELD_TYPE_TEXT = 'text';
 
     public const FIELD_TYPE_KEYWORD = 'keyword';

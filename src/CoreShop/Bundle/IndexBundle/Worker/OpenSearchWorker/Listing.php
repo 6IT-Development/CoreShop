@@ -485,8 +485,6 @@ class Listing extends AbstractListing
             ],
         ];
 
-        $variantTypeCondition = 'variant';
-
         $renderConditions = [
             'must' => [
                 ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'active') => true]],
@@ -525,7 +523,46 @@ class Listing extends AbstractListing
             }
         }
 
+        foreach ($this->relationConditions as $fieldName => $condArray) {
+            if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
+                continue;
+            }
+
+            foreach ($condArray as $cond) {
+                $nested = [
+                    'nested' => [
+                        'path' => 'relationalAttributes',
+                        'query' => [
+                            'bool' => [
+                                'must' => [
+                                    ['term' => ['relationalAttributes.fieldname' => $fieldName]]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex(), 'relation' => true]);
+
+                foreach ($renderedCondition as $key => $value) {
+                    if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
+                        continue;
+                    }
+
+                    if (!isset($renderConditions[$key])) {
+                        $renderConditions[$key] = [];
+                    }
+
+                    $nested['nested']['query']['bool'][$key][] = $value;
+                }
+
+                $renderConditions['must'][] = $nested;
+            }
+        }
+
         $body['query']['bool'] = $renderConditions;
+
+        dump(json_encode($body, \JSON_PRETTY_PRINT));
 
         return [
             'index' => $this->getWorker()->getIndexName($this->index->getName()),

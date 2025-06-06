@@ -169,7 +169,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                         'properties' => $localizedAttributes,
                     ],
                     'relationalAttributes' => [
-                        'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+                        'type' => OpenSearchWorkerInterface::FIELD_TYPE_NESTED,
                         'properties' => $relationalAttributes,
                     ],
                 ],
@@ -404,7 +404,12 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
         Assert::isInstanceOf($index, IndexInterface::class);
 
-        $params['mappedFieldName'] = $this->getMappedFieldName($index, $condition->getFieldName());
+        if ($params['relation'] ?? false) {
+            $params['mappedFieldName'] = 'relationalAttributes.' . $condition->getFieldName();
+        }
+        else {
+            $params['mappedFieldName'] = $this->getMappedFieldName($index, $condition->getFieldName());
+        }
 
         return parent::renderCondition($condition, $params);
     }

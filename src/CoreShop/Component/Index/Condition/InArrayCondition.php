@@ -16,26 +16,33 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Behat\Context\Domain;
+namespace CoreShop\Component\Index\Condition;
 
-use Behat\Behat\Context\Context;
-use CoreShop\Component\Resource\Metadata\Registry;
-use Webmozart\Assert\Assert;
-
-final class ResourceContext implements Context
+class InArrayCondition implements ConditionInterface
 {
     public function __construct(
-        private Registry $metadataRegistry,
+        private string $fieldName,
+        private array $value,
     ) {
     }
 
-    /**
-     * @Then /^the (class "[^"]+") is registered as Pimcore Resource$/
-     */
-    public function theClassIsRegisteredAsPimcoreResource(): void
+    public function getFieldName(): string
     {
-        $car = $this->metadataRegistry->get('app.car');
+        return $this->fieldName;
+    }
 
-        Assert::eq($car->getClass('model'), 'Pimcore\Model\DataObject\Car');
+    public function setFieldName(string $fieldName): void
+    {
+        $this->fieldName = $fieldName;
+    }
+
+    public function getValue(): array
+    {
+        return $this->value;
+    }
+
+    public function setValue(array $value): void
+    {
+        $this->value = $value;
     }
 }

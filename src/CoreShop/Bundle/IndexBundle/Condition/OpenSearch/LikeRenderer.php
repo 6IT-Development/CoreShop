@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,33 +21,35 @@ namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\LikeCondition;
-use CoreShop\Component\Index\Condition\NotLikeCondition;
 use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
 class LikeRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): array
     {
         /**
          * @var LikeCondition $condition
          */
         Assert::isInstanceOf($condition, LikeCondition::class);
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $value = $condition->getValue();
-        $conditionType = $condition instanceof NotLikeCondition ? 'must_not' : 'must';
         $pattern = $condition->getPattern();
 
+        if ($pattern === 'both') {
+            $value = '*' . $value . '*';
+        } elseif ($pattern === 'left') {
+            $value = '*' . $value;
+        } elseif ($pattern === 'right') {
+            $value .= '*';
+        }
+
         return [
-            'query' => [
-                'bool' => [
-                    $conditionType => [
-                        $pattern => [
-                            $fieldName => $value,
-                        ],
-                    ],
+            'filter' => [
+                'wildcard' => [
+                    $fieldName => $value,
                 ],
             ],
         ];

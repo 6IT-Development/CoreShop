@@ -120,6 +120,7 @@ class MysqlWorker extends AbstractWorker implements MysqlWorkerInterface, Worker
             foreach ($migrationDirectories as $namespace => $directory) {
                 if (str_starts_with($namespace, 'App\\')) {
                     $appNamespace = $namespace;
+
                     break;
                 }
             }

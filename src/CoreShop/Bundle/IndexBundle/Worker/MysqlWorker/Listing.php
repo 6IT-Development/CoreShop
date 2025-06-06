@@ -105,9 +105,6 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
         $this->dao = new Dao($this, $connection);
     }
 
-    /**
-     * @return MysqlWorker
-     */
     public function getWorker(): MysqlWorker
     {
         /**
@@ -387,7 +384,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
             $variantMode = $this->getVariantMode();
         }
 
-        $queryBuilder->where($this->getWorker()->renderCondition(new MatchCondition('active', '1'), 'q'));
+        $queryBuilder->where($this->getWorker()->renderCondition(new MatchCondition('active', '1'), ['prefix' => 'q']));
 
         $extensions = $this->getWorker()->getExtensions($this->getIndex());
 
@@ -395,7 +392,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
             if ($extension instanceof MysqlIndexQueryExtensionInterface) {
                 $conditions = $extension->preConditionQuery($this->getIndex());
                 foreach ($conditions as $cond) {
-                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, 'q'));
+                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, ['prefix' => 'q']));
                 }
             }
         }
@@ -429,7 +426,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
         foreach ($this->relationConditions as $fieldName => $condArray) {
             if ($fieldName !== $excludedFieldName && is_array($condArray)) {
                 foreach ($condArray as $cond) {
-                    $cond = $this->getWorker()->renderCondition($cond, 'q');
+                    $cond = $this->getWorker()->renderCondition($cond, ['prefix' => 'q']);
                     $queryBuilder->andWhere('q.o_id IN (SELECT DISTINCT src FROM ' . $relationalTableName . ' q WHERE ' . $cond . ')');
                 }
             }
@@ -437,7 +434,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
         foreach ($this->conditions as $fieldName => $condArray) {
             if ($fieldName !== $excludedFieldName && is_array($condArray)) {
                 foreach ($condArray as $cond) {
-                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, 'q'));
+                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, ['prefix' => 'q']));
                 }
             }
         }

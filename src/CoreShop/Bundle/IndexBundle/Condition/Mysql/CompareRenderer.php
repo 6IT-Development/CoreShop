@@ -26,7 +26,7 @@ use Webmozart\Assert\Assert;
 
 class CompareRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): string
     {
         /**
          * @var CompareCondition $condition
@@ -36,7 +36,7 @@ class CompareRenderer extends AbstractMysqlDynamicRenderer
         $value = $condition->getValue();
         $operator = $condition->getOperator();
 
-        return '' . $this->quoteFieldName($condition->getFieldName(), $prefix) . ' ' . $operator . ' ' . $this->quote($value);
+        return '' . $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' ' . $operator . ' ' . $this->quote($value);
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -20,7 +20,9 @@ namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\DynamicRendererInterface;
+use CoreShop\Component\Index\Condition\InArrayCondition;
 use CoreShop\Component\Index\Condition\InCondition;
+use CoreShop\Component\Index\Condition\NotInArrayCondition;
 use CoreShop\Component\Index\Condition\NotInCondition;
 use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
@@ -28,30 +30,31 @@ use Webmozart\Assert\Assert;
 
 class InRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): array
     {
         /**
-         * @var InCondition $condition
+         * @var InCondition|InArrayCondition $condition
          */
-        Assert::isInstanceOf($condition, InCondition::class);
+        Assert::isInstanceOfAny($condition, [InCondition::class, InArrayCondition::class]);
 
-        $values = $condition->getValues();
-        $fieldName = $condition->getFieldName();
+        if ($condition instanceof InCondition) {
+            $values = $condition->getValues();
+        } else {
+            $values = $condition->getValue();
+        }
+
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
 
         if (count($values) === 0) {
             return [];
         }
 
-        $conditionType = $condition instanceof NotInCondition ? 'must_not' : 'must';
+        $conditionType = ($condition instanceof NotInCondition || $condition instanceof NotInArrayCondition) ? 'must_not' : 'must';
 
         return [
-            'query' => [
-                'bool' => [
-                    $conditionType => [
-                        'terms' => [
-                            $fieldName => $values,
-                        ],
-                    ],
+            $conditionType => [
+                'terms' => [
+                    $fieldName => $values,
                 ],
             ],
         ];
@@ -59,6 +62,6 @@ class InRenderer implements DynamicRendererInterface
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof OpenSearchWorkerInterface && $condition instanceof InCondition;
+        return $worker instanceof OpenSearchWorkerInterface && ($condition instanceof InCondition || $condition instanceof InArrayCondition);
     }
 }

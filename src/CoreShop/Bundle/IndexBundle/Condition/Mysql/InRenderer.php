@@ -27,7 +27,7 @@ use Webmozart\Assert\Assert;
 
 class InRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null)
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = [])
     {
         /**
          * @var InCondition $condition
@@ -49,7 +49,7 @@ class InRenderer extends AbstractMysqlDynamicRenderer
 
             return sprintf(
                 '%s %s (%s)',
-                $this->quoteFieldName($condition->getFieldName(), $prefix),
+                $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null),
                 $operator,
                 implode(',', $inValues),
             );

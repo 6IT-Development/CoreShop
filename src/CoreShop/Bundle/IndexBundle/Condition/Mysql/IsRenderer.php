@@ -26,7 +26,7 @@ use Webmozart\Assert\Assert;
 
 class IsRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): string
     {
         /**
          * @var IsCondition $condition
@@ -35,7 +35,7 @@ class IsRenderer extends AbstractMysqlDynamicRenderer
 
         $value = $condition->getValue();
 
-        return '' . $this->quoteFieldName($condition->getFieldName(), $prefix) . ' IS ' . ($value ? '' : ' NOT ') . 'NULL';
+        return '' . $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' IS ' . ($value ? '' : ' NOT ') . 'NULL';
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -189,10 +189,13 @@ class Listing extends AbstractListing
         }
 
         $result = $this->getWorker()->getClient($this->index)
-            ->search($params);
+            ->search($params)
+        ;
+
+        $this->objects = [];
 
         foreach ($result['hits']['hits'] as $hit) {
-            $object = Concrete::getById($hit['_source']['o_id']);
+            $object = Concrete::getById($hit['_source']['attributes']['o_id']);
 
             if ($object instanceof Concrete) {
                 $this->objects[] = $object;
@@ -204,31 +207,17 @@ class Listing extends AbstractListing
 
     public function getGroupByValues($fieldName, $countValues = false, $fieldNameShouldBeExcluded = true): array
     {
-        if (!$this->preparedGroupByValuesLoaded) {
-            $this->doLoadGroupByValues();
-        }
-
-        $results = $this->preparedGroupByValuesResults[$fieldName] ?? null;
-
-        if (null === $results) {
-            return [];
-        }
-
-        if (true === $countValues) {
-            return $results;
-        }
-
-        return \array_column($results, 'value');
+        return $this->doGetGroupByValues($fieldName, $countValues, $fieldNameShouldBeExcluded);
     }
 
     public function getGroupByRelationValues($fieldName, $countValues = false, $fieldNameShouldBeExcluded = true): array
     {
-        throw new \BadMethodCallException('Not implemented');
+        return $this->doGetGroupByValues($fieldName, $countValues, $fieldNameShouldBeExcluded);
     }
 
     public function getGroupBySystemValues($fieldName, $countValues = false, $fieldNameShouldBeExcluded = true): array
     {
-        throw new \BadMethodCallException('Not implemented');
+        return $this->doGetGroupByValues($fieldName, $countValues, $fieldNameShouldBeExcluded);
     }
 
     public function buildSimilarityOrderBy(array $fields, int $objectId): string
@@ -293,6 +282,29 @@ class Listing extends AbstractListing
         return $worker;
     }
 
+    protected function doGetGroupByValues(string $fieldname, bool $countValues = false, bool $fieldnameShouldBeExcluded = true): array
+    {
+        if (!$this->preparedGroupByValuesLoaded) {
+            $this->doLoadGroupByValues();
+        }
+
+        $results = $this->preparedGroupByValuesResults[$fieldname] ?? null;
+        if ($results) {
+            if ($countValues) {
+                return $results;
+            }
+
+            $resultsWithoutCounts = [];
+            foreach ($results as $result) {
+                $resultsWithoutCounts[] = $result['value'];
+            }
+
+            return $resultsWithoutCounts;
+        }
+
+        return [];
+    }
+
     /**
      * Loads all prepared "group by" values
      */
@@ -313,7 +325,14 @@ class Listing extends AbstractListing
         // Reset size and remove existing aggregations if any
         $params['body']['size'] = 0;
         $params['body']['_source'] = false;
-        $params['body']['from'] = $this->getOffset();
+
+        if (null !== $this->getOffset()) {
+            $params['body']['from'] = $this->getOffset();
+        }
+
+        if (null !== $this->getLimit()) {
+            $params['body']['size'] = $this->getLimit();
+        }
 
         // Initialize aggregations array
         $aggregations = [];
@@ -322,85 +341,34 @@ class Listing extends AbstractListing
         $filteredFieldNames = [];
 
         foreach ($this->conditions as $fieldName => $condition) {
-            if (! \in_array($fieldName, $toExcludeFieldNames, true)) {
+            if (!\in_array($fieldName, $toExcludeFieldNames, true)) {
                 $filteredFieldNames[$fieldName] = $fieldName;
             }
         }
 
         foreach ($this->relationConditions as $fieldName => $condition) {
-            if (! \in_array($fieldName, $toExcludeFieldNames, true)) {
+            if (!\in_array($fieldName, $toExcludeFieldNames, true)) {
                 $filteredFieldNames[$fieldName] = $fieldName;
             }
         }
 
-        // Create aggregations for each prepared field
-        foreach ($this->preparedGroupByValues as $fieldName => $config) {
-            $specificFilters = [];
-            // User-specific filters
-            $specificFilters = $this->buildFilterConditions($specificFilters, [...$filteredFieldNames, $fieldName]);
-            // Relation conditions
-            $specificFilters = $this->buildRelationConditions($specificFilters, [...$filteredFieldNames, $fieldName]);
+        $columns = $this->getIndex()->getColumns();
+        $aggregations = [];
 
-            // Define the aggregation config
-            if (! empty($config['aggregationConfig'])) {
-                $aggregation = $config['aggregationConfig'];
-            } else {
-                $aggregation = [
-                    'terms' => [
-                        'field' => $fieldName,
-                        'size' => self::INTEGER_MAX_VALUE,
-                        'order' => ['o_key' => 'asc']
-                    ],
-                ];
-            }
-
-            // Add filters to the aggregation if needed
-            if ($specificFilters) {
-                $aggregations[$fieldName] = [
-                    'filter' => [
-                        'bool' => [
-                            'must' => $specificFilters,
-                        ],
-                    ],
-                    'aggs' => [
-                        $fieldName => $aggregation,
-                    ],
-                ];
-
-                // Add special handling for variant mode
-                if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
-                    $aggregations[$fieldName]['aggs'][$fieldName]['aggs'] = [
-                        'objectCount' => ['cardinality' => ['field' => 'o_virtualProductId']],
-                    ];
-                }
-            } else {
-                $aggregations[$fieldName] = $aggregation;
-
-                // Add special handling for variant mode
-                if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
-                    $aggregations[$fieldName]['aggs'] = [
-                        'objectCount' => ['cardinality' => ['field' => 'o_virtualProductId']],
-                    ];
-                }
-            }
+        foreach ($columns as $column) {
+            $aggregations[$column->getName()] = [
+                'terms' => [
+                    'field' => 'attributes.' . $column->getName(),
+                    'order' => ['_term' => 'asc'],
+                ],
+            ];
         }
 
-        // If we have aggregations, add them to the search params and execute the query
         if ($aggregations) {
             $params['body']['aggs'] = $aggregations;
-
-            // Modify variant mode for aggregations if needed
-            $variantModeForAggregations = $this->getVariantMode();
-            if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
-                $variantModeForAggregations = ListingInterface::VARIANT_MODE_VARIANTS_ONLY;
-
-                // Update the query to reflect the correct variant mode
-                $params = $this->updateQueryForVariantMode($params, $variantModeForAggregations);
-            }
-
-            // Send a request to OpenSearch
             $result = $this->getWorker()->getClient($this->index)
-                ->search($params);
+                ->search($params)
+            ;
 
             // Process result and extract aggregation values
             $this->processAggregationResults($result);
@@ -426,12 +394,12 @@ class Listing extends AbstractListing
                         if ($this->getVariantMode() === ListingInterface::VARIANT_MODE_INCLUDE_PARENT_OBJECT) {
                             $groupByValueResult[] = [
                                 'value' => $bucket['key'],
-                                'count' => $bucket['objectCount']['value']
+                                'count' => $bucket['objectCount']['value'],
                             ];
                         } else {
                             $data = [
                                 'value' => $bucket['key'],
-                                'count' => $bucket['doc_count']
+                                'count' => $bucket['doc_count'],
                             ];
 
                             // Handle sub-aggregations
@@ -464,7 +432,7 @@ class Listing extends AbstractListing
 
         // Search for nested aggregations
         foreach ($aggregation as $value) {
-            if (! \is_array($value)) {
+            if (!\is_array($value)) {
                 continue;
             }
 
@@ -474,7 +442,7 @@ class Listing extends AbstractListing
 
             $nestedBuckets = $this->extractBuckets($value);
 
-            if (! empty($nestedBuckets)) {
+            if (!empty($nestedBuckets)) {
                 return $nestedBuckets;
             }
         }
@@ -493,11 +461,11 @@ class Listing extends AbstractListing
         // Apply the variant mode filter
         if ($variantMode === ListingInterface::VARIANT_MODE_VARIANTS_ONLY) {
             $boolQuery['filter']['bool']['must'][] = [
-                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_VARIANT]
+                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_VARIANT],
             ];
         } elseif ($variantMode === ListingInterface::VARIANT_MODE_HIDE) {
             $boolQuery['filter']['bool']['must'][] = [
-                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_OBJECT]
+                'term' => ['o_type' => AbstractObject::OBJECT_TYPE_OBJECT],
             ];
         }
 
@@ -512,28 +480,56 @@ class Listing extends AbstractListing
         $body = [
             'query' => [
                 'bool' => [
-                    'filter' => [
-                        'term' => ['active' => true],
-                    ],
+                    'filter' => [],
                 ],
             ],
         ];
 
-        $renderConditions = [[]];
+        $variantTypeCondition = 'variant';
+
+        $renderConditions = [
+            'must' => [
+                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'active') => true]],
+            ],
+        ];
+
+        if ($this->getVariantMode() === self::VARIANT_MODE_HIDE) {
+            $renderConditions['must_not'] = [
+                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'o_type') => 'variant']],
+            ];
+        } elseif ($this->getVariantMode() === self::VARIANT_MODE_VARIANTS_ONLY) {
+            $renderConditions['must_not'] = [
+                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'o_type') => 'object']],
+            ];
+        }
 
         foreach ($this->conditions as $fieldName => $condArray) {
-            if ($fieldName === $excludedFieldName || ! \is_array($condArray)) {
+            if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
                 continue;
             }
 
             foreach ($condArray as $cond) {
-                $renderConditions[] = $this->worker->renderCondition($cond);
+                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex()]);
+
+                foreach ($renderedCondition as $key => $value) {
+                    if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
+                        continue;
+                    }
+
+                    if (!isset($renderConditions[$key])) {
+                        $renderConditions[$key] = [];
+                    }
+
+                    $renderConditions[$key][] = $value;
+                }
             }
         }
 
+        $body['query']['bool'] = $renderConditions;
+
         return [
             'index' => $this->getWorker()->getIndexName($this->index->getName()),
-            'body' => \array_merge_recursive($body, ...$renderConditions),
+            'body' => $body,
         ];
     }
 

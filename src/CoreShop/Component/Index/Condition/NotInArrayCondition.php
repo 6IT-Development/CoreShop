@@ -18,17 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Index\Condition;
 
-use CoreShop\Component\Index\Worker\WorkerInterface;
-
-interface DynamicRendererInterface
+class NotInArrayCondition extends InArrayCondition
 {
-    /**
-     * Renders the condition.
-     *
-     *
-     * @return mixed
-     */
-    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []);
-
-    public function supports(WorkerInterface $worker, ConditionInterface $condition): bool;
 }

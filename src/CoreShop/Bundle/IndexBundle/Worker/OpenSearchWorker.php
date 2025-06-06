@@ -11,17 +11,21 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Bundle\IndexBundle\Worker;
 
-use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder;
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder;
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Listing;
+use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Mapping\LanguageAnalyzer;
+use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\ConditionRendererInterface;
+use CoreShop\Component\Index\Extension\IndexColumnsExtensionInterface;
+use CoreShop\Component\Index\Interpreter\LocalizedInterpreterInterface;
+use CoreShop\Component\Index\Interpreter\RelationInterpreterInterface;
 use CoreShop\Component\Index\Listing\ListingInterface;
 use CoreShop\Component\Index\Model\IndexableInterface;
 use CoreShop\Component\Index\Model\IndexColumnInterface;
@@ -35,8 +39,9 @@ use OpenSearch\Client;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use function Symfony\Component\String\u;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Webmozart\Assert\Assert;
 
 class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterface, WorkerDeleteableByIdInterface
 {
@@ -51,9 +56,9 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         OrderRendererInterface $orderRenderer,
         private EventDispatcherInterface $eventDispatcher,
         private ServiceRegistryInterface $clientRegistry,
-        private MappingBuilder $mappingBuilder,
+        private ServiceRegistryInterface $interpreterRegistry,
         private SettingsBuilder $settingsBuilder,
-        private SluggerInterface $slugger
+        private SluggerInterface $slugger,
     ) {
         parent::__construct(
             $extensions,
@@ -61,10 +66,76 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             $interpreterServiceRegistry,
             $filterGroupHelper,
             $conditionRenderer,
-            $orderRenderer
+            $orderRenderer,
         );
 
         $this->defaultLocale = Tool::getDefaultLanguage();
+    }
+
+    /**
+     * @return array<string, array>
+     */
+    private function getIndexColumns(IndexInterface $index): array
+    {
+        $systemColumns = $this->getSystemAttributes();
+        $localizedSystemColumns = $this->getLocalizedSystemAttributes();
+
+        foreach ($this->getExtensions($index) as $extension) {
+            if ($extension instanceof IndexColumnsExtensionInterface) {
+                foreach ($extension->getSystemColumns() as $name => $type) {
+                    $systemColumns[$name] = $type;
+                }
+
+                foreach ($extension->getLocalizedSystemColumns() as $name => $type) {
+                    $localizedSystemColumns[$name] = $type;
+                }
+            }
+        }
+
+        $attributes = [];
+        $relationalAttributes = [];
+        $localizedAttributes = [];
+
+        foreach ($systemColumns as $name => $type) {
+            $attributes[$name] = [
+                'type' => $type,
+            ];
+        }
+
+        foreach ($localizedSystemColumns as $name => $type) {
+            $localizedAttributes[$name] = $this->createLocalizedAttribute($name, $type);
+        }
+
+        foreach ($index->getColumns() as $column) {
+            $propertyName = $column->getName();
+            $propertyType = $column->getColumnType();
+
+            if ($column->getInterpreter()) {
+                $interpreter = $this->interpreterRegistry->get($column->getInterpreter());
+
+                if ($interpreter instanceof LocalizedInterpreterInterface) {
+                    $localizedAttributes[$propertyName] = $this->createLocalizedAttribute($propertyName, $propertyType);
+                } elseif ($interpreter instanceof RelationInterpreterInterface) {
+                    $relationalAttributes[$propertyName] = [
+                        'type' => $propertyType,
+                    ];
+                } else {
+                    $attributes[$propertyName] = [
+                        'type' => $propertyType,
+                    ];
+                }
+            } else {
+                $attributes[$propertyName] = [
+                    'type' => $propertyType,
+                ];
+            }
+        }
+
+        return [
+            'attributes' => $attributes,
+            'localizedAttributes' => $localizedAttributes,
+            'relationalAttributes' => $relationalAttributes,
+        ];
     }
 
     /**
@@ -79,13 +150,30 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             $this->deleteIndexStructures($index);
         }
 
+        $columns = $this->getIndexColumns($index);
+
+        $attributes = $columns['attributes'];
+        $relationalAttributes = $columns['relationalAttributes'];
+        $localizedAttributes = $columns['localizedAttributes'];
+
         $body = [
             'settings' => $this->settingsBuilder->build($index),
-            'mappings' => $this->mappingBuilder->build(
-                $index,
-                $this->getSystemAttributes(),
-                $this->getLocalizedSystemAttributes()
-            ),
+            'mappings' => [
+                'properties' => [
+                    'attributes' => [
+                        'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+                        'properties' => $attributes,
+                    ],
+                    'localizedAttributes' => [
+                        'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+                        'properties' => $localizedAttributes,
+                    ],
+                    'relationalAttributes' => [
+                        'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+                        'properties' => $relationalAttributes,
+                    ],
+                ],
+            ],
         ];
 
         $event = new GenericEvent($index);
@@ -101,7 +189,35 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             ->create([
                 'index' => $event->getArgument('index'),
                 'body' => $event->getArgument('body'),
-            ]);
+            ])
+        ;
+    }
+
+    private function createLocalizedAttribute(string $name, string $type): array
+    {
+        $attribute = [
+            'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+            'properties' => [],
+        ];
+
+        foreach (Tool::getValidLanguages() as $locale) {
+            $propertySettings = [
+                'type' => $type,
+            ];
+
+            // Language analyzers are only supported for text fields
+            if ($type === OpenSearchWorkerInterface::FIELD_TYPE_TEXT) {
+                $analyzer = LanguageAnalyzer::fromLocale($locale);
+
+                if ($analyzer instanceof LanguageAnalyzer) {
+                    $propertySettings['analyzer'] = $analyzer->value;
+                }
+            }
+
+            $attribute['properties'][$locale] = $propertySettings;
+        }
+
+        return $attribute;
     }
 
     /**
@@ -113,7 +229,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             ->indices()
             ->delete([
                 'index' => $this->getIndexName($index->getName()),
-            ]);
+            ])
+        ;
     }
 
     public function renameIndexStructures(IndexInterface $index, string $oldName, string $newName): void
@@ -123,7 +240,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         $newIndex = $this->getIndexName($newName);
 
         // First, check if the old index exists
-        if (! $indices->exists(['index' => $oldIndex])) {
+        if (!$indices->exists(['index' => $oldIndex])) {
             return;
         }
 
@@ -149,7 +266,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             ->delete([
                 'index' => $this->getIndexName($index->getName()),
                 'id' => (string) $id,
-            ]);
+            ])
+        ;
     }
 
     /**
@@ -161,7 +279,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             ->delete([
                 'index' => $this->getIndexName($index->getName()),
                 'id' => (string) $object->getId(),
-            ]);
+            ])
+        ;
     }
 
     /**
@@ -176,12 +295,13 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         $objectId = (string) $object->getId();
 
         // Delete the document from the index if it is not indexable
-        if (! $object->getIndexable($index)) {
+        if (!$object->getIndexable($index)) {
             $client
                 ->delete([
                     'index' => $indexName,
                     'id' => $objectId,
-                ]);
+                ])
+            ;
 
             return;
         }
@@ -191,7 +311,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 'index' => $indexName,
                 'id' => $objectId,
                 'body' => $this->prepareDataForOpenSearch($index, $object),
-            ]);
+            ])
+        ;
     }
 
     /**
@@ -218,8 +339,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 u($indexName)
                     ->trim()
                     ->lower()
-                    ->toString()
-            )
+                    ->toString(),
+            ),
         );
     }
 
@@ -233,13 +354,13 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
         $client = $this->clientRegistry->get($config['client']);
 
-        if (! $client instanceof Client) {
+        if (!$client instanceof Client) {
             throw new \RuntimeException(
                 \sprintf(
                     'OpenSearch client "%s" could not be found. Available clients: "%s"',
                     $config['client'],
-                    \implode(", ", \array_keys($this->clientRegistry->all()))
-                )
+                    \implode(', ', \array_keys($this->clientRegistry->all())),
+                ),
             );
         }
 
@@ -262,26 +383,51 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
     private function prepareDataForOpenSearch(IndexInterface $index, IndexableInterface $object): array
     {
         $preparedData = $this->prepareData($index, $object);
+        $openSearchData = [];
 
-        if (! \is_array($preparedData['localizedData']['values'])) {
-            return $preparedData;
-        }
+        $openSearchData['attributes'] = $preparedData['data'];
+//        $openSearchData['localizedAttributes'] = $preparedData['localizedData']['values'];
+        $openSearchData['relationalAttributes'] = $preparedData['relation'];
 
-        // Prepare localized data for OpenSearch
-        foreach ($preparedData['localizedData']['values'] as $locale => $localizedValues) {
-            foreach ($localizedValues as $fieldName => $value) {
-                // Load data and make sure to always pass data
-                $localizedValue = $value;
-
-                if (empty($localizedValue)) {
-                    $localizedValue = $preparedData['localizedData']['values'][$this->defaultLocale][$fieldName];
-                }
-
-                $preparedData['data'][$fieldName][$locale] = $localizedValue;
+        foreach ($preparedData['localizedData']['values'] as $language => $localizedValues) {
+            foreach ($localizedValues as $name => $value) {
+                $openSearchData['localizedAttributes'][$name][$language] = $value;
             }
         }
 
-        return $preparedData['data'];
+        return $openSearchData;
+    }
+
+    public function renderCondition(ConditionInterface $condition, array|string $params = [])
+    {
+        $index = $params['index'] ?? null;
+
+        Assert::isInstanceOf($index, IndexInterface::class);
+
+        $params['mappedFieldName'] = $this->getMappedFieldName($index, $condition->getFieldName());
+
+        return parent::renderCondition($condition, $params);
+    }
+
+    public function getMappedFieldName(IndexInterface $index, string $fieldName): string
+    {
+        $columns = $this->getIndexColumns($index);
+
+        $attributes = $columns['attributes'];
+        $relationalAttributes = $columns['relationalAttributes'];
+        $localizedAttributes = $columns['localizedAttributes'];
+
+        if (array_key_exists($fieldName, $attributes)) {
+            $prefix = 'attributes';
+        } elseif (array_key_exists($fieldName, $relationalAttributes)) {
+            $prefix = 'relationalAttributes';
+        } elseif (array_key_exists($fieldName, $localizedAttributes)) {
+            $prefix = 'localizedAttributes';
+        } else {
+            throw new \Exception(sprintf('field name %s not found in index', $fieldName));
+        }
+
+        return sprintf('%s.%s', $prefix, $fieldName);
     }
 
     protected function getSystemAttributes(): array

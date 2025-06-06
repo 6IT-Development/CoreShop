@@ -153,7 +153,7 @@ services:
             - '@CoreShop\Component\Index\Order\OrderRendererInterface'
             - '@Symfony\Contracts\EventDispatcher\EventDispatcherInterface'
             - '@coreshop.registry.index.opensearch_client'
-            - '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder'
+            - '@coreshop.registry.index.interpreter'
             - '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder'
             - '@Symfony\Component\String\Slugger\SluggerInterface'
         shared: false
@@ -345,7 +345,4 @@ services:
             - { name: coreshop.index.extension }
 
     # OpenSearch Index Builder
-    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\MappingBuilder:
-        arguments:
-            - '@coreshop.registry.index.interpreter'
     CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder: ~

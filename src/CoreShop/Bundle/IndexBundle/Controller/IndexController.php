@@ -178,7 +178,7 @@ class IndexController extends ResourceController
         $result = [
             'clients' => \array_map(
                 static fn (string $client) => ['name' => $client],
-                \array_keys($clientRegistry->all())
+                \array_keys($clientRegistry->all()),
             ),
         ];
 
@@ -426,13 +426,13 @@ class IndexController extends ResourceController
             new SubscribedService(
                 'coreshop.registry.index.interpreter',
                 ServiceRegistryInterface::class,
-                attributes: new Autowire(service: 'coreshop.registry.index.interpreter')
+                attributes: new Autowire(service: 'coreshop.registry.index.interpreter'),
             ),
             new SubscribedService(
                 'coreshop.registry.index.opensearch_client',
                 ServiceRegistryInterface::class,
-                attributes: new Autowire(service: 'coreshop.registry.index.opensearch_client')
-            )
+                attributes: new Autowire(service: 'coreshop.registry.index.opensearch_client'),
+            ),
         ]);
     }
 

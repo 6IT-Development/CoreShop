@@ -27,7 +27,7 @@ use Webmozart\Assert\Assert;
 
 class IsNullRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null)
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = [])
     {
         /**
          * @var IsNullCondition $condition
@@ -40,7 +40,7 @@ class IsNullRenderer extends AbstractMysqlDynamicRenderer
             $operator = 'IS NOT NULL';
         }
 
-        return sprintf('%s %s', $this->quoteFieldName($condition->getFieldName(), $prefix), $operator);
+        return sprintf('%s %s', $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null), $operator);
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool

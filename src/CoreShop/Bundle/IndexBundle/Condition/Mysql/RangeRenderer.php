@@ -26,7 +26,7 @@ use Webmozart\Assert\Assert;
 
 class RangeRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): string
     {
         /**
          * @var RangeCondition $condition
@@ -36,8 +36,8 @@ class RangeRenderer extends AbstractMysqlDynamicRenderer
         $from = $condition->getFrom();
         $to = $condition->getTo();
 
-        return '' . $this->quoteFieldName($condition->getFieldName(), $prefix) . ' >= ' . $from . ' AND ' .
-            $this->quoteFieldName($condition->getFieldName(), $prefix) . ' <= ' . $to;
+        return '' . $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' >= ' . $from . ' AND ' .
+            $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' <= ' . $to;
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool

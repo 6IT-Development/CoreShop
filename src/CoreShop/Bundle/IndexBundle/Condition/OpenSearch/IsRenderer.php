@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,29 +22,26 @@ use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\IsCondition;
+use CoreShop\Component\Index\Condition\MatchCondition;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
 class IsRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): array
     {
         /**
-         * @var IsCondition $condition
+         * @var IsCondition|MatchCondition $condition
          */
-        Assert::isInstanceOf($condition, IsCondition::class);
+        Assert::isInstanceOfAny($condition, [IsCondition::class, MatchCondition::class]);
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $value = $condition->getValue();
 
         return [
-            'query' => [
-                'bool' => [
-                    'must' => [
-                        'term' => [
-                            $fieldName => $value,
-                        ],
-                    ],
+            'must' => [
+                'term' => [
+                    $fieldName => $value,
                 ],
             ],
         ];
@@ -52,6 +49,6 @@ class IsRenderer implements DynamicRendererInterface
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof OpenSearchWorker && $condition instanceof IsCondition;
+        return $worker instanceof OpenSearchWorker && ($condition instanceof IsCondition || $condition instanceof MatchCondition);
     }
 }

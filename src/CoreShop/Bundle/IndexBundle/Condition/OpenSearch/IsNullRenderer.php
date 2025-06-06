@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -28,24 +28,20 @@ use Webmozart\Assert\Assert;
 
 class IsNullRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): array
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): array
     {
         /**
          * @var IsNullCondition $condition
          */
         Assert::isInstanceOf($condition, IsNullCondition::class);
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $conditionType = $condition instanceof IsNotNullCondition ? 'must' : 'must_not';
 
         return [
-            'query' => [
-                'bool' => [
-                    $conditionType => [
-                        'exists' => [
-                             'field' => $fieldName,
-                        ],
-                    ],
+            $conditionType => [
+                'exists' => [
+                    'field' => $fieldName,
                 ],
             ],
         ];

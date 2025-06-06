@@ -19,7 +19,9 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
 
 use CoreShop\Component\Index\Condition\ConditionInterface;
+use CoreShop\Component\Index\Condition\InArrayCondition;
 use CoreShop\Component\Index\Condition\LikeCondition;
+use CoreShop\Component\Index\Condition\NotInArrayCondition;
 use CoreShop\Component\Index\Condition\NotLikeCondition;
 use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
@@ -27,15 +29,20 @@ use Webmozart\Assert\Assert;
 
 class LikeRenderer extends AbstractMysqlDynamicRenderer
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null)
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = [])
     {
-        /**
-         * @var LikeCondition $condition
-         */
-        Assert::isInstanceOf($condition, LikeCondition::class);
+        if ($condition instanceof InArrayCondition) {
+            $value = sprintf('%1$s%2$s%1$s', ',', implode(',', $condition->getValue()));
+            $pattern = 'both';
+        } else {
+            /**
+             * @var LikeCondition $condition
+             */
+            Assert::isInstanceOf($condition, LikeCondition::class);
 
-        $value = $condition->getValue();
-        $pattern = $condition->getPattern();
+            $value = $condition->getValue();
+            $pattern = $condition->getPattern();
+        }
         $operator = 'LIKE';
         $patternValue = '';
 
@@ -54,13 +61,13 @@ class LikeRenderer extends AbstractMysqlDynamicRenderer
                 break;
         }
 
-        if ($condition instanceof NotLikeCondition) {
+        if ($condition instanceof NotLikeCondition || $condition instanceof NotInArrayCondition) {
             $operator = 'NOT LIKE';
         }
 
         return sprintf(
             '%s %s %s',
-            $this->quoteFieldName($condition->getFieldName(), $prefix),
+            $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null),
             $operator,
             $this->quote($patternValue),
         );
@@ -68,6 +75,6 @@ class LikeRenderer extends AbstractMysqlDynamicRenderer
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorkerInterface && $condition instanceof LikeCondition;
+        return $worker instanceof MysqlWorkerInterface && ($condition instanceof LikeCondition || $condition instanceof InArrayCondition);
     }
 }

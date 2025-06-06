@@ -34,8 +34,6 @@ use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Order\OrderInterface;
 use CoreShop\Component\Index\Order\OrderRendererInterface;
 use CoreShop\Component\Index\Worker\FilterGroupHelperInterface;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
-use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use Pimcore\Model\DataObject\AbstractObject;
@@ -72,9 +70,17 @@ abstract class AbstractWorker implements WorkerInterface
         return $eligibleExtensions;
     }
 
-    public function renderCondition(ConditionInterface $condition, $prefix = null)
+    public function renderCondition(ConditionInterface $condition, array|string $params = [])
     {
-        return $this->conditionRenderer->render($this, $condition, $prefix);
+        if (is_string($params)) {
+            trigger_deprecation('coreshop/index-bundle', '4.1', 'passing a string as second parameter for renderCondition is deprecated, use a array with a prefix key');
+
+            $params = [
+                'prefix' => 'q',
+            ];
+        }
+
+        return $this->conditionRenderer->render($this, $condition, $params);
     }
 
     public function renderOrder(OrderInterface $condition, $prefix = null)
@@ -89,7 +95,7 @@ abstract class AbstractWorker implements WorkerInterface
         return \array_filter(
             $reflection->getConstants(\ReflectionClassConstant::IS_PUBLIC),
             static fn (string $name) => \str_starts_with($name, 'FIELD_TYPE_'),
-            ARRAY_FILTER_USE_KEY
+            \ARRAY_FILTER_USE_KEY,
         );
     }
 

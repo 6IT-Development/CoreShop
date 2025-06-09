@@ -32,11 +32,7 @@ interface OpenSearchWorkerInterface extends WorkerInterface
 
     public const FIELD_TYPE_OBJECT = 'object';
 
-    public const FIELD_TYPE_ARRAY = 'array';
-
     public const FIELD_TYPE_TEXT = 'text';
 
     public const FIELD_TYPE_KEYWORD = 'keyword';
-
-    public const FIELD_TYPE_DATE = 'date';
 }

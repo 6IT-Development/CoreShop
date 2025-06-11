@@ -45,8 +45,6 @@ use Webmozart\Assert\Assert;
 
 class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterface, WorkerDeleteableByIdInterface
 {
-    private string $defaultLocale;
-
     public function __construct(
         ServiceRegistryInterface $extensions,
         ServiceRegistryInterface $getterServiceRegistry,
@@ -57,7 +55,6 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         private EventDispatcherInterface $eventDispatcher,
         private ServiceRegistryInterface $clientRegistry,
         private ServiceRegistryInterface $interpreterRegistry,
-        private SettingsBuilder $settingsBuilder,
         private SluggerInterface $slugger,
     ) {
         parent::__construct(
@@ -68,74 +65,6 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             $conditionRenderer,
             $orderRenderer,
         );
-
-        $this->defaultLocale = Tool::getDefaultLanguage();
-    }
-
-    /**
-     * @return array<string, array>
-     */
-    private function getIndexColumns(IndexInterface $index): array
-    {
-        $systemColumns = $this->getSystemAttributes();
-        $localizedSystemColumns = $this->getLocalizedSystemAttributes();
-
-        foreach ($this->getExtensions($index) as $extension) {
-            if ($extension instanceof IndexColumnsExtensionInterface) {
-                foreach ($extension->getSystemColumns() as $name => $type) {
-                    $systemColumns[$name] = $type;
-                }
-
-                foreach ($extension->getLocalizedSystemColumns() as $name => $type) {
-                    $localizedSystemColumns[$name] = $type;
-                }
-            }
-        }
-
-        $attributes = [];
-        $relationalAttributes = [];
-        $localizedAttributes = [];
-
-        foreach ($systemColumns as $name => $type) {
-            $attributes[$name] = [
-                'type' => $type,
-            ];
-        }
-
-        foreach ($localizedSystemColumns as $name => $type) {
-            $localizedAttributes[$name] = $this->createLocalizedAttribute($name, $type);
-        }
-
-        foreach ($index->getColumns() as $column) {
-            $propertyName = $column->getName();
-            $propertyType = $column->getColumnType();
-
-            if ($column->getInterpreter()) {
-                $interpreter = $this->interpreterRegistry->get($column->getInterpreter());
-
-                if ($interpreter instanceof LocalizedInterpreterInterface) {
-                    $localizedAttributes[$propertyName] = $this->createLocalizedAttribute($propertyName, $propertyType);
-                } elseif ($interpreter instanceof RelationInterpreterInterface) {
-                    $relationalAttributes[$propertyName] = [
-                        'type' => $propertyType,
-                    ];
-                } else {
-                    $attributes[$propertyName] = [
-                        'type' => $propertyType,
-                    ];
-                }
-            } else {
-                $attributes[$propertyName] = [
-                    'type' => $propertyType,
-                ];
-            }
-        }
-
-        return [
-            'attributes' => $attributes,
-            'localizedAttributes' => $localizedAttributes,
-            'relationalAttributes' => $relationalAttributes,
-        ];
     }
 
     /**
@@ -150,6 +79,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
             $this->deleteIndexStructures($index);
         }
 
+        $config = $index->getConfiguration();
         $columns = $this->getIndexColumns($index);
 
         $attributes = $columns['attributes'];
@@ -157,7 +87,12 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         $localizedAttributes = $columns['localizedAttributes'];
 
         $body = [
-            'settings' => $this->settingsBuilder->build($index),
+            'settings' => [
+                'index' => [
+                    'number_of_shards' => $config['numberOfShards'] ?? 1,
+                    'number_of_replicas' => $config['numberOfReplicas'] ?? 1,
+                ]
+            ],
             'mappings' => [
                 'properties' => [
                     'attributes' => [
@@ -191,33 +126,6 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 'body' => $event->getArgument('body'),
             ])
         ;
-    }
-
-    private function createLocalizedAttribute(string $name, string $type): array
-    {
-        $attribute = [
-            'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
-            'properties' => [],
-        ];
-
-        foreach (Tool::getValidLanguages() as $locale) {
-            $propertySettings = [
-                'type' => $type,
-            ];
-
-            // Language analyzers are only supported for text fields
-            if ($type === OpenSearchWorkerInterface::FIELD_TYPE_TEXT) {
-                $analyzer = LanguageAnalyzer::fromLocale($locale);
-
-                if ($analyzer instanceof LanguageAnalyzer) {
-                    $propertySettings['analyzer'] = $analyzer->value;
-                }
-            }
-
-            $attribute['properties'][$locale] = $propertySettings;
-        }
-
-        return $attribute;
     }
 
     /**
@@ -367,37 +275,6 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         return $client;
     }
 
-    protected function typeCastValues(IndexColumnInterface $column, $value)
-    {
-        return $value;
-    }
-
-    protected function handleArrayValues(IndexInterface $index, array $value): array
-    {
-        return $value;
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function prepareDataForOpenSearch(IndexInterface $index, IndexableInterface $object): array
-    {
-        $preparedData = $this->prepareData($index, $object);
-        $openSearchData = [];
-
-        $openSearchData['attributes'] = $preparedData['data'];
-//        $openSearchData['localizedAttributes'] = $preparedData['localizedData']['values'];
-        $openSearchData['relationalAttributes'] = $preparedData['relation'];
-
-        foreach ($preparedData['localizedData']['values'] as $language => $localizedValues) {
-            foreach ($localizedValues as $name => $value) {
-                $openSearchData['localizedAttributes'][$name][$language] = $value;
-            }
-        }
-
-        return $openSearchData;
-    }
-
     public function renderCondition(ConditionInterface $condition, array|string $params = [])
     {
         $index = $params['index'] ?? null;
@@ -406,14 +283,16 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
         if ($params['relation'] ?? false) {
             $params['mappedFieldName'] = 'relationalAttributes.' . $condition->getFieldName();
-        }
-        else {
+        } else {
             $params['mappedFieldName'] = $this->getMappedFieldName($index, $condition->getFieldName());
         }
 
         return parent::renderCondition($condition, $params);
     }
 
+    /**
+     * @throws \RuntimeException
+     */
     public function getMappedFieldName(IndexInterface $index, string $fieldName): string
     {
         $columns = $this->getIndexColumns($index);
@@ -429,10 +308,20 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         } elseif (array_key_exists($fieldName, $localizedAttributes)) {
             $prefix = 'localizedAttributes';
         } else {
-            throw new \Exception(sprintf('field name %s not found in index', $fieldName));
+            throw new \RuntimeException(sprintf('Field name %s not found in index', $fieldName));
         }
 
         return sprintf('%s.%s', $prefix, $fieldName);
+    }
+
+    protected function typeCastValues(IndexColumnInterface $column, $value)
+    {
+        return $value;
+    }
+
+    protected function handleArrayValues(IndexInterface $index, array $value): array
+    {
+        return $value;
     }
 
     protected function getSystemAttributes(): array
@@ -455,5 +344,118 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         return [
             'name' => OpenSearchWorkerInterface::FIELD_TYPE_KEYWORD,
         ];
+    }
+
+    /**
+     * @return array<string, array>
+     */
+    private function getIndexColumns(IndexInterface $index): array
+    {
+        $systemColumns = $this->getSystemAttributes();
+        $localizedSystemColumns = $this->getLocalizedSystemAttributes();
+
+        foreach ($this->getExtensions($index) as $extension) {
+            if ($extension instanceof IndexColumnsExtensionInterface) {
+                foreach ($extension->getSystemColumns() as $name => $type) {
+                    $systemColumns[$name] = $type;
+                }
+
+                foreach ($extension->getLocalizedSystemColumns() as $name => $type) {
+                    $localizedSystemColumns[$name] = $type;
+                }
+            }
+        }
+
+        $attributes = [];
+        $relationalAttributes = [];
+        $localizedAttributes = [];
+
+        foreach ($systemColumns as $name => $type) {
+            $attributes[$name] = [
+                'type' => $type,
+            ];
+        }
+
+        foreach ($localizedSystemColumns as $name => $type) {
+            $localizedAttributes[$name] = $this->createLocalizedAttribute($type);
+        }
+
+        foreach ($index->getColumns() as $column) {
+            $propertyName = $column->getName();
+            $propertyType = $column->getColumnType();
+
+            if ($column->getInterpreter()) {
+                $interpreter = $this->interpreterRegistry->get($column->getInterpreter());
+
+                if ($interpreter instanceof LocalizedInterpreterInterface) {
+                    $localizedAttributes[$propertyName] = $this->createLocalizedAttribute($propertyType);
+                } elseif ($interpreter instanceof RelationInterpreterInterface) {
+                    $relationalAttributes[$propertyName] = [
+                        'type' => $propertyType,
+                    ];
+                } else {
+                    $attributes[$propertyName] = [
+                        'type' => $propertyType,
+                    ];
+                }
+            } else {
+                $attributes[$propertyName] = [
+                    'type' => $propertyType,
+                ];
+            }
+        }
+
+        return [
+            'attributes' => $attributes,
+            'localizedAttributes' => $localizedAttributes,
+            'relationalAttributes' => $relationalAttributes,
+        ];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function prepareDataForOpenSearch(IndexInterface $index, IndexableInterface $object): array
+    {
+        $openSearchData = [];
+        $preparedData = $this->prepareData($index, $object);
+
+        $openSearchData['attributes'] = $preparedData['data'];
+        $openSearchData['relationalAttributes'] = $preparedData['relation'];
+
+        foreach ($preparedData['localizedData']['values'] as $language => $localizedValues) {
+            foreach ($localizedValues as $name => $value) {
+                $openSearchData['localizedAttributes'][$name][$language] = $value;
+            }
+        }
+
+        return $openSearchData;
+    }
+
+    private function createLocalizedAttribute(string $type): array
+    {
+        $attribute = [
+            'type' => OpenSearchWorkerInterface::FIELD_TYPE_OBJECT,
+            'properties' => [],
+        ];
+
+        foreach (Tool::getValidLanguages() as $locale) {
+            $propertySettings = [
+                'type' => $type,
+            ];
+
+            // Language analyzers are only supported for text fields
+            if ($type === OpenSearchWorkerInterface::FIELD_TYPE_TEXT) {
+                $analyzer = LanguageAnalyzer::fromLocale($locale);
+
+                if ($analyzer instanceof LanguageAnalyzer) {
+                    $propertySettings['analyzer'] = $analyzer->value;
+                }
+            }
+
+            $attribute['properties'][$locale] = $propertySettings;
+        }
+
+        return $attribute;
     }
 }

@@ -154,7 +154,6 @@ services:
             - '@Symfony\Contracts\EventDispatcher\EventDispatcherInterface'
             - '@coreshop.registry.index.opensearch_client'
             - '@coreshop.registry.index.interpreter'
-            - '@CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder'
             - '@Symfony\Component\String\Slugger\SluggerInterface'
         shared: false
         calls:
@@ -343,6 +342,3 @@ services:
     CoreShop\Component\Index\Extension\DecimalIndexColumnTypeConfigExtension:
         tags:
             - { name: coreshop.index.extension }
-
-    # OpenSearch Index Builder
-    CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Builder\SettingsBuilder: ~

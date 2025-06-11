@@ -36,10 +36,9 @@ core_shop_index:
             double: ~
             integer: ~
             object: ~
-            array: ~
+            nested: ~
             text: ~
             keyword: ~
-            date: ~
 
 jms_serializer:
     metadata:

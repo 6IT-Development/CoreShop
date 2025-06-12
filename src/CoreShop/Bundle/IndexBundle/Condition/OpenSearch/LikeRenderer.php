@@ -34,7 +34,7 @@ class LikeRenderer implements DynamicRendererInterface
          */
         Assert::isInstanceOf($condition, LikeCondition::class);
 
-        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
+        $fieldName = $condition->getFieldName();
         $value = $condition->getValue();
         $pattern = $condition->getPattern();
 

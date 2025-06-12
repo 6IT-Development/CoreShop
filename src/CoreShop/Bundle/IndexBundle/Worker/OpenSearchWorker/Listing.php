@@ -453,17 +453,17 @@ class Listing extends AbstractListing
 
         $renderConditions = [
             'must' => [
-                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'active') => true]],
+                ['term' => ['active' => true]],
             ],
         ];
 
         if ($this->getVariantMode() === self::VARIANT_MODE_HIDE) {
             $renderConditions['must_not'] = [
-                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'o_type') => 'variant']],
+                ['term' => ['o_type' => 'variant']],
             ];
         } elseif ($this->getVariantMode() === self::VARIANT_MODE_VARIANTS_ONLY) {
             $renderConditions['must_not'] = [
-                ['term' => [$this->getWorker()->getMappedFieldName($this->getIndex(), 'o_type') => 'object']],
+                ['term' => ['o_type' => 'object']],
             ];
         }
 

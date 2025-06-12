@@ -34,7 +34,7 @@ class RangeRenderer implements DynamicRendererInterface
          */
         Assert::isInstanceOf($condition, RangeCondition::class);
 
-        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
+        $fieldName = $condition->getFieldName();
         $from = $condition->getFrom();
         $to = $condition->getTo();
 

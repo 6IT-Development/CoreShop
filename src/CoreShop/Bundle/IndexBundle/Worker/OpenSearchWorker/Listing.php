@@ -303,15 +303,6 @@ class Listing extends AbstractListing
      */
     private function doLoadGroupByValues(): void
     {
-        // Create general filters and queries
-        $toExcludeFieldNames = [];
-
-        foreach ($this->preparedGroupByValues as $fieldName => $config) {
-            if (true === $config['fieldNameShouldBeExcluded']) {
-                $toExcludeFieldNames[] = $fieldName;
-            }
-        }
-
         // Get base search parameters
         $params = $this->getSearchParams();
 
@@ -327,21 +318,6 @@ class Listing extends AbstractListing
             $params['body']['size'] = $this->getLimit();
         }
 
-        // Calculate already filtered attributes to avoid duplicate filtering
-        $filteredFieldNames = [];
-
-        foreach ($this->conditions as $fieldName => $condition) {
-            if (!\in_array($fieldName, $toExcludeFieldNames, true)) {
-                $filteredFieldNames[$fieldName] = $fieldName;
-            }
-        }
-
-        foreach ($this->relationConditions as $fieldName => $condition) {
-            if (!\in_array($fieldName, $toExcludeFieldNames, true)) {
-                $filteredFieldNames[$fieldName] = $fieldName;
-            }
-        }
-
         $columns = $this->getIndex()->getColumns();
         $aggregations = [];
 
@@ -349,7 +325,7 @@ class Listing extends AbstractListing
             $columnName = $column->getName();
             $aggregations[$columnName] = [
                 'terms' => [
-                    'field' => 'attributes.' . $columnName,
+                    'field' => $columnName,
                     'order' => ['_term' => 'asc'],
                 ],
             ];
@@ -467,13 +443,13 @@ class Listing extends AbstractListing
             ];
         }
 
-        foreach ($this->conditions as $fieldName => $condArray) {
+        foreach ([...$this->conditions, ...$this->relationConditions] as $fieldName => $condArray) {
             if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
                 continue;
             }
 
             foreach ($condArray as $cond) {
-                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex()]);
+                $renderedCondition = $this->worker->renderCondition($cond);
 
                 foreach ($renderedCondition as $key => $value) {
                     if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
@@ -486,43 +462,6 @@ class Listing extends AbstractListing
 
                     $renderConditions[$key][] = $value;
                 }
-            }
-        }
-
-        foreach ($this->relationConditions as $fieldName => $condArray) {
-            if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
-                continue;
-            }
-
-            foreach ($condArray as $cond) {
-                $nested = [
-                    'nested' => [
-                        'path' => 'relationalAttributes',
-                        'query' => [
-                            'bool' => [
-                                'must' => [
-                                    ['term' => ['relationalAttributes.fieldname' => $fieldName]]
-                                ]
-                            ]
-                        ]
-                    ]
-                ];
-
-                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex(), 'relation' => true]);
-
-                foreach ($renderedCondition as $key => $value) {
-                    if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
-                        continue;
-                    }
-
-                    if (!isset($renderConditions[$key])) {
-                        $renderConditions[$key] = [];
-                    }
-
-                    $nested['nested']['query']['bool'][$key][] = $value;
-                }
-
-                $renderConditions['must'][] = $nested;
             }
         }
 

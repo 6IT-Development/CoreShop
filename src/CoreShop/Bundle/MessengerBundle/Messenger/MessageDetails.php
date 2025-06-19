@@ -41,4 +41,9 @@ final class MessageDetails
     {
         return $this->serialized;
     }
+
+    public function setSerialized(string $serialized): void
+    {
+        $this->serialized = $serialized;
+    }
 }

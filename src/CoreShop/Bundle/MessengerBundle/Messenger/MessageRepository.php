@@ -48,7 +48,7 @@ final class MessageRepository implements MessageRepositoryInterface
             $rows[] = new MessageDetails(
                 $this->getMessageId($envelope),
                 $envelope->getMessage()::class,
-                print_r($envelope->getMessage(), true),
+                '<pre>' . print_r($envelope->getMessage(), true) . '</pre>',
             );
         }
 

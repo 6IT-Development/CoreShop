@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,7 +21,6 @@ namespace CoreShop\Component\Pimcore\DataObject;
 use CoreShop\Component\Pimcore\Exception\LinkGenerationNotPossibleException;
 use Laminas\Stdlib\PriorityQueue;
 use Pimcore\Model\DataObject\ClassDefinition\LinkGeneratorInterface;
-use Pimcore\Model\DataObject\Concrete;
 
 class CompositeLinkGenerator implements LinkGeneratorInterface
 {
@@ -42,7 +41,7 @@ class CompositeLinkGenerator implements LinkGeneratorInterface
         $this->linkGenerator->insert($linkGenerator, $priority);
     }
 
-    public function generate(Concrete $object, array $params = []): string
+    public function generate(object $object, array $params = []): string
     {
         foreach ($this->linkGenerator as $linkGenerator) {
             try {

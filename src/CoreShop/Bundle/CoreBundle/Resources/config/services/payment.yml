@@ -42,6 +42,10 @@ services:
         tags:
             - { name: coreshop.payment_provider_rule.condition, type: customerGroups, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CustomerGroupsConfigurationType }
 
+    CoreShop\Component\Core\Payment\Rule\Condition\GuestConditionChecker:
+        tags:
+            - { name: coreshop.payment_provider_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
+
     CoreShop\Component\Core\Payment\Rule\Condition\StoresConditionChecker:
         tags:
             - { name: coreshop.payment_provider_rule.condition, type: stores, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\StoresConfigurationType }
@@ -49,6 +53,10 @@ services:
     CoreShop\Component\Core\Payment\Rule\Condition\CurrenciesConditionChecker:
         tags:
             - { name: coreshop.payment_provider_rule.condition, type: currencies, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CurrenciesConfigurationType }
+
+    CoreShop\Component\Core\Payment\Rule\Condition\CarrierConditionChecker:
+        tags:
+            - { name: coreshop.payment_provider_rule.condition, type: carriers, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CarriersConfigurationType }
 
 
 

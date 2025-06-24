@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -24,6 +24,7 @@ coreshop.carrier.item = Class.create(coreshop.resource.item, {
         this.data = data;
         this.panelKey = panelKey;
         this.type = type;
+        this.logoSelect = null;
 
         var store = Ext.create('store.coreshop_carrier_shipping_rules');
 
@@ -91,6 +92,7 @@ coreshop.carrier.item = Class.create(coreshop.resource.item, {
             langTabs.push(tab);
         });
 
+        this.logoSelect = this.getLogoSelect();
         this.settingsForm = new Ext.form.Panel({
             iconCls: 'coreshop_icon_settings',
             title: t('settings'),
@@ -116,7 +118,7 @@ coreshop.carrier.item = Class.create(coreshop.resource.item, {
                         fieldLabel: t('coreshop_carrier_trackingUrl'),
                         value: data.trackingUrl
                     },
-                    this.getLogoSelect().getLayoutEdit(),
+                    this.logoSelect.getLayoutEdit(),
                     {
                         xtype: 'tabpanel',
                         activeTab: 0,
@@ -287,6 +289,7 @@ coreshop.carrier.item = Class.create(coreshop.resource.item, {
 
         Ext.apply(data, this.settingsForm.getForm().getFieldValues());
         Ext.apply(data, this.shippingLocationAndCosts.getForm().getFieldValues());
+        data.logo = this.logoSelect.getValue();
 
         var ruleGroups = this.shippingRuleGroupsStore.getRange();
 

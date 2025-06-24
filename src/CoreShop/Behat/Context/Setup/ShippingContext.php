@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -32,6 +32,7 @@ use CoreShop\Bundle\CoreBundle\Form\Type\Shipping\Rule\Action\AdditionAmountActi
 use CoreShop\Bundle\CoreBundle\Form\Type\Shipping\Rule\Action\DiscountAmountActionConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Shipping\Rule\Action\PriceActionConfigurationType;
 use CoreShop\Bundle\ResourceBundle\Form\Registry\FormTypeRegistryInterface;
+use CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType;
 use CoreShop\Bundle\ShippingBundle\Form\Type\Rule\Action\AdditionPercentActionConfigurationType;
 use CoreShop\Bundle\ShippingBundle\Form\Type\Rule\Action\DiscountPercentActionConfigurationType;
 use CoreShop\Bundle\ShippingBundle\Form\Type\Rule\Condition\AmountConfigurationType;
@@ -469,6 +470,17 @@ final class ShippingContext implements Context
         $this->addCondition($rule, $this->createConditionWithForm('customerGroups', [
             'customerGroups' => [$customerGroup->getId()],
         ]));
+    }
+
+    /**
+     * @Given /^the (shipping rule "[^"]+") has a condition guest$/
+     * @Given /^the (shipping rule) has a condition guest$/
+     */
+    public function theShippingRuleHasAGuestCondition(ShippingRuleInterface $rule): void
+    {
+        $this->assertConditionForm(EmptyConfigurationFormType::class, 'guest');
+
+        $this->addCondition($rule, $this->createConditionWithForm('guest', []));
     }
 
     /**

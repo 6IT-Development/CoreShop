@@ -1,5 +1,4 @@
 imports:
-    - { resource: services_alias.yml }
     - { resource: services/form.yml }
     - { resource: services/rules.yml }
     - { resource: services/price-rules.yml }
@@ -125,3 +124,6 @@ services:
             - '@coreshop.manager.product_specific_price_rule'
         tags:
             - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: onPostDelete }
+
+
+

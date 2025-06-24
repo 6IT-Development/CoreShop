@@ -11,16 +11,16 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Bundle\MessengerBundle\Messenger;
 
-use Symfony\Component\Serializer\Annotation\SerializedName;
+use Symfony\Component\Serializer\Attribute\SerializedName;
 
-final class FailedMessageDetails
+final class FailedMessageDetails implements \JsonSerializable
 {
     public function __construct(
         private mixed $id,
@@ -59,5 +59,16 @@ final class FailedMessageDetails
     public function getSerialized(): string
     {
         return $this->serialized;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'id' => $this->id,
+            'class' => $this->class,
+            'failedAt' => $this->failedAt,
+            'error' => $this->error,
+            'serialized' => $this->serialized,
+        ];
     }
 }

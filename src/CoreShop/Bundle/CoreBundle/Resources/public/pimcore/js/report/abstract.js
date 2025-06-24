@@ -5,20 +5,20 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 pimcore.registerNS('coreshop.report.abstract');
-coreshop.report.abstract = Class.create(pimcore.report.abstract, {
+coreshop.report.abstract = Class.create(pimcore.bundle.customreports.abstract, {
 
     reportType: 'abstract',
     remoteSort: false,
 
     matchType: function (type) {
         var types = ['global'];
-        return !!pimcore.report.abstract.prototype.matchTypeValidate(type, types);
+        return !!pimcore.bundle.customreports.abstract.prototype.matchTypeValidate(type, types);
     },
 
     getName: function () {

@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -48,7 +48,7 @@ coreshop.order.order.message = {
                             if (form.isValid()) {
                                 var formValues = form.getFieldValues();
 
-                                formValues['o_id'] = orderId;
+                                formValues['id'] = orderId;
 
                                 Ext.Ajax.request({
                                     url: '/admin/coreshop/order/send-message',

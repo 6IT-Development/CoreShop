@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -24,7 +24,7 @@ use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Repository\ProductRepositoryInterface;
 use CoreShop\Component\Core\Repository\ProductVariantRepositoryInterface;
 use CoreShop\Component\Store\Model\StoreInterface;
-use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ArrayParameterType;
 use Pimcore\Cache;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Listing;
@@ -41,8 +41,8 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
             ['condition' => 'stores LIKE ?', 'variable' => '%,' . $store->getId() . ',%'],
         ];
 
-        /** @psalm-suppress InvalidScalarArgument */
-        return $this->findBy($conditions, ['o_creationDate' => 'DESC'], $count);
+        /** @psalm-suppress InvalidArgument */
+        return $this->findBy($conditions, ['creationDate' => 'DESC'], $count);
     }
 
     public function findAllVariants(ProductInterface $product, bool $recursive = true): array
@@ -51,9 +51,9 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
         $list->setObjectTypes([AbstractObject::OBJECT_TYPE_VARIANT]);
 
         if ($recursive) {
-            $list->setCondition('o_path LIKE ?', [$product->getRealFullPath() . '/%']);
+            $list->setCondition('path LIKE ?', [$product->getRealFullPath() . '/%']);
         } else {
-            $list->setCondition('o_parentId = ?', [$product->getId()]);
+            $list->setCondition('parentId = ?', [$product->getId()]);
         }
 
         return $list->getObjects();
@@ -68,20 +68,20 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
             $dao = $list->getDao();
 
             /** @psalm-suppress InternalMethod */
-            $query = "
-                SELECT oo_id as id FROM (
-                    SELECT CONCAT(o_path, o_key) as realFullPath FROM objects WHERE o_id IN (:products)
-                ) as products
-                INNER JOIN ".$dao->getTableName()." variants ON variants.o_path LIKE CONCAT(products.realFullPath, '/%')
-                WHERE variants.stores LIKE :store
-            ";
+            $query = '
+            SELECT oo_id as id FROM (
+                SELECT CONCAT(path, `key`) as realFullPath FROM objects WHERE id IN (:products)
+            ) as products
+            INNER JOIN ' . $dao->getTableName() . " variants ON variants.path LIKE CONCAT(products.realFullPath, '/%')
+            WHERE variants.stores LIKE :store
+        ";
 
             $params = [
                 'products' => $products,
-                'store' => '%,'.$store->getId().',%'
+                'store' => '%,' . $store->getId() . ',%',
             ];
             $paramTypes = [
-                'products' => Connection::PARAM_STR_ARRAY,
+                'products' => ArrayParameterType::STRING,
             ];
 
             $resultProducts = $this->connection->fetchAllAssociative($query, $params, $paramTypes);
@@ -114,9 +114,9 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
             ->select()
             ->from($dao->getTableName())
             ->select('oo_id')
-            ->where('o_path LIKE :path')
+            ->where('path LIKE :path')
             ->andWhere('stores LIKE :stores')
-            ->andWhere('o_type = :variant')
+            ->andWhere('type = :variant')
             ->setParameter('path', $product->getRealFullPath() . '/%')
             ->setParameter('stores', '%,' . $store->getId() . ',%')
             ->setParameter('variant', 'variant')
@@ -199,7 +199,7 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
                 }
             }
             if (count($categoryIds) > 0) {
-                $list->addConditionParam('(o_id IN (SELECT DISTINCT src_id FROM object_relations_' . $classId . ' WHERE fieldname = "categories" AND dest_id IN (' . implode(',', $categoryIds) . ')))');
+                $list->addConditionParam('(id IN (SELECT DISTINCT src_id FROM object_relations_' . $classId . ' WHERE fieldname = "categories" AND dest_id IN (' . implode(',', $categoryIds) . ')))');
             }
         }
 

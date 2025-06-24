@@ -1,5 +1,4 @@
 imports:
-    - { resource: services_alias.yml }
     - { resource: services/form.yml }
     - { resource: services/workflow.yml }
     - { resource: services/pimcore.yml }
@@ -16,6 +15,8 @@ services:
             - payment-price-calculators
         tags:
             - { name: coreshop.registry, type_hint: paymentPriceCalculators }
+
+    CoreShop\Component\Payment\Calculator\PaymentProviderRulePriceCalculatorInterface: '@CoreShop\Component\Payment\Calculator\PaymentProviderRulePriceCalculator'
 
     CoreShop\Component\Payment\Calculator\PaymentProviderRulePriceCalculator:
         arguments:

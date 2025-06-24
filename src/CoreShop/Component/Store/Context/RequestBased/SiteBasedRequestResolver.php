@@ -11,40 +11,32 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Store\Context\RequestBased;
 
+use CoreShop\Component\Store\Context\SiteBasedResolverInterface;
 use CoreShop\Component\Store\Context\StoreNotFoundException;
 use CoreShop\Component\Store\Model\StoreInterface;
-use CoreShop\Component\Store\Repository\StoreRepositoryInterface;
 use Pimcore\Model\Site;
 use Symfony\Component\HttpFoundation\Request;
 
 final class SiteBasedRequestResolver implements RequestResolverInterface
 {
     public function __construct(
-        private StoreRepositoryInterface $storeRepository,
+        private SiteBasedResolverInterface $siteBasedResolver,
     ) {
     }
 
     public function findStore(Request $request): ?StoreInterface
     {
-        if (Site::isSiteRequest()) {
-            $store = $this->storeRepository->findOneBySite(Site::getCurrentSite()->getId());
+        $store = $this->siteBasedResolver->resolveSiteWithDefaultForStore(Site::isSiteRequest() ? Site::getCurrentSite() : null);
 
-            if ($store !== null) {
-                return $store;
-            }
-        }
-
-        $defaultStore = $this->storeRepository->findStandard();
-
-        if ($defaultStore) {
-            return $defaultStore;
+        if ($store) {
+            return $store;
         }
 
         throw new StoreNotFoundException();

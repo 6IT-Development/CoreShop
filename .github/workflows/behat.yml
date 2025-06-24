@@ -1,7 +1,7 @@
 name: Behat
 on:
   push:
-    branches: [ '3.0', '3.1', '3.2' ]
+    branches: [ '4.0' ]
     paths:
       - 'composer.json'
       - 'features/**'
@@ -9,7 +9,7 @@ on:
       - '*.php'
       - 'src/**'
   pull_request:
-    branches: [ '3.0', '3.1', '3.2' ]
+    branches: [ '4.0' ]
     paths:
       - 'composer.json'
       - 'features/**'
@@ -37,12 +37,11 @@ jobs:
       PIMCORE_INSTALL_MYSQL_DATABASE: "coreshop_test"
       PIMCORE_INSTALL_MYSQL_PORT: "3306"
       PIMCORE_KERNEL_CLASS: 'Kernel'
-      PIMCORE_WRITE_TARGET_STATICROUTES: 'settings-store'
 
     strategy:
       matrix:
-        php: [ 8.0, 8.1 ]
-        pimcore: [ ~10.6 ]
+        php: [ 8.1, 8.2 ]
+        pimcore: [ ~11.1.0, ~11.2.0 ]
         dependencies: [ highest ]
         exclude:
           - php: 8.1
@@ -50,7 +49,7 @@ jobs:
 
     services:
       database:
-        image: "mariadb:10.5"
+        image: "mysql:8"
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
@@ -105,7 +104,7 @@ jobs:
       run: bin/console assets:install --symlink
 
     - name: Install Pimcore
-      run: PIMCORE_KERNEL_CLASS=Kernel vendor/bin/pimcore-install --ignore-existing-config --env=test --skip-database-config
+      run: PIMCORE_KERNEL_CLASS=Kernel vendor/bin/pimcore-install --env=test --skip-database-config
 
     - name: Install CoreShop
       run: |

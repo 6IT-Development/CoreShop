@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -73,7 +73,7 @@ final class ProductContext implements Context
         $list = $this->productRepository->getList();
         $list->setLocale('en');
         $list->setObjectTypes([AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_VARIANT]);
-        $list->setCondition('o_key = ?', [$productName]);
+        $list->setCondition('`key` = ?', [$productName]);
         $list->load();
 
         Assert::eq(

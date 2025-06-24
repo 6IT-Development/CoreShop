@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -75,7 +75,7 @@ class PaymentProvider extends AbstractResource implements PaymentProviderInterfa
         return sprintf('%s', $this->getIdentifier());
     }
 
-    public function getId()
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -90,32 +90,32 @@ class PaymentProvider extends AbstractResource implements PaymentProviderInterfa
         $this->identifier = $identifier;
     }
 
-    public function getTitle($language = null)
+    public function getTitle(?string $language = null)
     {
         return $this->getTranslation($language)->getTitle();
     }
 
-    public function setTitle($title, $language = null)
+    public function setTitle($title, ?string $language = null)
     {
         $this->getTranslation($language)->setTitle($title);
     }
 
-    public function getDescription($language = null)
+    public function getDescription(?string $language = null)
     {
         return $this->getTranslation($language)->getDescription();
     }
 
-    public function setDescription($description, $language = null)
+    public function setDescription($description, ?string $language = null)
     {
         $this->getTranslation($language)->setDescription($description);
     }
 
-    public function getInstructions($language = null)
+    public function getInstructions(?string $language = null)
     {
         return $this->getTranslation($language)->getInstructions();
     }
 
-    public function setInstructions($instructions, $language = null)
+    public function setInstructions($instructions, ?string $language = null)
     {
         $this->getTranslation($language)->setInstructions($instructions);
     }

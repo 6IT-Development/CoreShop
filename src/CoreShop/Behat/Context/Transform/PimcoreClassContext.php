@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,7 +21,7 @@ namespace CoreShop\Behat\Context\Transform;
 use Behat\Behat\Context\Context;
 use CoreShop\Behat\Service\ClassStorageInterface;
 use CoreShop\Behat\Service\SharedStorageInterface;
-use Pimcore\Cache\Runtime;
+use Pimcore\Cache\RuntimeCache;
 use Pimcore\Model\DataObject\ClassDefinition;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Fieldcollection\Definition;
@@ -40,7 +40,7 @@ final class PimcoreClassContext implements Context
      */
     public function class($name): ClassDefinition
     {
-        Runtime::clear();
+        RuntimeCache::clear();
 
         $fqcp = sprintf('%s/DataObject/%s.php', PIMCORE_CLASS_DIRECTORY, $name);
         $fqcn = sprintf('\\Pimcore\\Model\\DataObject\\%s', $name);
@@ -108,7 +108,7 @@ final class PimcoreClassContext implements Context
      */
     public function definition(): ClassDefinition|Definition
     {
-        Runtime::clear();
+        RuntimeCache::clear();
 
         $name = $this->sharedStorage->get('pimcore_definition_name');
         $class = $this->sharedStorage->get('pimcore_definition_class');

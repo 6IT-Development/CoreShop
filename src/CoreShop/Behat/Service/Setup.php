@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -38,6 +38,10 @@ class Setup
         }
 
         $connection = \Pimcore::getContainer()->get('database_connection');
+
+        if (null === $connection) {
+            throw new \Exception('Database connection not found');
+        }
 
         $dbName = $connection->getParams()['dbname'];
         $params = $connection->getParams();
@@ -66,11 +70,23 @@ class Setup
             \Pimcore::getContainer()->get('event_dispatcher'),
         );
 
-        $installer->setupDatabase([
-            'username' => 'admin',
-            'password' => 'coreshop',
-        ]);
+        $method = new \ReflectionMethod($installer, 'setupDatabase');
+        $num = $method->getNumberOfParameters();
 
+        if ($num >= 3) {
+            $installer->setupDatabase($connection, [
+                'username' => 'admin',
+                'password' => 'coreshop',
+            ]);
+        } else {
+            /**
+             * @phpstan-ignore-next-line
+             */
+            $installer->setupDatabase([
+                'username' => 'admin',
+                'password' => 'coreshop',
+            ]);
+        }
         static::$pimcoreSetupDone = true;
     }
 

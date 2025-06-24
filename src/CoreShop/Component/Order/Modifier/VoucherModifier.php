@@ -11,16 +11,16 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Order\Modifier;
 
 use CoreShop\Component\Order\Factory\CartPriceRuleVoucherCodeCustomerFactoryInterface;
-use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeCustomerInterface;
+use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\PriceRuleItemInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherCodeCustomerRepositoryInterface;
@@ -34,7 +34,7 @@ class VoucherModifier implements VoucherModifierInterface
         protected EntityManagerInterface $entityManager,
         protected CartPriceRuleVoucherRepositoryInterface $voucherCodeRepository,
         protected CartPriceRuleVoucherCodeCustomerRepositoryInterface $codePerUserRepository,
-        protected CartPriceRuleVoucherCodeCustomerFactoryInterface $voucherCodeCustomerFactory
+        protected CartPriceRuleVoucherCodeCustomerFactoryInterface $voucherCodeCustomerFactory,
     ) {
     }
 
@@ -146,8 +146,7 @@ class VoucherModifier implements VoucherModifierInterface
 
                             if ($perCustomerEntry->getUses() === 0) {
                                 $this->entityManager->remove($perCustomerEntry);
-                            }
-                            else {
+                            } else {
                                 $this->entityManager->persist($perCustomerEntry);
                             }
                         }

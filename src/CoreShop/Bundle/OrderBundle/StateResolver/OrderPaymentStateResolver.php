@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -24,7 +24,7 @@ use CoreShop\Component\Order\OrderPaymentTransitions;
 use CoreShop\Component\Order\StateResolver\StateResolverInterface;
 use CoreShop\Component\Payment\Model\PaymentInterface;
 use CoreShop\Component\Payment\Repository\PaymentRepositoryInterface;
-use Symfony\Component\Workflow\Workflow;
+use Symfony\Component\Workflow\WorkflowInterface;
 
 final class OrderPaymentStateResolver implements StateResolverInterface
 {
@@ -44,7 +44,7 @@ final class OrderPaymentStateResolver implements StateResolverInterface
         }
     }
 
-    private function applyTransition(Workflow $workflow, OrderInterface $subject, string $transition): void
+    private function applyTransition(WorkflowInterface $workflow, OrderInterface $subject, string $transition): void
     {
         if ($workflow->can($subject, $transition)) {
             $workflow->apply($subject, $transition);
@@ -108,7 +108,7 @@ final class OrderPaymentStateResolver implements StateResolverInterface
             $processingPaymentTotal += $payment->getTotalAmount();
         }
 
-        if (count($processingPayments) > 0  && $processingPaymentTotal >= $order->getPaymentTotal()) {
+        if (count($processingPayments) > 0 && $processingPaymentTotal >= $order->getPaymentTotal()) {
             return OrderPaymentTransitions::TRANSITION_REQUEST_PAYMENT;
         }
 

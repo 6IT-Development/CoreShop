@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -64,14 +64,14 @@ final class RegisterElement extends Element implements RegisterElementInterface
         $this->getElement('gender')->setValue($gender);
     }
 
-    public function specifyFirstname(?string $firstName): void
+    public function specifyFirstname(?string $firstname): void
     {
-        $this->getElement('firstname')->setValue($firstName);
+        $this->getElement('firstname')->setValue($firstname);
     }
 
-    public function specifyLastname(?string $lastName): void
+    public function specifyLastname(?string $lastname): void
     {
-        $this->getElement('lastname')->setValue($lastName);
+        $this->getElement('lastname')->setValue($lastname);
     }
 
     public function specifyEmail(?string $email): void

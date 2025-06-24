@@ -11,15 +11,14 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Pimcore\DataObject;
 
 use CoreShop\Component\Pimcore\Exception\ClassDefinitionFieldNotFoundException;
-use Pimcore\Bundle\CoreBundle\Migrations\Version20211117173000;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 
 abstract class AbstractDefinitionUpdate implements ClassUpdateInterface
@@ -30,13 +29,10 @@ abstract class AbstractDefinitionUpdate implements ClassUpdateInterface
 
     protected array $fieldDefinitions;
 
-    protected string $childrenPath = 'childs';
+    protected string $childrenPath = 'children';
 
     public function __construct(
         ) {
-        if (class_exists(Version20211117173000::class)) {
-            $this->childrenPath = 'children';
-        }
     }
 
     abstract public function save(): bool;

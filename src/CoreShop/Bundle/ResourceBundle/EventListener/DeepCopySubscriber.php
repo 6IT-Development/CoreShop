@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,7 +21,6 @@ namespace CoreShop\Bundle\ResourceBundle\EventListener;
 use CoreShop\Bundle\ResourceBundle\DeepCopy\PimcoreFieldCollectionDefinitionMatcher;
 use CoreShop\Bundle\ResourceBundle\DeepCopy\PimcoreFieldCollectionDefinitionReplaceFilter;
 use CoreShop\Bundle\ResourceBundle\Pimcore\CacheMarshallerInterface;
-use CoreShop\Component\Resource\Model\ResourceInterface;
 use DeepCopy\DeepCopy;
 use DeepCopy\Filter\Doctrine\DoctrineCollectionFilter;
 use DeepCopy\Matcher\PropertyTypeMatcher;
@@ -30,8 +29,6 @@ use Pimcore\Event\SystemEvents;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Fieldcollection\Data\AbstractData;
-use Pimcore\Model\Element\DeepCopy\PimcoreClassDefinitionMatcher;
-use Pimcore\Model\Element\DeepCopy\PimcoreClassDefinitionReplaceFilter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
@@ -76,9 +73,9 @@ class DeepCopySubscriber implements EventSubscriberInterface
                         }
 
                         return $currentValue;
-                    }
+                    },
                 ),
-                new PimcoreFieldCollectionDefinitionMatcher(Data\CustomVersionMarshalInterface::class)
+                new PimcoreFieldCollectionDefinitionMatcher(Data\CustomVersionMarshalInterface::class),
             );
         }
 
@@ -91,9 +88,9 @@ class DeepCopySubscriber implements EventSubscriberInterface
                         }
 
                         return $currentValue;
-                    }
+                    },
                 ),
-                new PimcoreFieldCollectionDefinitionMatcher(Data\CustomVersionMarshalInterface::class)
+                new PimcoreFieldCollectionDefinitionMatcher(Data\CustomVersionMarshalInterface::class),
             );
         }
 
@@ -126,10 +123,6 @@ class DeepCopySubscriber implements EventSubscriberInterface
 
                         $class = $currentValue->getClass();
 
-                        if (!$class) {
-                            return $currentValue;
-                        }
-
                         foreach ($class->getFieldDefinitions() as $fd) {
                             if (!$fd instanceof CacheMarshallerInterface) {
                                 continue;
@@ -137,14 +130,14 @@ class DeepCopySubscriber implements EventSubscriberInterface
 
                             $currentValue->setObjectVar(
                                 $fd->getName(),
-                                $fd->marshalForCache($currentValue, $currentValue->getObjectVar($fd->getName()))
+                                $fd->marshalForCache($currentValue, $currentValue->getObjectVar($fd->getName())),
                             );
                         }
 
                         return $currentValue;
-                    }
+                    },
                 ),
-                new TypeMatcher(Concrete::class)
+                new TypeMatcher(Concrete::class),
             );
         }
     }

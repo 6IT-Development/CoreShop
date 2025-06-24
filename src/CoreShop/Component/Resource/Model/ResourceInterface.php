@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,22 +21,12 @@ namespace CoreShop\Component\Resource\Model;
 interface ResourceInterface
 {
     /**
-     * @return int|string|null
+     * Can be a string or int or null, depending on where we store the data
+     * DataDefinitions for example uses a string identifier
      */
-    public function getId();
+    public function getId(): int|string|null;
 
-    /**
-     * @param array $data
-     *
-     * @return $this
-     */
-    public function setValues($data = []);
+    public function setValues(array $data = []): static;
 
-    /**
-     * @param string $key
-     * @param mixed  $value
-     *
-     * @return $this
-     */
-    public function setValue($key, $value);
+    public function setValue(string $key, mixed $value, bool $ignoreEmptyValues = false): static;
 }

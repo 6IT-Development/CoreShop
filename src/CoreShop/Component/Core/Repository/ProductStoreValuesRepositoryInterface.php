@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,6 +22,7 @@ use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use CoreShop\Component\Store\Model\StoreInterface;
+use Pimcore\Model\DataObject\Concrete;
 
 interface ProductStoreValuesRepositoryInterface extends RepositoryInterface
 {
@@ -31,4 +32,11 @@ interface ProductStoreValuesRepositoryInterface extends RepositoryInterface
     public function findForProduct(ProductInterface $product): array;
 
     public function findForProductAndStore(ProductInterface $product, StoreInterface $store): ?ProductStoreValuesInterface;
+
+    /**
+     * @return ProductStoreValuesInterface[]
+     */
+    public function findForObject(Concrete $product, string $fieldName): array;
+
+    public function findForObjectAndStore(Concrete $product, string $fieldName, StoreInterface $store): ?ProductStoreValuesInterface;
 }

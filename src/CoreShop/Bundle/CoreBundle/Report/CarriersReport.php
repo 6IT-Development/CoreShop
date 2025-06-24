@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -67,16 +67,16 @@ class CarriersReport implements ReportInterface
                     COUNT(1) / t.cnt * 100 as `percentage` 
               FROM $tableName as `order` 
               INNER JOIN objects as o 
-                ON o.o_id = `order`.oo_id 
+                ON o.id = `order`.oo_id 
               CROSS JOIN 
                 (
                   SELECT COUNT(1) as cnt 
                   FROM $tableName as `order` 
                   INNER JOIN objects as o 
-                    ON o.o_id = `order`.oo_id  
-                  WHERE store = $storeId AND o_creationDate > $fromTimestamp AND o_creationDate < $toTimestamp
+                    ON o.id = `order`.oo_id  
+                  WHERE store = $storeId AND creationDate > $fromTimestamp AND creationDate < $toTimestamp
                 ) t 
-              WHERE store = $storeId AND carrier IS NOT NULL AND o_creationDate > $fromTimestamp AND o_creationDate < $toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "' 
+              WHERE store = $storeId AND carrier IS NOT NULL AND creationDate > $fromTimestamp AND creationDate < $toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "' 
               GROUP BY carrier";
 
         $results = $this->db->fetchAllAssociative($sql);

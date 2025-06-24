@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -24,6 +24,8 @@ use CoreShop\Bundle\StorageListBundle\Core\EventListener\SessionStoreStorageList
 use CoreShop\Bundle\StorageListBundle\Core\EventListener\StorageListBlamerListener;
 use CoreShop\Bundle\StorageListBundle\EventListener\CacheListener;
 use CoreShop\Bundle\StorageListBundle\EventListener\SessionSubscriber;
+use CoreShop\Component\Core\Context\ShopperContextInterface;
+use CoreShop\Component\Customer\Context\CustomerContextInterface;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\StorageList\Context\CompositeStorageListContext;
 use CoreShop\Component\StorageList\Context\SessionBasedListContext;
@@ -35,6 +37,7 @@ use CoreShop\Component\StorageList\Core\Context\StoreBasedStorageListContext;
 use CoreShop\Component\StorageList\Expiration\StorageListExpiration;
 use CoreShop\Component\StorageList\Maintenance\ExpireTask;
 use CoreShop\Component\StorageList\StorageListsManager;
+use CoreShop\Component\Store\Context\StoreContextInterface;
 use CoreShop\Component\Store\Model\StoreAwareInterface;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Http\RequestHelper;
@@ -115,13 +118,13 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
             if ($list['disable_caching']) {
                 $cacheSubscriber = new Definition(CacheListener::class, [
                     new Reference($list['resource']['repository']),
-                    new Reference($list['resource']['item_repository'])
+                    new Reference($list['resource']['item_repository']),
                 ]);
 
                 $cacheSubscriber->addTag('kernel.event_subscriber');
                 $container->setDefinition('coreshop.storage_list.cache_subscriber.' . $name, $cacheSubscriber);
             }
-            
+
             if ($list['controller']['enabled']) {
                 $class = $list['controller']['class'];
 
@@ -147,8 +150,9 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                 $controllerDefinition->setArgument('$indexRoute', $list['routes']['index']);
                 $controllerDefinition->setArgument('$templateSummary', $list['templates']['summary']);
                 $controllerDefinition->setArgument('$templateAddToList', $list['templates']['add_to_cart']);
+                $controllerDefinition->setArgument('$translator', new Reference('translator'));
                 $controllerDefinition->addTag('controller.service_arguments');
-                $controllerDefinition->addMethodCall('setContainer', [new Reference('service_container')]);
+                $controllerDefinition->addTag('container.service_subscriber');
 
                 $container->setDefinition('coreshop.storage_list.controller.' . $name, $controllerDefinition);
             }
@@ -169,8 +173,8 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                     $contextsRegistered = true;
 
                     $customerAndStoreBasedContextDefinition = new Definition(CustomerAndStoreBasedStorageListContext::class);
-                    $customerAndStoreBasedContextDefinition->setArgument('$customerContext', new Reference('coreshop.context.customer'));
-                    $customerAndStoreBasedContextDefinition->setArgument('$storeContext', new Reference('coreshop.context.store'));
+                    $customerAndStoreBasedContextDefinition->setArgument('$customerContext', new Reference(CustomerContextInterface::class));
+                    $customerAndStoreBasedContextDefinition->setArgument('$storeContext', new Reference(StoreContextInterface::class));
                     $customerAndStoreBasedContextDefinition->setArgument('$repository', new Reference($list['resource']['repository']));
                     $customerAndStoreBasedContextDefinition->setArgument('$requestHelper', new Reference(RequestHelper::class));
                     $customerAndStoreBasedContextDefinition->setArgument('$restoreCustomerStorageListOnlyOnLogin', $list['context']['restore_customer_list_only_on_login']);
@@ -187,7 +191,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                         );
                         $storeBasedContextDefinition->setArgument(
                             '$shopperContext',
-                            new Reference('coreshop.context.shopper'),
+                            new Reference(ShopperContextInterface::class),
                         );
 
                         $container->setDefinition(
@@ -203,7 +207,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                         $sessionAndStoreBasedContextDefinition->setArgument('$requestStack', new Reference('request_stack'));
                         $sessionAndStoreBasedContextDefinition->setArgument('$sessionKeyName', $list['session']['key']);
                         $sessionAndStoreBasedContextDefinition->setArgument('$repository', new Reference($list['resource']['repository']));
-                        $sessionAndStoreBasedContextDefinition->setArgument('$storeContext', new Reference('coreshop.context.store'));
+                        $sessionAndStoreBasedContextDefinition->setArgument('$storeContext', new Reference(StoreContextInterface::class));
                         $sessionAndStoreBasedContextDefinition->addTag($list['context']['tag'], ['priority' => -555]);
 
                         $container->setDefinition('coreshop.storage_list.context.session_and_store_based.' . $name, $sessionAndStoreBasedContextDefinition);
@@ -225,13 +229,13 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                                 [
                                     'event' => LogoutEvent::class,
                                     'method' => 'onLogoutSuccess',
-                                    'dispatcher' => 'security.event_dispatcher.coreshop_frontend'
-                                ]
+                                    'dispatcher' => 'security.event_dispatcher.coreshop_frontend',
+                                ],
                             );
 
                             $container->setDefinition(
-                                'coreshop.storage_list.logout_subscriber.'.$name,
-                                $logoutSubscriber
+                                'coreshop.storage_list.logout_subscriber.' . $name,
+                                $logoutSubscriber,
                             );
                         }
                     }

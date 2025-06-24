@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,6 +25,7 @@ use CoreShop\Behat\Service\SharedStorageInterface;
 use CoreShop\Bundle\CoreBundle\Form\Type\Payment\Rule\Action\AdditionAmountActionConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Payment\Rule\Action\DiscountAmountActionConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Payment\Rule\Action\PriceActionConfigurationType;
+use CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CarriersConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CategoriesConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CountriesConfigurationType;
 use CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CurrenciesConfigurationType;
@@ -39,7 +40,9 @@ use CoreShop\Bundle\PaymentBundle\Form\Type\Rule\Action\AdditionPercentActionCon
 use CoreShop\Bundle\PaymentBundle\Form\Type\Rule\Action\DiscountPercentActionConfigurationType;
 use CoreShop\Bundle\PaymentBundle\Form\Type\Rule\Condition\AmountConfigurationType;
 use CoreShop\Bundle\ResourceBundle\Form\Registry\FormTypeRegistryInterface;
+use CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType;
 use CoreShop\Component\Address\Model\ZoneInterface;
+use CoreShop\Component\Core\Model\CarrierInterface;
 use CoreShop\Component\Core\Model\CategoryInterface;
 use CoreShop\Component\Core\Model\CountryInterface;
 use CoreShop\Component\Core\Model\CurrencyInterface;
@@ -459,6 +462,17 @@ final class PaymentContext implements Context
     }
 
     /**
+     * @Given /^the (payment-provider-rule "[^"]+") has a condition guest$/
+     * @Given /^the (payment-provider-rule) has a condition guest$/
+     */
+    public function thePaymentProviderRuleHasAGuestCondition(PaymentProviderRuleInterface $rule): void
+    {
+        $this->assertConditionForm(EmptyConfigurationFormType::class, 'guest');
+
+        $this->addCondition($rule, $this->createConditionWithForm('guest', []));
+    }
+
+    /**
      * @Given /^the (payment-provider-rule "[^"]+") has a condition zones with (zone "[^"]+")$/
      * @Given /^the (payment-provider-rule) has a condition zones with (zone "[^"]+")$/
      */
@@ -507,6 +521,19 @@ final class PaymentContext implements Context
         $this->addAction($rule, $this->createActionWithForm('price', [
             'price' => (int) $price,
             'currency' => $currency->getId(),
+        ]));
+    }
+
+    /**
+     * @Given /^the (payment-provider-rule "[^"]+") has a condition carriers with (carrier "[^"]+")$/
+     * @Given /^the (payment-provider-rule) has a condition carriers with (carrier "[^"]+")$/
+     */
+    public function thePaymentProviderRuleHasACarriersCondition(PaymentProviderRuleInterface $rule, CarrierInterface $carrier): void
+    {
+        $this->assertConditionForm(CarriersConfigurationType::class, 'carriers');
+
+        $this->addCondition($rule, $this->createConditionWithForm('carriers', [
+            'carriers' => [$carrier->getId()],
         ]));
     }
 

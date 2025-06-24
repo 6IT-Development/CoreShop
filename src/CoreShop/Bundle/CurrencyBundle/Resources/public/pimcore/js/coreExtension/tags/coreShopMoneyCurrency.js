@@ -7,8 +7,8 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -65,11 +65,11 @@ pimcore.object.tags.coreShopMoneyCurrency = Class.create(pimcore.object.tags.abs
         //container.width += container.labelWidth + valueField.width + currencyField.width;
 
         if (is_numeric(this.fieldConfig["minValue"])) {
-            input.minValue = this.fieldConfig.minValue;
+            valueField.minValue = this.fieldConfig.minValue;
         }
 
         if (is_numeric(this.fieldConfig["maxValue"])) {
-            input.maxValue = this.fieldConfig.maxValue;
+            valueField.maxValue = this.fieldConfig.maxValue;
         }
 
         container.items = [

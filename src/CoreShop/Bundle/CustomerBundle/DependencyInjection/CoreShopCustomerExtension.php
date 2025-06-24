@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -23,6 +23,7 @@ use CoreShop\Bundle\CustomerBundle\DependencyInjection\Compiler\CompositeRequest
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelExtension;
 use CoreShop\Component\Customer\Context\CustomerContextInterface;
 use CoreShop\Component\Customer\Context\RequestBased\RequestResolverInterface;
+use Pimcore\Bundle\NewsletterBundle\PimcoreNewsletterBundle;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
@@ -34,10 +35,10 @@ final class CoreShopCustomerExtension extends AbstractModelExtension
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
 
-        //$this->registerResources('coreshop', CoreShopResourceBundle::DRIVER_DOCTRINE_ORM, $configs['resources'], $container);
         $this->registerPimcoreModels('coreshop', $configs['pimcore'], $container);
         $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
         $this->registerStack('coreshop', $configs['stack'], $container);
+        $this->registerDependantBundles('coreshop', [PimcoreNewsletterBundle::class], $container);
 
         $container->setParameter('coreshop.customer.security.login_identifier', $configs['login_identifier']);
 

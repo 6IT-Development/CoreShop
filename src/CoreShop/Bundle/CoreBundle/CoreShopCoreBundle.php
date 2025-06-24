@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -26,7 +26,6 @@ use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterPortletsPass
 use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterReportsPass;
 use CoreShop\Bundle\CurrencyBundle\CoreShopCurrencyBundle;
 use CoreShop\Bundle\CustomerBundle\CoreShopCustomerBundle;
-use CoreShop\Bundle\FixtureBundle\CoreShopFixtureBundle;
 use CoreShop\Bundle\FrontendBundle\CoreShopFrontendBundle;
 use CoreShop\Bundle\IndexBundle\CoreShopIndexBundle;
 use CoreShop\Bundle\InventoryBundle\CoreShopInventoryBundle;
@@ -48,6 +47,9 @@ use CoreShop\Bundle\TrackingBundle\CoreShopTrackingBundle;
 use CoreShop\Bundle\UserBundle\CoreShopUserBundle;
 use CoreShop\Bundle\VariantBundle\CoreShopVariantBundle;
 use CoreShop\Bundle\WishlistBundle\CoreShopWishlistBundle;
+use Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle;
+use Pimcore\Bundle\CustomReportsBundle\PimcoreCustomReportsBundle;
+use Pimcore\Bundle\NewsletterBundle\PimcoreNewsletterBundle;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
@@ -75,7 +77,7 @@ final class CoreShopCoreBundle extends AbstractResourceBundle
 
         $collection->addBundle(new CoreShopMenuBundle(), 4000);
         $collection->addBundle(new CoreShopSEOBundle(), 3800);
-        $collection->addBundle(new CoreShopFixtureBundle(), 3700);
+        $collection->addBundle(new DoctrineFixturesBundle(), 3700);
         $collection->addBundle(new CoreShopMoneyBundle(), 3600);
         $collection->addBundle(new CoreShopConfigurationBundle(), 3300);
         $collection->addBundle(new CoreShopOrderBundle(), 3200);
@@ -98,6 +100,8 @@ final class CoreShopCoreBundle extends AbstractResourceBundle
         $collection->addBundle(new CoreShopProductQuantityPriceRulesBundle(), 1600);
         $collection->addBundle(new CoreShopWishlistBundle(), 1500);
         $collection->addBundle(new CoreShopClassDefinitionPatchBundle(), 1400);
+        $collection->addBundle(new PimcoreCustomReportsBundle(), 20000);
+        $collection->addBundle(new PimcoreNewsletterBundle(), 20000);
     }
 
     public function getPackageName(): string

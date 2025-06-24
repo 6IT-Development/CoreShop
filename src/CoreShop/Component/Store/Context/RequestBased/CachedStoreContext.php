@@ -11,20 +11,21 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Store\Context\RequestBased;
 
 use CoreShop\Component\Store\Context\StoreContextInterface;
-use CoreShop\Component\Store\Model\StoreInterface;
 use CoreShop\Component\Store\Context\StoreNotFoundException;
+use CoreShop\Component\Store\Model\StoreInterface;
 
 final class CachedStoreContext implements StoreContextInterface
 {
     private bool $initialized = false;
+
     private ?StoreInterface $cachedStore = null;
 
     public function __construct(
@@ -35,8 +36,8 @@ final class CachedStoreContext implements StoreContextInterface
     public function getStore(): StoreInterface
     {
         if (false === $this->initialized) {
-            $this->initialized = true;
             $this->cachedStore = $this->requestBasedStoreContext->getStore();
+            $this->initialized = true;
         } elseif (!$this->cachedStore) {
             throw new StoreNotFoundException();
         }

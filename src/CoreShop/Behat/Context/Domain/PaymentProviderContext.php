@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -23,7 +23,7 @@ use CoreShop\Component\Core\Model\OrderInterface;
 use CoreShop\Component\Core\Model\PaymentProviderInterface;
 use CoreShop\Component\Core\Repository\PaymentProviderRepositoryInterface;
 use CoreShop\Component\Order\Cart\CartContextResolverInterface;
-use CoreShop\Component\Payment\Calculator\PaymentProviderRulePriceCalculator;
+use CoreShop\Component\Payment\Calculator\PaymentProviderRulePriceCalculatorInterface;
 use CoreShop\Component\Payment\Model\PaymentProviderRuleInterface;
 use CoreShop\Component\Payment\Validator\PaymentProviderRuleValidator;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
@@ -36,7 +36,7 @@ final class PaymentProviderContext implements Context
         private PaymentProviderRepositoryInterface $paymentProviderRepository,
         private RuleValidationProcessorInterface $ruleValidationProcessor,
         private FactoryInterface $addressFactory,
-        private PaymentProviderRulePriceCalculator $paymentProviderPriceCalculator,
+        private PaymentProviderRulePriceCalculatorInterface $paymentProviderPriceCalculator,
         private PaymentProviderRuleValidator $paymentRuleValidator,
         private CartContextResolverInterface $cartContextResolver,
     ) {

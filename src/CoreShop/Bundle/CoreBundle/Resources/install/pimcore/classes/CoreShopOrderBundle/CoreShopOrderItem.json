@@ -908,7 +908,7 @@
                                                     "CoreShopTaxItem"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -980,7 +980,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -1359,7 +1359,7 @@
                                                     "CoreShopTaxItem"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -1431,7 +1431,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -1481,7 +1481,7 @@
                                             "CoreShopPriceRuleItem"
                                         ],
                                         "lazyLoading": true,
-                                        "maxItems": "",
+                                        "maxItems": null,
                                         "disallowAddRemove": false,
                                         "disallowReorder": false,
                                         "collapsed": false,

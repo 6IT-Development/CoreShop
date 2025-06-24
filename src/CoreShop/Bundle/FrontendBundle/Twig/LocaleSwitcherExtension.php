@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -20,10 +20,10 @@ namespace CoreShop\Bundle\FrontendBundle\Twig;
 
 use CoreShop\Component\Core\Context\ShopperContextInterface;
 use CoreShop\Component\Pimcore\Slug\SluggableInterface;
+use Pimcore\Bundle\StaticRoutesBundle\Model\Staticroute;
 use Pimcore\Model\DataObject\Data\UrlSlug;
 use Pimcore\Model\Document;
 use Pimcore\Model\Site;
-use Pimcore\Model\Staticroute;
 use Pimcore\Tool;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -91,11 +91,14 @@ final class LocaleSwitcherExtension extends AbstractExtension
             if ($this->getMainRequest()->attributes->get('pimcore_request_source') === 'staticroute') {
                 $route = $this->getMainRequest()->attributes->get('_route');
                 $staticRoute = Staticroute::getByName($route);
-                $params = [];
-                if (str_contains($staticRoute->getVariables(), '_locale')) {
-                    $params = ['_locale' => $language];
+
+                if ($staticRoute) {
+                    $params = [];
+                    if (str_contains($staticRoute->getVariables(), '_locale')) {
+                        $params = ['_locale' => $language];
+                    }
+                    $link = $this->router->generate($route, $params);
                 }
-                $link = $this->router->generate($route, $params);
             } else {
                 if (isset($translations[$language])) {
                     $localizedDocument = Document::getById($translations[$language]);

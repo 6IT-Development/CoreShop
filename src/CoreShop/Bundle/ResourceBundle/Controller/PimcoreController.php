@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,6 +22,8 @@ use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Metadata\MetadataInterface;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 use Pimcore\Model\User;
+use Psr\Container\ContainerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Finder\Exception\AccessDeniedException;
 
 class PimcoreController extends AdminController
@@ -30,9 +32,11 @@ class PimcoreController extends AdminController
         protected MetadataInterface $metadata,
         protected PimcoreRepositoryInterface $repository,
         protected FactoryInterface $factory,
+        ContainerInterface $container,
         ViewHandlerInterface $viewHandler,
+        ParameterBagInterface $parameterBag,
     ) {
-        parent::__construct($viewHandler);
+        parent::__construct($container, $viewHandler, $parameterBag);
     }
 
     /**
@@ -45,8 +49,10 @@ class PimcoreController extends AdminController
              * @var User $user
              *
              * @psalm-var User $user
+             *
+             * @psalm-suppress InternalMethod
              */
-            $user = method_exists($this, 'getAdminUser') ? $this->getAdminUser() : $this->getUser();
+            $user = $this->getAdminUser();
 
             if ($user->isAllowed($this->getPermission())) {
                 return;

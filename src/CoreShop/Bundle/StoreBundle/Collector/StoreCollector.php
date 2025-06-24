@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -29,15 +29,13 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 final class StoreCollector extends DataCollector
 {
     public function __construct(
-        StoreRepositoryInterface $storeRepository,
+        private StoreRepositoryInterface $storeRepository,
         private StoreContextInterface $storeContext,
         private PimcoreContextResolver $pimcoreContext,
-        $storeChangeSupport = false,
+        private $storeChangeSupport = false,
     ) {
         $this->data = [
             'store' => null,
-            'stores' => $storeRepository->findAll(),
-            'store_change_support' => $storeChangeSupport,
         ];
     }
 
@@ -68,7 +66,11 @@ final class StoreCollector extends DataCollector
         }
 
         try {
-            $this->data['store'] = $this->storeContext->getStore();
+            $this->data = [
+                'store' => $this->storeContext->getStore(),
+                'stores' => $this->storeRepository->findAll(),
+                'store_change_support' => $this->storeChangeSupport,
+            ];
         } catch (\Exception) {
             //If some goes wrong, we just ignore it
         }

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -28,6 +28,10 @@ use CoreShop\Bundle\ResourceBundle\DependencyInjection\Compiler\StackClassesPass
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Compiler\StackRepositoryPass;
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Compiler\ValidatorAutoMappingFixPass;
 use JMS\SerializerBundle\JMSSerializerBundle;
+use Pimcore\Bundle\AdminBundle\PimcoreAdminBundle;
+use Pimcore\Bundle\ApplicationLoggerBundle\PimcoreApplicationLoggerBundle;
+use Pimcore\Bundle\SimpleBackendSearchBundle\PimcoreSimpleBackendSearchBundle;
+use Pimcore\Bundle\StaticRoutesBundle\PimcoreStaticRoutesBundle;
 use Pimcore\Extension\Bundle\AbstractPimcoreBundle;
 use Pimcore\HttpKernel\Bundle\DependentBundleInterface;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
@@ -66,6 +70,10 @@ final class CoreShopResourceBundle extends AbstractPimcoreBundle implements Depe
         $collection->addBundle(new \CoreShop\Bundle\OptimisticEntityLockBundle\CoreShopOptimisticEntityLockBundle(), 3800);
         $collection->addBundle(new \CoreShop\Bundle\LocaleBundle\CoreShopLocaleBundle(), 3850);
         $collection->addBundle(new \Stof\DoctrineExtensionsBundle\StofDoctrineExtensionsBundle(), 1200);
+        $collection->addBundle(new PimcoreAdminBundle(), 10);
+        $collection->addBundle(new PimcoreApplicationLoggerBundle(), 10);
+        $collection->addBundle(new PimcoreStaticRoutesBundle(), 10);
+        $collection->addBundle(new PimcoreSimpleBackendSearchBundle(), 10);
     }
 
     public function getNiceName(): string

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -27,9 +27,9 @@ use CoreShop\Component\Order\Model\OrderItemInterface;
 
 class OrderController extends BaseOrderController
 {
-    protected function prepareSale(OrderInterface $order): array
+    protected function prepareSale(OrderInterface $order, string $locale = null): array
     {
-        $serialized = parent::prepareSale($order);
+        $serialized = parent::prepareSale($order, $locale);
 
         if ($order instanceof CoreOrderInterface) {
             $serialized['carrier'] = $order->getCarrier() instanceof CarrierInterface ? $order->getCarrier()->getId() : null;
@@ -39,9 +39,9 @@ class OrderController extends BaseOrderController
         return $serialized;
     }
 
-    protected function getDetails(OrderInterface $order): array
+    protected function getDetails(OrderInterface $order, ?string $locale = null): array
     {
-        $serialized = parent::getDetails($order);
+        $serialized = parent::getDetails($order, $locale);
 
         if ($order instanceof CoreOrderInterface) {
             $serialized['shippingPayment'] = [

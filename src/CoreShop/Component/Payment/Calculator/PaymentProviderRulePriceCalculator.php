@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -24,7 +24,7 @@ use CoreShop\Component\Payment\Model\PaymentProviderInterface;
 use CoreShop\Component\Payment\Model\PaymentProviderRuleInterface;
 use CoreShop\Component\Payment\Rule\Processor\PaymentProviderRuleActionProcessorInterface;
 
-class PaymentProviderRulePriceCalculator
+class PaymentProviderRulePriceCalculator implements PaymentProviderRulePriceCalculatorInterface
 {
     public function __construct(
         protected PaymentProviderRuleCheckerInterface $paymentProviderRuleChecker,
@@ -35,7 +35,7 @@ class PaymentProviderRulePriceCalculator
     public function getPrice(PaymentProviderInterface $paymentProvider, PayableInterface $payable, array $context): int
     {
         /**
-         * First valid price rule wins. so, we loop through all ShippingRuleGroups
+         * First valid price rule wins. so, we loop through all PaymentProviderRuleGroups
          * get the first valid one, and process it for the price.
          */
         $paymentProviderRule = $this->paymentProviderRuleChecker->findValidPaymentProviderRule($paymentProvider, $payable);

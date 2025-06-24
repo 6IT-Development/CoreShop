@@ -11,15 +11,17 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Bundle\OrderBundle\Pimcore\GridColumnConfig\Operator;
 
 use CoreShop\Bundle\WorkflowBundle\StateManager\WorkflowStateInfoManagerInterface;
-use Pimcore\DataObject\GridColumnConfig\Operator\AbstractOperator;
+use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\Operator\AbstractOperator;
+use Pimcore\Bundle\AdminBundle\DataObject\GridColumnConfig\ResultContainer;
+use Pimcore\Model\Element\ElementInterface;
 
 class OrderState extends AbstractOperator
 {
@@ -34,16 +36,13 @@ class OrderState extends AbstractOperator
         $this->highlightLabel = $config->highlightLabel;
     }
 
-    /**
-     * @param \Pimcore\Model\Element\ElementInterface $element
-     *
-     * @return \stdClass|string|null
-     */
-    public function getLabeledValue($element)
+    public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
     {
+        $locale = $this->context['language'];
+
         $result = new \stdClass();
         $result->label = $this->label;
-        $children = $this->getChilds();
+        $children = $this->getChildren();
 
         if (!$children) {
             return $result;
@@ -77,7 +76,7 @@ class OrderState extends AbstractOperator
                 return $result;
         }
 
-        $state = $this->workflowManager->getStateInfo($workflow, $result->value, false);
+        $state = $this->workflowManager->getStateInfo($workflow, $result->value, false, $locale);
 
         $rgb = $this->hex2rgb($state['color']);
         $opacity = $workflow === 'coreshop_order' ? '1' : '0.3';

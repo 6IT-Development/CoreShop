@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -307,15 +307,15 @@ coreshop.index.fields = Class.create({
                     var text = t(data[keys[i]].nodeLabel);
 
                     if (data[keys[i]].nodeType == 'objectbricks') {
-                        text = ts(data[keys[i]].nodeLabel) + ' ' + t('columns');
+                        text = t(data[keys[i]].nodeLabel) + ' ' + t('columns');
                     }
 
                     if (data[keys[i]].nodeType == 'classificationstore') {
-                        text = ts(data[keys[i]].nodeLabel) + ' ' + t('columns');
+                        text = t(data[keys[i]].nodeLabel) + ' ' + t('columns');
                     }
 
                     if (data[keys[i]].nodeType == 'fieldcollections') {
-                        text = ts(data[keys[i]].nodeLabel) + ' ' + t('columns');
+                        text = t(data[keys[i]].nodeLabel) + ' ' + t('columns');
                     }
 
                     var baseNode = {

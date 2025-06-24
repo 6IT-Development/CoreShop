@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -31,7 +31,7 @@ class CustomerDataMapper implements DataMapperInterface
         $this->propertyPathDataMapper = new DataMapper();
     }
 
-    public function mapDataToForms($viewData, $forms): void
+    public function mapDataToForms(mixed $viewData, \Traversable $forms): void
     {
         $formsOtherThanAddress = [];
 
@@ -50,11 +50,11 @@ class CustomerDataMapper implements DataMapperInterface
         }
 
         if (!empty($formsOtherThanAddress)) {
-            $this->propertyPathDataMapper->mapDataToForms($viewData, $formsOtherThanAddress);
+            $this->propertyPathDataMapper->mapDataToForms($viewData, new \ArrayObject($formsOtherThanAddress));
         }
     }
 
-    public function mapFormsToData($forms, &$viewData): void
+    public function mapFormsToData(\Traversable $forms, mixed &$viewData)
     {
         $formsOtherThanAddress = [];
 
@@ -73,7 +73,7 @@ class CustomerDataMapper implements DataMapperInterface
         }
 
         if (!empty($formsOtherThanAddress)) {
-            $this->propertyPathDataMapper->mapFormsToData($formsOtherThanAddress, $viewData);
+            $this->propertyPathDataMapper->mapFormsToData(new \ArrayObject($formsOtherThanAddress), $viewData);
         }
     }
 }

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -91,7 +91,7 @@ class ManufacturerReport implements ReportInterface
             SELECT SQL_CALC_FOUND_ROWS
               `manufacturers`.oo_id as manufacturerId,
               `manufacturers`.name as manufacturerName,
-              `manufacturers`.o_key as manufacturerKey,
+              `manufacturers`.key as manufacturerKey,
               `orders`.store,
               SUM(orderItems.totalGross) AS sales,
               SUM((orderItems.itemRetailPriceNet - orderItems.itemWholesalePrice) * orderItems.quantity) AS profit,

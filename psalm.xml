@@ -25,13 +25,22 @@
     </projectFiles>
 
     <issueHandlers>
-        <!-- level 3 issues - slightly lazy code writing, but probably low false-negatives -->
-        <UndefinedDocblockClass>
-            <errorLevel type="suppress">
-                <referencedClass name="UnitEnum" />
+        <RiskyCast>
+            <errorLevel type="info">
+                <directory name="src/CoreShop/*" />
             </errorLevel>
-        </UndefinedDocblockClass>
-
+        </RiskyCast>
+        <RiskyTruthyFalsyComparison>
+            <errorLevel type="info">
+                <directory name="src/CoreShop/*" />
+            </errorLevel>
+        </RiskyTruthyFalsyComparison>
+        <MissingTemplateParam>
+            <errorLevel type="info">
+                <directory name="src/CoreShop/*" />
+            </errorLevel>
+        </MissingTemplateParam>
+        <!-- level 3 issues - slightly lazy code writing, but probably low false-negatives -->
         <DeprecatedClass>
             <errorLevel type="info">
                 <referencedClass name="Doctrine\Common\Persistence\ManagerRegistry" />
@@ -40,7 +49,6 @@
                 <referencedClass name="Doctrine\Common\Persistence\ObjectRepository" />
                 <referencedClass name="Payum\Core\Action\GatewayAwareAction" />
                 <referencedClass name="Payum\Core\Security\GenericTokenFactoryInterface" />
-                <referencedClass name="Sylius\Component\Core\Calculator\ProductVariantPriceCalculatorInterface" />
                 <referencedClass name="Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand" />
                 <referencedClass name="Symfony\Bundle\FrameworkBundle\Controller\Controller" />
                 <referencedClass name="Symfony\Bundle\FrameworkBundle\Templating\EngineInterface" />
@@ -63,9 +71,11 @@
             <errorLevel type="info">
                 <referencedClass name="Doctrine\Common\Persistence\ObjectManager" />
                 <referencedClass name="Doctrine\Common\Persistence\ObjectRepository" />
-                <referencedClass name="Sylius\Component\Core\Calculator\ProductVariantPriceCalculatorInterface" />
                 <referencedClass name="Symfony\Component\Security\Core\User\AdvancedUserInterface" />
                 <referencedClass name="Pimcore\Bundle\AdminBundle\Controller\AdminControllerInterface" />
+                <referencedClass name="Symfony\Component\DependencyInjection\ContainerAwareInterface" />
+                <referencedClass name="Payum\Core\Security\GenericTokenFactoryInterface" />
+                <referencedClass name="Pimcore\Model\DataObject\ClassDefinition\DynamicOptionsProvider\MultiSelectOptionsProviderInterface" />
             </errorLevel>
         </DeprecatedInterface>
         <DeprecatedMethod>
@@ -81,14 +91,35 @@
                 <referencedMethod name="Symfony\Bundle\FrameworkBundle\Controller\AbstractController::get" />
                 <referencedMethod name="Pimcore\Bundle\AdminBundle\Controller\AdminController::decodeJson" />
                 <referencedMethod name="Pimcore\Bundle\AdminBundle\Controller\AdminController::getAdminUser" />
+                <referencedMethod name="Doctrine\DBAL\Query\QueryBuilder::getQueryPart" />
             </errorLevel>
         </DeprecatedMethod>
+        <UndefinedInterfaceMethod>
+            <errorLevel type="info">
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::end" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::scalarNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::scalarPrototype" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::arrayNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::integerNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::scalarPrototype" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::booleanNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::variableNode" />
+            </errorLevel>
+        </UndefinedInterfaceMethod>
 
         <InternalMethod>
             <errorLevel type="info">
                 <referencedMethod name="Symfony\Bundle\SecurityBundle\Security\_FirewallMap::getFirewallConfig" />
+                <referencedMethod name="Symfony\Component\Workflow\Registry::get" />
+                <referencedMethod name="Pimcore\File::getValidFilename" />
             </errorLevel>
         </InternalMethod>
+
+        <InternalClass>
+            <errorLevel type="info">
+                <referencedClass name="Pimcore\File" />
+            </errorLevel>
+        </InternalClass>
 
         <MissingReturnType errorLevel="info" />
 
@@ -136,8 +167,46 @@
                 <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::variableNode" />
                 <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::scalarPrototype" />
                 <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeParentInterface::end" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::arrayNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::booleanNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::children" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::integerNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::scalarNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::variableNode" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\VariableNodeDefinition::scalarPrototype" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::scalarPrototype" />
             </errorLevel>
         </PossiblyUndefinedMethod>
+
+        <UndefinedMethod>
+            <errorLevel type="info">
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::children" />
+                <referencedMethod name="Symfony\Component\Config\Definition\Builder\NodeDefinition::scalarPrototype" />
+            </errorLevel>
+        </UndefinedMethod>
+        
+        <AmbiguousConstantInheritance>
+            <errorLevel type="info">
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_NEW" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_AUTHORIZED" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_PROCESSING" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_COMPLETED" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_FAILED" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_CANCELLED" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_REFUNDED" />
+                <referencedConstant name="CoreShop\Component\Core\Model\Payment::STATE_UNKNOWN" />
+                <referencedConstant name="CoreShop\Bundle\CoreBundle\Pimcore\Repository\WishlistRepository::ORDER_ASCENDING" />
+                <referencedConstant name="CoreShop\Bundle\StorageListBundle\Pimcore\Repository\PimcoreStorageListRepository::ORDER_ASCENDING" />
+                <referencedConstant name="CoreShop\Bundle\WishlistBundle\Pimcore\Repository\WishlistRepository::ORDER_ASCENDING" />
+                <referencedConstant name="CoreShop\Bundle\OrderBundle\Pimcore\Repository\OrderRepository::ORDER_ASCENDING" />
+                <referencedConstant name="CoreShop\Bundle\ProductQuantityPriceRulesBundle\Doctrine\ORM\ProductQuantityPriceRuleRepository::ORDER_ASCENDING" />
+                <referencedConstant name="CoreShop\Bundle\CoreBundle\Pimcore\Repository\WishlistRepository::ORDER_DESCENDING" />
+                <referencedConstant name="CoreShop\Bundle\StorageListBundle\Pimcore\Repository\PimcoreStorageListRepository::ORDER_DESCENDING" />
+                <referencedConstant name="CoreShop\Bundle\WishlistBundle\Pimcore\Repository\WishlistRepository::ORDER_DESCENDING" />
+                <referencedConstant name="CoreShop\Bundle\OrderBundle\Pimcore\Repository\OrderRepository::ORDER_DESCENDING" />
+                <referencedConstant name="CoreShop\Bundle\ProductQuantityPriceRulesBundle\Doctrine\ORM\ProductQuantityPriceRuleRepository::ORDER_DESCENDING" />
+            </errorLevel>
+        </AmbiguousConstantInheritance>
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
 
@@ -151,6 +220,7 @@
             <errorLevel type="suppress">
                 <referencedFunction name="Doctrine\ORM\Query\Expr::andX" />
                 <referencedFunction name="Doctrine\ORM\Query\Expr::orX" />
+                <referencedFunction name="Symfony\Component\Serializer\Attribute\SerializedName::__construct" />
             </errorLevel>
         </TooManyArguments>
 
@@ -169,7 +239,6 @@
         <InvalidArgument>
             <errorLevel type="info">
                 <referencedFunction name="Symfony\Component\EventDispatcher\EventDispatcherInterface::dispatch" />
-                <referencedFunction name="SyliusLabs\AssociationHydrator\AssociationHydrator::__construct" />
                 <referencedFunction name="Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken::__construct" />
             </errorLevel>
         </InvalidArgument>
@@ -179,10 +248,28 @@
         <MethodSignatureMismatch errorLevel="info" />
 
         <!-- Custom -->
-
-        <!-- remove after guzzlehttp-release -->
-        <!-- see https://github.com/guzzle/guzzle/pull/2273 -->
-        <InvalidCatch errorLevel="info" />
+        <MissingOverrideAttribute errorLevel="info" />
+        <ClassMustBeFinal errorLevel="info" />
+        <PossiblyUnusedMethod errorLevel="info" />
+        <UnusedClass errorLevel="info" />
+        <InvalidOperand errorLevel="info" />
+        <PossiblyFalseArgument errorLevel="info" />
+        <PossiblyUnusedReturnValue errorLevel="info" />
+        <UnusedVariable errorLevel="info" />
+        <PossiblyUnusedProperty errorLevel="info" />
+        <PossiblyUnusedParam errorLevel="info" />
+        <UnusedParam errorLevel="info" />
+        <PossiblyUnusedProperty errorLevel="info" />
+        <UnnecessaryVarAnnotation errorLevel="info" />
+        <UnusedProperty errorLevel="info" />
+        <InvalidPropertyFetch errorLevel="info" />
+        <UnusedClosureParam errorLevel="info" />
+        <UnusedMethod errorLevel="info" />
+        <UnusedMethodCall errorLevel="info" />
+        <UnevaluatedCode errorLevel="info" />
+        <PossiblyFalseIterator errorLevel="info" />
+        <UndefinedMethod errorLevel="info" />
+        <ReservedWord errorLevel="info" />
     </issueHandlers>
 
     <stubs>

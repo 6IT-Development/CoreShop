@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -83,7 +83,7 @@ final class DataObjectBatchListing implements Iterator, Countable
         if (!$this->total) {
             $dao = $this->list->getDao();
 
-            if (!method_exists($dao, 'getTotalCount')) {
+            if (!method_exists($dao, 'getCount')) {
                 throw new \InvalidArgumentException(sprintf(
                     '%s listing class does not support count.',
                     $this->list::class,
@@ -91,7 +91,7 @@ final class DataObjectBatchListing implements Iterator, Countable
             }
 
             /** @psalm-suppress InternalMethod */
-            $this->total = $dao->getTotalCount();
+            $this->total = $dao->getCount();
         }
 
         return $this->total;

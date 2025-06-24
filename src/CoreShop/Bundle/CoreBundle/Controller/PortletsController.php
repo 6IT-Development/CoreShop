@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,16 +21,20 @@ namespace CoreShop\Bundle\CoreBundle\Controller;
 use CoreShop\Bundle\ResourceBundle\Controller\AdminController;
 use CoreShop\Component\Core\Portlet\ExportPortletInterface;
 use CoreShop\Component\Core\Portlet\PortletInterface;
+use CoreShop\Component\Registry\ServiceRegistryInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class PortletsController extends AdminController
 {
     public function getPortletDataAction(Request $request): Response
     {
         $portletName = $this->getParameterFromRequest($request, 'portlet');
-        $portletRegistry = $this->get('coreshop.registry.portlets');
+        $portletRegistry = $this->container->get('coreshop.registry.portlets');
 
         if (!$portletRegistry->has($portletName)) {
             throw new \InvalidArgumentException(sprintf('Portlet %s not found', $portletName));
@@ -45,10 +49,12 @@ class PortletsController extends AdminController
         ]);
     }
 
-    public function exportPortletCsvAction(Request $request): Response
-    {
+    public function exportPortletCsvAction(
+        Request $request,
+        SerializerInterface $serializer,
+    ): Response {
         $portletName = $this->getParameterFromRequest($request, 'portlet');
-        $portletRegistry = $this->get('coreshop.registry.portlets');
+        $portletRegistry = $this->container->get('coreshop.registry.portlets');
 
         if (!$portletRegistry->has($portletName)) {
             throw new \InvalidArgumentException(sprintf('Portlet %s not found', $portletName));
@@ -63,7 +69,7 @@ class PortletsController extends AdminController
             $data = $portlet->getPortletData($request->query);
         }
 
-        $csvData = $this->get('serializer')->serialize($data, 'csv');
+        $csvData = $serializer->serialize($data, 'csv');
 
         $response = new Response($csvData);
         $disposition = $response->headers->makeDisposition(
@@ -74,5 +80,12 @@ class PortletsController extends AdminController
         $response->headers->set('Content-Disposition', $disposition);
 
         return $response;
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            new SubscribedService('coreshop.registry.portlets', ServiceRegistryInterface::class, attributes: new Autowire(service: 'coreshop.registry.portlets')),
+        ]);
     }
 }

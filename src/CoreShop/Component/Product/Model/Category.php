@@ -11,30 +11,26 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Product\Model;
 
 use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
+use Pimcore\Model\DataObject\Listing;
 
 abstract class Category extends AbstractPimcoreModel implements CategoryInterface
 {
-    public function getChildCategories(): array
+    public function getChildCategories(): Listing
     {
-        /**
-         * @var CategoryInterface[] $childs
-         */
-        $childs = $this->getChildren();
-
-        return $childs;
+        return $this->getChildren();
     }
 
     public function hasChildCategories(): bool
     {
-        return count($this->getChildren()) > 0;
+        return $this->getChildren()->getTotalCount() > 0;
     }
 
     public function getNameForSlug(string $language = null): ?string

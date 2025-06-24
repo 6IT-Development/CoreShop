@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -78,7 +78,7 @@ class VouchersReport implements ReportInterface, ExportReportInterface
               orderVouchers.discountGross AS discount,
               orders.orderDate
               FROM object_collection_CoreShopProposalCartPriceRuleItem_$classId as orderVouchers
-              INNER JOIN object_query_$classId as orders ON orders.oo_id = orderVouchers.o_id 
+              INNER JOIN object_query_$classId as orders ON orders.oo_id = orderVouchers.id 
               LEFT JOIN coreshop_cart_price_rule AS priceRule ON orderVouchers.cartPriceRule = priceRule.id 
               WHERE orderVouchers.voucherCode <> '' AND orders.store = $storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate > ? AND orders.orderDate < ? AND saleState='" . OrderSaleStates::STATE_ORDER . "'
               ORDER BY orders.orderDate DESC

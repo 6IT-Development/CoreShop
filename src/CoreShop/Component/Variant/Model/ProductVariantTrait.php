@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -32,7 +32,7 @@ trait ProductVariantTrait
     {
         if ($this instanceof Concrete) {
             $list = $this::getList();
-            $list->setCondition('o_path LIKE ?', [$this->getFullPath() . '/%']);
+            $list->setCondition('path LIKE ?', [$this->getFullPath() . '/%']);
             $list->setObjectTypes([AbstractObject::OBJECT_TYPE_VARIANT]);
 
             $variants = $list->getObjects();

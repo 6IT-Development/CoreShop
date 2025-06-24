@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -46,8 +46,8 @@ use CoreShop\Component\Order\Model\CartPriceRuleTranslation;
 use CoreShop\Component\Order\Model\CartPriceRuleTranslationInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCode;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeCustomer;
-use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeCustomerInterface;
+use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderInvoiceInterface;
 use CoreShop\Component\Order\Model\OrderInvoiceItemInterface;
@@ -115,6 +115,12 @@ final class Configuration implements ConfigurationInterface
                             ->children()
                                 ->variableNode('options')->end()
                                 ->scalarNode('permission')->defaultValue('cart_price_rule')->cannotBeOverwritten()->end()
+                                ->arrayNode('graphql')
+                                    ->addDefaultsIfNotSet()
+                                    ->children()
+                                        ->booleanNode('enabled')->defaultTrue()->end()
+                                    ->end()
+                                ->end()
                                 ->arrayNode('classes')
                                     ->addDefaultsIfNotSet()
                                     ->children()

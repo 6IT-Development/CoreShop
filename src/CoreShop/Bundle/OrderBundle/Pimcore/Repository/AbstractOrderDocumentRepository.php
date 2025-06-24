@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -26,7 +26,7 @@ abstract class AbstractOrderDocumentRepository extends PimcoreRepository impleme
 {
     public function getDocuments(OrderInterface $order): array
     {
-        return $this->findBy(['order__id' => $order->getId()], ['o_id' => 'DESC']);
+        return $this->findBy(['order__id' => $order->getId()], ['id' => 'DESC']);
     }
 
     public function getDocumentsInState(OrderInterface $order, string $state): array

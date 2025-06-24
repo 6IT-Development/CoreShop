@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -36,7 +36,7 @@ class PriceActionProcessor implements ProductPriceActionProcessorInterface
 
     public function getPrice($subject, array $context, array $configuration): int
     {
-        if (!$subject instanceof ProductInterface)  {
+        if (!$subject instanceof ProductInterface) {
             throw new NoRetailPriceFoundException(__CLASS__);
         }
 
@@ -47,7 +47,7 @@ class PriceActionProcessor implements ProductPriceActionProcessorInterface
                 throw new NoRetailPriceFoundException(__CLASS__);
             }
         }
-        
+
         Assert::keyExists($context, 'base_currency');
         Assert::isInstanceOf($context['base_currency'], CurrencyInterface::class);
 
@@ -55,7 +55,7 @@ class PriceActionProcessor implements ProductPriceActionProcessorInterface
          * @var CurrencyInterface $contextCurrency
          */
         $contextCurrency = $context['base_currency'];
-        $price = $configuration['price'];
+        $price = (int) $configuration['price'];
 
         /**
          * @var CurrencyInterface $currency

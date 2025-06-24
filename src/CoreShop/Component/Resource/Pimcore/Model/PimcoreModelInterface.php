@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -20,67 +20,34 @@ namespace CoreShop\Component\Resource\Pimcore\Model;
 
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use Pimcore\Model\DataObject\ClassDefinition;
+use Pimcore\Model\DataObject\Listing;
 use Pimcore\Model\Element\ElementInterface;
 
 interface PimcoreModelInterface extends ResourceInterface, ElementInterface
 {
-    /**
-     * @param string $key
-     */
-    public function setKey($key);
+    public function getId(): ?int;
 
-    /**
-     * @return string
-     */
-    public function getKey();
+    public function setKey(string $key): static;
 
-    /**
-     * @param bool $published
-     */
-    public function setPublished($published);
+    public function getKey(): ?string;
 
-    /**
-     * @return bool
-     */
-    public function getPublished();
+    public function setPublished(bool $published): static;
 
-    /**
-     * @return bool
-     */
-    public function isPublished();
+    public function getPublished(): bool;
 
-    /**
-     * @param ElementInterface $parent
-     */
-    public function setParent($parent);
+    public function isPublished(): bool;
 
-    /**
-     * @return ElementInterface|null
-     */
-    public function getParent();
+    public function setParent(?ElementInterface $parent): static;
 
-    /**
-     * @return mixed
-     */
-    public function getObjectVar($field);
+    public function getParent(): ?ElementInterface;
 
-    /**
-     * @return mixed
-     */
-    public function save();
+    public function getObjectVar(?string $var): mixed;
 
-    /**
-     * @return mixed
-     */
-    public function delete();
+    public function save(array $parameters = []): static;
 
-    /**
-     * @return array
-     */
-    public function getChildren(array $type = [], $includingUnpublished = false);
+    public function delete(): void;
 
-    /**
-     * @return ClassDefinition
-     */
-    public function getClass();
+    public function getChildren(array $type = [], bool $includingUnpublished = false): Listing;
+
+    public function getClass(): ClassDefinition;
 }

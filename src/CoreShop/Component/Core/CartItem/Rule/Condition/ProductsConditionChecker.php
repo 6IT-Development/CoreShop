@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -48,7 +48,7 @@ final class ProductsConditionChecker extends AbstractConditionChecker
             $configuration['products'],
             $orderItem->getOrder()->getStore(),
             $configuration['include_variants'] ?: false,
-            [sprintf('cs_rule_variant_%s', $cartPriceRule->getId())]
+            [sprintf('cs_rule_variant_%s', $cartPriceRule->getId())],
         );
 
         if ($orderItem->getIsGiftItem()) {

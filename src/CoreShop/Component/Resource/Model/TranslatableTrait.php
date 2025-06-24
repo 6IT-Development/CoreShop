@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -73,7 +73,7 @@ trait TranslatableTrait
             return $translation;
         }
 
-        if ($useFallbackTranslation) {
+        if ($useFallbackTranslation && null !== $this->fallbackLocale) {
             $fallbackTranslation = $this->translations->get($this->fallbackLocale);
             if (null !== $fallbackTranslation) {
                 $this->translationsCache[$this->fallbackLocale] = $fallbackTranslation;

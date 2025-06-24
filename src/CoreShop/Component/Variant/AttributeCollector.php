@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -31,9 +31,9 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class AttributeCollector implements AttributeCollectorInterface
 {
-
-    public function __construct(private EventDispatcherInterface $eventDispatcher)
-    {
+    public function __construct(
+        private EventDispatcherInterface $eventDispatcher,
+    ) {
     }
 
     /**
@@ -57,10 +57,9 @@ class AttributeCollector implements AttributeCollectorInterface
     {
         $resolvedGroups = [];
         foreach ($products as $product) {
-
             $event = $this->eventDispatcher->dispatch(new VariantAvailabilityEvent($product), 'coreshop.attribute.collector.preCondition');
 
-            if (!$event->isConditionMet()){
+            if (!$event->isConditionMet()) {
                 continue;
             }
 
@@ -85,7 +84,6 @@ class AttributeCollector implements AttributeCollectorInterface
                     $group = new ResolvedAttributeGroup();
                     $group->setGroup($attributeGroup);
                     $group->setType(get_class($attribute));
-
 
                     $resolvedGroups[$attributeGroup->getId()] = $group;
                 } else {

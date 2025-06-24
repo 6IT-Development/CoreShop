@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -67,7 +67,6 @@ class CustomerManager implements CustomerManagerInterface
                 'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
             ]),
         );
-        /** @psalm-suppress InternalMethod */
         $customer->setKey(File::getValidFilename($customer->getEmail()));
         /** @psalm-suppress InvalidArgument */
         $customer->setKey(Service::getUniqueKey($customer));
@@ -96,7 +95,6 @@ class CustomerManager implements CustomerManagerInterface
                     'prefix' => $customer->getFullPath(),
                 ]),
             );
-            /** @psalm-suppress InternalMethod */
             $userBackup->setKey(File::getValidFilename($customer->getEmail()));
             /** @psalm-suppress InvalidArgument */
             $userBackup->setKey(Service::getUniqueKey($userBackup));

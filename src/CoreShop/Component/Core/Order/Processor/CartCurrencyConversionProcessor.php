@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -53,12 +53,14 @@ final class CartCurrencyConversionProcessor implements CartProcessorInterface
                 $itemRetailPrice = $item->getItemRetailPrice($withTax);
                 $itemDiscountPrice = $item->getItemDiscountPrice($withTax);
                 $itemDiscount = $item->getItemDiscount($withTax);
-                $itemPrice = $item->getTotal($withTax);
-                $total = $item->getItemPrice($withTax);
+                $total = $item->getTotal($withTax);
+                $itemPrice = $item->getItemPrice($withTax);
+                $subtotal = $item->getSubtotal($withTax);
 
                 $item->setConvertedItemRetailPrice($this->convert($itemRetailPrice, $cart), $withTax);
-                $item->setConvertedTotal($this->convert($itemPrice, $cart), $withTax);
-                $item->setConvertedItemPrice($this->convert($total, $cart), $withTax);
+                $item->setConvertedTotal($this->convert($total, $cart), $withTax);
+                $item->setConvertedSubtotal($this->convert($subtotal, $cart), $withTax);
+                $item->setConvertedItemPrice($this->convert($itemPrice, $cart), $withTax);
                 $item->setConvertedItemDiscount($this->convert($itemDiscount, $cart), $withTax);
                 $item->setConvertedItemDiscountPrice($this->convert($itemDiscountPrice, $cart), $withTax);
             }

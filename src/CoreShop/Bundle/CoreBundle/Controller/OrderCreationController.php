@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,7 +25,10 @@ use CoreShop\Component\Order\Cart\CartContextResolverInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
 use CoreShop\Component\Shipping\Calculator\TaxedShippingCalculatorInterface;
+use CoreShop\Component\Shipping\Resolver\CarriersResolver;
 use CoreShop\Component\Shipping\Resolver\CarriersResolverInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Contracts\Service\Attribute\SubscribedService;
 use Webmozart\Assert\Assert;
 
 class OrderCreationController extends BaseOrderCreationController
@@ -79,7 +82,7 @@ class OrderCreationController extends BaseOrderCreationController
             return [];
         }
 
-        $carriers = $this->get(CarriersResolverInterface::class)->resolveCarriers($cart, $cart->getShippingAddress());
+        $carriers = $this->container->get(CarriersResolverInterface::class)->resolveCarriers($cart, $cart->getShippingAddress());
 
         $result = [];
 
@@ -87,12 +90,12 @@ class OrderCreationController extends BaseOrderCreationController
          * @var CarrierInterface $carrier
          */
         foreach ($carriers as $carrier) {
-            $price = $this->get(TaxedShippingCalculatorInterface::class)->getPrice(
+            $price = $this->container->get(TaxedShippingCalculatorInterface::class)->getPrice(
                 $carrier,
                 $cart,
                 $cart->getShippingAddress(),
                 true,
-                $this->get(CartContextResolverInterface::class)->resolveCartContext($cart),
+                $this->container->get(CartContextResolverInterface::class)->resolveCartContext($cart),
             );
 
             $result[] = [
@@ -138,5 +141,16 @@ class OrderCreationController extends BaseOrderCreationController
         ]);
 
         return $result;
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return parent::getSubscribedServices() + [
+                new SubscribedService('CoreShop\Component\Shipping\Resolver\CarriersResolverInterface', CarriersResolver::class, attributes: new Autowire('CoreShop\Component\Shipping\Resolver\CarriersResolverInterface')),
+                TaxedShippingCalculatorInterface::class,
+                CartContextResolverInterface::class,
+                CarriersResolverInterface::class,
+                TaxedShippingCalculatorInterface::class,
+            ];
     }
 }

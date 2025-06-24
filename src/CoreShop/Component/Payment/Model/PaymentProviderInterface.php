@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -31,6 +31,8 @@ interface PaymentProviderInterface extends
     TranslatableInterface,
     TimestampableInterface
 {
+    public function getId(): ?int;
+
     /**
      * @return mixed
      */
@@ -42,43 +44,34 @@ interface PaymentProviderInterface extends
     public function setIdentifier($identifier);
 
     /**
-     * @param string|null $language
-     *
      * @return string
      */
-    public function getTitle($language = null);
+    public function getTitle(?string $language = null);
 
     /**
      * @param string $title
-     * @param string|null $language
      */
-    public function setTitle($title, $language = null);
+    public function setTitle($title, ?string $language = null);
 
     /**
-     * @param string|null $language
-     *
      * @return string
      */
-    public function getDescription($language = null);
+    public function getDescription(?string $language = null);
 
     /**
      * @param string $description
-     * @param string|null $language
      */
-    public function setDescription($description, $language = null);
+    public function setDescription($description, ?string $language = null);
 
     /**
-     * @param string|null $language
-     *
      * @return string
      */
-    public function getInstructions($language = null);
+    public function getInstructions(?string $language = null);
 
     /**
      * @param string $instructions
-     * @param string|null $language
      */
-    public function setInstructions($instructions, $language = null);
+    public function setInstructions($instructions, ?string $language = null);
 
     /**
      * @return int

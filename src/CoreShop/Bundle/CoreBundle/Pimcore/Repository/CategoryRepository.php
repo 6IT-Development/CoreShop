@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,7 +22,7 @@ use CoreShop\Bundle\ProductBundle\Pimcore\Repository\CategoryRepository as BaseC
 use CoreShop\Component\Core\Repository\CategoryRepositoryInterface;
 use CoreShop\Component\Product\Model\CategoryInterface;
 use CoreShop\Component\Store\Model\StoreInterface;
-use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ArrayParameterType;
 use Pimcore\Model\DataObject\Listing;
 
 class CategoryRepository extends BaseCategoryRepository implements CategoryRepositoryInterface
@@ -62,18 +62,18 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
         $dao = $list->getDao();
 
         /** @psalm-suppress InternalMethod */
-        $query = "
+        $query = '
             SELECT oo_id as id FROM (
-                SELECT CONCAT(o_path, o_key) as realFullPath FROM objects WHERE o_id IN (:categories)
+                SELECT CONCAT(path, `key`) as realFullPath FROM objects WHERE id IN (:categories)
             ) as categories
-            INNER JOIN ".$dao->getTableName()." variants ON variants.o_path LIKE CONCAT(categories.realFullPath, '/%')
+            INNER JOIN ' . $dao->getTableName() . " variants ON variants.path LIKE CONCAT(categories.realFullPath, '/%')
         ";
 
         $params = [
             'categories' => $categories,
         ];
         $paramTypes = [
-            'categories' => Connection::PARAM_STR_ARRAY,
+            'categories' => ArrayParameterType::STRING,
         ];
 
         $resultCategories = $this->connection->fetchAllAssociative($query, $params, $paramTypes);
@@ -101,7 +101,7 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
         $qb
             ->select('oo_id')
             ->from($dao->getTableName())
-            ->where('o_path LIKE :path')
+            ->where('path LIKE :path')
             ->andWhere('stores LIKE :stores')
             ->setParameter('path', $category->getRealFullPath() . '/%')
             ->setParameter('stores', '%,' . $store->getId() . ',%')
@@ -138,12 +138,12 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
     {
         if (method_exists($category, 'getChildrenSortBy')) {
             $list->setOrderKey(
-                sprintf('o_%s ASC', $category->getChildrenSortBy()),
+                sprintf('`%s` ASC', $category->getChildrenSortBy()),
                 false,
             );
         } else {
             $list->setOrderKey(
-                'o_key ASC',
+                '`key` ASC',
                 false,
             );
         }
@@ -152,7 +152,7 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
     private function setSortingForListingWithoutCategory(Listing $list): void
     {
         $list->setOrderKey(
-            'o_index ASC, o_key ASC',
+            '`index` ASC, `key` ASC',
             false,
         );
     }

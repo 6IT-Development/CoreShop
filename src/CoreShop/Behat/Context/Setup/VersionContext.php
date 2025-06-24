@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -54,7 +54,7 @@ final class VersionContext implements Context
         $GLOBALS['data'] = $data;
 
         $db = Db::get();
-        $versionData = $db->fetchRow("SELECT id,date,versionCount FROM versions WHERE cid = ? AND ctype='object' ORDER BY `versionCount` DESC, `id` DESC LIMIT 1", $concrete->getId());
+        $versionData = $db->fetchAssociative("SELECT id,date,versionCount FROM versions WHERE cid = ? AND ctype='object' ORDER BY `versionCount` DESC, `id` DESC LIMIT 1", [$concrete->getId()]);
         $version = Version::getById($versionData['id']);
 
 //        $version = $concrete->getLatestVersion();
@@ -80,7 +80,7 @@ final class VersionContext implements Context
         $product = $this->sharedStorage->get('product');
         $id = $product->getId();
 
-        $this->sharedStorage->set('product', $product::getById($id, true));
+        $this->sharedStorage->set('product', $product::getById($id, ['force' => true]));
     }
 
     private function restoreVersion(Concrete $concrete, string $key): Concrete

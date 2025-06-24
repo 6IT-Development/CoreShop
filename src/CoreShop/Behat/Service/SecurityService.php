@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,7 +25,7 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\TokenNotFoundException;
 
-final class SecurityService implements SecurityServiceInterface
+class SecurityService implements SecurityServiceInterface
 {
     private string $sessionTokenVariable;
 
@@ -40,7 +40,7 @@ final class SecurityService implements SecurityServiceInterface
 
     public function logIn(UserInterface $user): void
     {
-        $token = new UsernamePasswordToken($user, $user->getPassword(), $this->firewallContextName, $user->getRoles());
+        $token = new UsernamePasswordToken($user, $this->firewallContextName, $user->getRoles());
         $this->setToken($token);
     }
 

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,25 +22,19 @@ use Pimcore\Model\DataObject\Data\UrlSlug;
 
 interface SluggableInterface
 {
-    /**
-     * @return int|string|null
-     */
-    public function getId();
+    public function getId(): ?int;
+
+    public function getKey(): ?string;
 
     /**
-     * @return string
+     * @return UrlSlug[]|null
      */
-    public function getKey();
-
-    /**
-     * @return UrlSlug[]
-     */
-    public function getSlug($language = null): ?array;
+    public function getSlug(?string $language = null): ?array;
 
     /**
      * @param UrlSlug[] $slug
      */
-    public function setSlug(?array $slug, $language = null);
+    public function setSlug(?array $slug, ?string $language = null);
 
     public function getNameForSlug(string $language = null): ?string;
 }

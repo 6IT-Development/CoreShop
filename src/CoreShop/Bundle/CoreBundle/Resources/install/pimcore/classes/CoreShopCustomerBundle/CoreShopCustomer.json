@@ -153,22 +153,23 @@
                                 "visibleSearch": true
                             },
                             {
-                                "fieldtype": "newsletterActive",
-                                "defaultValue": 0,
                                 "name": "newsletterActive",
                                 "title": "coreshop.customer.newsletter_active",
                                 "tooltip": "",
                                 "mandatory": false,
                                 "noteditable": false,
-                                "index": null,
+                                "index": 0,
                                 "locked": false,
                                 "style": "",
                                 "permissions": null,
-                                "datatype": "data",
+                                "fieldtype": "newsletterActive",
                                 "relationType": false,
                                 "invisible": false,
-                                "visibleGridView": true,
-                                "visibleSearch": true
+                                "visibleGridView": false,
+                                "visibleSearch": false,
+                                "defaultValue": null,
+                                "defaultValueGenerator": "",
+                                "datatype": "data"
                             },
                             {
                                 "fieldtype": "newsletterConfirmed",

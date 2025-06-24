@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -31,6 +31,8 @@ final class NotificationRuleListener implements NotificationRuleListenerInterfac
 
     public function hasBeenFired(string $type): bool
     {
+        $this->checkDirExists();
+
         $finder = new Finder();
         $finder->files()->name(sprintf('*.%s.notification', $type))->in($this->cacheDir);
 
@@ -60,10 +62,15 @@ final class NotificationRuleListener implements NotificationRuleListenerInterfac
             'arguments' => $type->getArguments(),
         ];
 
+        $this->checkDirExists();
+
+        file_put_contents(sprintf('%s/%s.%s.notification', $this->cacheDir, uniqid(), $type->getSubject()), serialize($data));
+    }
+
+    private function checkDirExists()
+    {
         if (!is_dir($this->cacheDir)) {
             mkdir($this->cacheDir, 0777, true);
         }
-
-        file_put_contents(sprintf('%s/%s.%s.notification', $this->cacheDir, uniqid(), $type->getSubject()), serialize($data));
     }
 }

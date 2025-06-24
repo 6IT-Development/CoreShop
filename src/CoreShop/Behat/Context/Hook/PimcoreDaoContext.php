@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -51,10 +51,22 @@ final class PimcoreDaoContext implements Context
     /**
      * @BeforeScenario
      */
+    public function purgeSlugs(): void
+    {
+        Cache::clearAll();
+        Cache\RuntimeCache::clear();
+
+        //Force
+        $this->connection->executeQuery('DELETE FROM object_url_slugs');
+    }
+
+    /**
+     * @BeforeScenario
+     */
     public function purgeObjects(): void
     {
         Cache::clearAll();
-        Cache\Runtime::clear();
+        Cache\RuntimeCache::clear();
 
         /**
          * Delete Orders first, otherwise the CustomerDeletionListener would trigger.
@@ -74,7 +86,7 @@ final class PimcoreDaoContext implements Context
          */
         $list = new DataObject\Listing();
         $list->setUnpublished(true);
-        $list->setCondition('o_id <> 1');
+        $list->setCondition('id <> 1');
         $list->load();
 
         foreach ($list->getObjects() as $obj) {
@@ -82,7 +94,7 @@ final class PimcoreDaoContext implements Context
         }
 
         //Force
-        $this->connection->executeQuery('DELETE FROM objects WHERE o_id <> 1');
+        $this->connection->executeQuery('DELETE FROM objects WHERE id <> 1');
     }
 
     /**
@@ -110,7 +122,7 @@ final class PimcoreDaoContext implements Context
     public function clearRuntimeCacheScenario(): void
     {
         //Clearing it here is totally fine, since each scenario has its own separated context of objects
-        \Pimcore\Cache\Runtime::clear();
+        \Pimcore\Cache\RuntimeCache::clear();
     }
 
     /**
@@ -120,7 +132,7 @@ final class PimcoreDaoContext implements Context
     {
         //We should not clear Pimcore Objects here, otherwise we lose the reference to it
         //and end up having the same object twice
-        $copy = \Pimcore\Cache\Runtime::getInstance()->getArrayCopy();
+        $copy = \Pimcore\Cache\RuntimeCache::getInstance()->getArrayCopy();
         $keepItems = [];
 
         foreach ($copy as $key => $value) {
@@ -129,7 +141,7 @@ final class PimcoreDaoContext implements Context
             }
         }
 
-        \Pimcore\Cache\Runtime::clear($keepItems);
+        \Pimcore\Cache\RuntimeCache::clear($keepItems);
     }
 
     /**

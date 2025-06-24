@@ -11,13 +11,18 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Order\Factory;
 
+use CoreShop\Component\Order\OrderInvoiceStates;
+use CoreShop\Component\Order\OrderPaymentStates;
+use CoreShop\Component\Order\OrderSaleStates;
+use CoreShop\Component\Order\OrderShipmentStates;
+use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\TokenGenerator\UniqueTokenGenerator;
 
@@ -36,6 +41,11 @@ class OrderFactory implements FactoryInterface
         $cart->setKey(uniqid('cart', true));
         $cart->setPublished(true);
         $cart->setToken($this->tokenGenerator->generate($this->tokenLength));
+        $cart->setSaleState(OrderSaleStates::STATE_CART);
+        $cart->setOrderState(OrderStates::STATE_INITIALIZED);
+        $cart->setShippingState(OrderShipmentStates::STATE_NEW);
+        $cart->setPaymentState(OrderPaymentStates::STATE_NEW);
+        $cart->setInvoiceState(OrderInvoiceStates::STATE_NEW);
 
         return $cart;
     }

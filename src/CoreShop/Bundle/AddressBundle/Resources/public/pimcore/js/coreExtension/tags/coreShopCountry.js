@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -14,6 +14,15 @@ pimcore.registerNS('pimcore.object.tags.coreShopCountry');
 pimcore.object.tags.coreShopCountry = Class.create(coreshop.object.tags.select, {
 
     type: 'coreShopCountry',
-    storeName: 'coreshop_countries'
+    storeName: 'coreshop_countries',
+    getLayoutEdit: function () {
+        const layout = coreshop.object.tags.select.prototype.getLayoutEdit.call(this);
+
+        if (layout && layout.setEditable) {
+            layout.setEditable(true);
+        }
+
+        return layout;
+    }
 
 });

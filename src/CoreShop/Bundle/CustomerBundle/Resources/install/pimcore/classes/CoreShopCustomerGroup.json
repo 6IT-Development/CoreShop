@@ -64,7 +64,7 @@
                         "options": [],
                         "width": "",
                         "height": "",
-                        "maxItems": "",
+                        "maxItems": null,
                         "optionsProviderClass": "CoreShop\\Bundle\\CustomerBundle\\CoreExtension\\Provider\\RoleOptionsProvider",
                         "optionsProviderData": "",
                         "name": "roles",

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -26,19 +26,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TaxRuleGroupController extends ResourceController
 {
-    public function listRulesAction(Request $request): Response
+    public function listRulesAction(Request $request, TaxRuleRepositoryInterface $taxRuleRepository): Response
     {
         /**
          * @var TaxRuleGroupInterface $ruleGroup
          */
         $ruleGroup = $this->findOr404($this->getParameterFromRequest($request, 'id'));
-        $data = $this->getTaxRulesRepository()->findByGroup($ruleGroup);
+        $data = $taxRuleRepository->findByGroup($ruleGroup);
 
         return $this->viewHandler->handle($data);
-    }
-
-    protected function getTaxRulesRepository(): TaxRuleRepositoryInterface
-    {
-        return $this->get('coreshop.repository.tax_rule');
     }
 }

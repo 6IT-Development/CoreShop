@@ -3080,7 +3080,7 @@
                                 "fieldtype": "objectbricks",
                                 "phpdocType": "\\Pimcore\\Model\\DataObject\\Objectbrick",
                                 "allowedTypes": [],
-                                "maxItems": "",
+                                "maxItems": null,
                                 "border": false,
                                 "name": "additionalData",
                                 "title": "coreshop.order.additional_data",
@@ -3502,7 +3502,7 @@
                                                     "CoreShopTaxItem"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -3595,7 +3595,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -3828,7 +3828,7 @@
                                                     "CoreShopTaxItem"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -3921,7 +3921,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -3989,7 +3989,7 @@
                                                     "CoreShopProposalCartPriceRuleItem"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,

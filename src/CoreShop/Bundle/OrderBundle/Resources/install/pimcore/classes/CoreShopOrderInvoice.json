@@ -275,7 +275,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,
@@ -446,7 +446,7 @@
                                                     "CoreShopAdjustment"
                                                 ],
                                                 "lazyLoading": true,
-                                                "maxItems": "",
+                                                "maxItems": null,
                                                 "disallowAddRemove": false,
                                                 "disallowReorder": false,
                                                 "collapsed": false,

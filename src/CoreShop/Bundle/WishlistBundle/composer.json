@@ -7,7 +7,7 @@
     "pimcore",
     "ecommerce"
   ],
-  "homepage": "http://www.coreshop.org",
+  "homepage": "https://www.coreshop.com",
   "license": "GPL-3.0-or-later",
   "authors": [
     {
@@ -24,9 +24,9 @@
     }
   ],
   "require": {
-    "coreshop/resource-bundle": "^3.0",
-    "coreshop/storage-list-bundle": "^3.0",
-    "coreshop/wishlist": "^3.0"
+    "coreshop/resource-bundle": "^4.0",
+    "coreshop/storage-list-bundle": "^4.0",
+    "coreshop/wishlist": "^4.0"
   },
   "require-dev": {
     "phpstan/phpstan": "^1.10",
@@ -48,8 +48,7 @@
   "prefer-stable": true,
   "extra": {
     "branch-alias": {
-      "dev-next": "3.1-dev",
-      "dev-master": "3.1-dev"
+      "dev-master": "4.0-dev"
     }
   }
 }

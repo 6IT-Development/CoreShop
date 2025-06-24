@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -32,16 +32,20 @@ use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
 use CoreShop\Component\Order\OrderSaleTransitions;
+use CoreShop\Component\Order\OrderTransitions;
 use CoreShop\Component\Order\Processor\CartProcessorInterface;
 use CoreShop\Component\Pimcore\DataObject\DataLoader;
 use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Store\Model\StoreInterface;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Security\User\TokenStorageUserResolver;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderCreationController extends PimcoreController
 {
@@ -51,7 +55,7 @@ class OrderCreationController extends PimcoreController
         Request $request,
         CustomerRepositoryInterface $customerRepository,
     ): Response {
-        $this->isGrantedOr403();
+        //$this->isGrantedOr403();
 
         $customerId = $this->getParameterFromRequest($request, 'customerId');
         $customer = $customerRepository->find($customerId);
@@ -72,7 +76,12 @@ class OrderCreationController extends PimcoreController
         FormFactoryInterface $formFactory,
         CartProcessorInterface $cartProcessor,
     ): Response {
+        /**
+         * @var OrderInterface $cart
+         */
         $cart = $orderFactory->createNew();
+        $cart->setBackendCreated(true);
+
         $form = $formFactory->createNamed('', CartCreationType::class, $cart, [
             'customer' => $this->getParameterFromRequest($request, 'customer'),
         ]);
@@ -102,11 +111,17 @@ class OrderCreationController extends PimcoreController
         ErrorSerializer $errorSerializer,
         StateMachineManagerInterface $manager,
     ): Response {
+        // TODO: fails with must not be accessed before initialization
         $this->isGrantedOr403();
 
         $type = $this->getParameterFromRequest($request, 'saleType', OrderSaleTransitions::TRANSITION_CART);
 
+        /**
+         * @var OrderInterface $cart
+         */
         $cart = $orderFactory->createNew();
+        $cart->setBackendCreated(true);
+
         $form = $formFactory->createNamed('', CartCreationType::class, $cart, [
             'customer' => $this->getParameterFromRequest($request, 'customer'),
         ]);
@@ -132,13 +147,19 @@ class OrderCreationController extends PimcoreController
             $cartManager->persistCart($cart);
 
             $workflow = $manager->get($cart, OrderSaleTransitions::IDENTIFIER);
+            $orderWorkflow = $manager->get($cart, OrderTransitions::IDENTIFIER);
 
             if (!$workflow->can($cart, $type)) {
                 throw new HttpException(500);
             }
 
-            InheritanceHelper::useInheritedValues(static function () use ($workflow, $cart, $type, $cartManager) {
+            InheritanceHelper::useInheritedValues(static function () use ($workflow, $cart, $type, $cartManager, $orderWorkflow) {
                 $workflow->apply($cart, $type);
+
+                if ($type === OrderSaleTransitions::TRANSITION_ORDER) {
+                    //confirm order
+                    $orderWorkflow->apply($cart, OrderTransitions::TRANSITION_CONFIRM);
+                }
 
                 $cartManager->persistCart($cart);
             });
@@ -156,7 +177,7 @@ class OrderCreationController extends PimcoreController
     {
         $jsonCart = $this->getDataForObject($cart);
 
-        $jsonCart['o_id'] = $cart->getId();
+        $jsonCart['id'] = $cart->getId();
         $jsonCart['customer'] = $cart->getCustomer() instanceof CustomerInterface ? $this->getDataForObject($cart->getCustomer()) : null;
         $jsonCart['items'] = $this->getItemDetails($cart);
         $jsonCart['currency'] = $this->getCurrency($cart->getCurrency() ?: $cart->getStore()->getCurrency());
@@ -167,7 +188,7 @@ class OrderCreationController extends PimcoreController
             'shipping' => $this->getDataForObject($cart->getShippingAddress()),
             'billing' => $this->getDataForObject($cart->getInvoiceAddress()),
         ];
-
+        $this->addressFormatter = $this->container->get('CoreShop\Component\Address\Formatter\AddressFormatter');
         if ($cart->getShippingAddress() instanceof AddressInterface && $cart->getShippingAddress()->getCountry() instanceof CountryInterface
         ) {
             $jsonCart['address_shipping_formatted'] = $this->addressFormatter->formatAddress($cart->getShippingAddress());
@@ -304,11 +325,20 @@ class OrderCreationController extends PimcoreController
 
     public function setAddressFormatter(AddressFormatterInterface $addressFormatter): void
     {
-        $this->addressFormatter = $addressFormatter;
+        $this->addressFormatter = $this->container->get('CoreShop\Component\Address\Formatter\AddressFormatter');
+        //$this->addressFormatter = $addressFormatter;
     }
 
     protected function getPermission(): string
     {
         return 'coreshop_permission_order_create';
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return parent::getSubscribedServices() + [
+                new SubscribedService('Pimcore\Security\User\TokenStorageUserResolver', TokenStorageUserResolver::class, attributes: new Autowire(service:'Pimcore\Security\User\TokenStorageUserResolver')),
+                new SubscribedService('CoreShop\Component\Address\Formatter\AddressFormatter', TokenStorageUserResolver::class, attributes: new Autowire(service:'CoreShop\Component\Address\Formatter\AddressFormatter')),
+            ];
     }
 }

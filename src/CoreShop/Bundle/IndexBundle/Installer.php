@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,8 +21,8 @@ namespace CoreShop\Bundle\IndexBundle;
 use Pimcore\Console\Application;
 use Pimcore\Extension\Bundle\Installer\SettingsStoreAwareInstaller;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 class Installer extends SettingsStoreAwareInstaller
@@ -66,7 +66,7 @@ class Installer extends SettingsStoreAwareInstaller
         return true;
     }
 
-    public function getOutput(): OutputInterface
+    public function getOutput(): BufferedOutput | NullOutput
     {
         return new NullOutput();
     }

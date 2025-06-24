@@ -11,32 +11,28 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Bundle\CoreBundle\Fixtures\Data\Application;
 
-use CoreShop\Bundle\FixtureBundle\Fixture\VersionedFixtureInterface;
 use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
-use Doctrine\Common\DataFixtures\AbstractFixture;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class ConfigurationFixture extends AbstractFixture implements ContainerAwareInterface, VersionedFixtureInterface
+class ConfigurationFixture extends Fixture implements FixtureGroupInterface
 {
-    private ?ContainerInterface $container;
-
-    public function getVersion(): string
-    {
-        return '2.0';
+    public function __construct(
+        private ConfigurationServiceInterface $configurationService,
+    ) {
     }
 
-    public function setContainer(ContainerInterface $container = null): void
+    public static function getGroups(): array
     {
-        $this->container = $container;
+        return ['application'];
     }
 
     public function load(ObjectManager $manager): void
@@ -62,7 +58,7 @@ class ConfigurationFixture extends AbstractFixture implements ContainerAwareInte
         ];
 
         foreach ($configurations as $key => $value) {
-            $this->container->get(ConfigurationServiceInterface::class)->set($key, $value);
+            $this->configurationService->set($key, $value);
         }
     }
 }

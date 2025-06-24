@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -36,7 +36,7 @@ coreshop.order.order.detail.blocks.payment = Class.create(coreshop.order.order.d
                     type: 'coreshop-add',
                     tooltip: t('add'),
                     handler: function () {
-                        coreshop.order.order.createPayment.showWindow(me.sale.o_id, me.sale, function (result) {
+                        coreshop.order.order.createPayment.showWindow(me.sale.id, me.sale, function (result) {
                             if (result.success) {
                                 me.panel.reload();
                             }

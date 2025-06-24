@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -37,7 +37,7 @@ class ProductPriceRuleController extends ResourceController
      */
     protected function getConfigActions(): array
     {
-        return $this->container->getParameter('coreshop.product_price_rule.actions');
+        return $this->getParameter('coreshop.product_price_rule.actions');
     }
 
     /**
@@ -45,6 +45,6 @@ class ProductPriceRuleController extends ResourceController
      */
     protected function getConfigConditions(): array
     {
-        return $this->container->getParameter('coreshop.product_price_rule.conditions');
+        return $this->getParameter('coreshop.product_price_rule.conditions');
     }
 }

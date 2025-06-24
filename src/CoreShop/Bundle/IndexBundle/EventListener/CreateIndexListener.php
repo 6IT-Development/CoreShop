@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,7 +21,6 @@ namespace CoreShop\Bundle\IndexBundle\EventListener;
 use CoreShop\Bundle\ResourceBundle\Event\ResourceControllerEvent;
 use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
-use Symfony\Component\Intl\Exception\InvalidArgumentException;
 use Webmozart\Assert\Assert;
 
 final class CreateIndexListener
@@ -40,7 +39,7 @@ final class CreateIndexListener
         $worker = $resource->getWorker();
 
         if (!$this->workerServiceRegistry->has($worker)) {
-            throw new InvalidArgumentException(sprintf('%s Worker not found', $worker));
+            throw new \InvalidArgumentException(sprintf('%s Worker not found', $worker));
         }
 
         $worker = $this->workerServiceRegistry->get($worker);

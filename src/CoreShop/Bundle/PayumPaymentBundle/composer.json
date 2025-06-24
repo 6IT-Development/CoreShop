@@ -7,7 +7,7 @@
     "pimcore",
     "ecommerce"
   ],
-  "homepage": "http://www.coreshop.org",
+  "homepage": "https://www.coreshop.com",
   "license": "GPL-3.0-or-later",
   "authors": [
     {
@@ -24,9 +24,9 @@
     }
   ],
   "require": {
-    "coreshop/payment-bundle": "^3.0",
-    "coreshop/payum-payment": "^3.0",
-    "pimcore/pimcore": "^10.6",
+    "coreshop/payment-bundle": "^4.0",
+    "coreshop/payum-payment": "^4.0",
+    "pimcore/pimcore": "^11.0",
     "payum/payum-bundle": "^2.5",
     "php-http/guzzle7-adapter": "^1.0"
   },
@@ -50,8 +50,7 @@
   "prefer-stable": true,
   "extra": {
     "branch-alias": {
-      "dev-next": "3.1-dev",
-      "dev-master": "3.1-dev"
+      "dev-master": "4.0-dev"
     }
   },
   "config": {

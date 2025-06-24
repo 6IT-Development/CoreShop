@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -27,8 +27,8 @@ class CurrencyController extends ResourceController
     public function getConfigAction(Request $request): Response
     {
         $settings = [
-            'decimal_precision' => $this->container->getParameter('coreshop.currency.decimal_precision'),
-            'decimal_factor' => $this->container->getParameter('coreshop.currency.decimal_factor'),
+            'decimal_precision' => $this->getParameter('coreshop.currency.decimal_precision'),
+            'decimal_factor' => $this->getParameter('coreshop.currency.decimal_factor'),
         ];
 
         return $this->viewHandler->handle($settings);

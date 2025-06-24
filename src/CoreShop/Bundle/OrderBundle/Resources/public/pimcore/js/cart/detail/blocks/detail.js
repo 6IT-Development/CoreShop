@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -67,7 +67,7 @@ coreshop.order.cart.detail.blocks.detail = Class.create(coreshop.order.order.det
     //             handler: function (grid, rowIndex) {
     //                 var record = grid.getStore().getAt(rowIndex);
     //
-    //                 pimcore.helpers.openObject(record.get('o_id'));
+    //                 pimcore.helpers.openObject(record.get('id'));
     //             }
     //         },
     //         {
@@ -244,7 +244,7 @@ coreshop.order.cart.detail.blocks.detail = Class.create(coreshop.order.order.det
     //         method: 'post',
     //         jsonData: {
     //             items: items,
-    //             id: this.sale.o_id,
+    //             id: this.sale.id,
     //         },
     //         callback: function (request, success, response) {
     //             this.panel.layout.setLoading(false);
@@ -272,8 +272,8 @@ coreshop.order.cart.detail.blocks.detail = Class.create(coreshop.order.order.det
     //         url: '/admin/coreshop/cart-edit/remove-item',
     //         method: 'post',
     //         jsonData: {
-    //             cartItem: item.get('o_id'),
-    //             id: this.sale.o_id,
+    //             cartItem: item.get('id'),
+    //             id: this.sale.id,
     //         },
     //         callback: function (request, success, response) {
     //             this.panel.layout.setLoading(false);
@@ -318,7 +318,7 @@ coreshop.order.cart.detail.blocks.detail = Class.create(coreshop.order.order.det
     //         method: 'post',
     //         jsonData: {
     //             items: items,
-    //             id: this.sale.o_id,
+    //             id: this.sale.id,
     //         },
     //         callback: function (request, success, response) {
     //             this.panel.layout.setLoading(false);

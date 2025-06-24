@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,13 +25,14 @@ use EmailizrBundle\EmailizrBundle;
 use Pimcore\Extension\Bundle\AbstractPimcoreBundle;
 use Pimcore\HttpKernel\Bundle\DependentBundleInterface;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class CoreShopFrontendBundle extends AbstractPimcoreBundle implements DependentBundleInterface
 {
     public static function registerDependentBundles(BundleCollection $collection): void
     {
-        $collection->addBundle(new CoreShopCoreBundle(), 1600);
+        $collection->addBundle(new CoreShopCoreBundle(), 100);
         $collection->addBundle(new EmailizrBundle(), 1000);
     }
 
@@ -39,7 +40,7 @@ final class CoreShopFrontendBundle extends AbstractPimcoreBundle implements Depe
     {
         parent::build($container);
 
-        $container->addCompilerPass(new RegisterFrontendControllerPass());
+        $container->addCompilerPass(new RegisterFrontendControllerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100);
     }
 
     public function getNiceName(): string

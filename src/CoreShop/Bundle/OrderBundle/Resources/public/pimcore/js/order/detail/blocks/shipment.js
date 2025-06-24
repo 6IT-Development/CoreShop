@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -81,7 +81,7 @@ coreshop.order.order.detail.blocks.shipment = Class.create(coreshop.order.order.
                                     var record = widgetColumn.getWidgetRecord();
                                     var url = Routing.generate('coreshop_admin_order_shipment_update_state'),
                                         transitions = record.get('transitions'),
-                                        id = record.get('o_id');
+                                        id = record.get('id');
                                     if (transitions.length !== 0) {
                                         coreshop.order.order.state.changeState.showWindow(url, id, transitions, function (result) {
                                             if (result.success) {

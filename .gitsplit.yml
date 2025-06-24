@@ -1,22 +1,22 @@
 cache_url: 'file://cache'
 project_url: 'https://@github.com/coreshop/CoreShop.git'
 origins:
-    - ^master$
+    - ^next$
     - ^\d+\.\d+$
     - ^\d+\.\d+\.\d+$
+    - '^\d+\.\d+\.\d+(?:-?(?:alpha|beta|rc)\.?\d*)?$'
 splits:
     - { prefix: src/CoreShop/Component/Address, target: 'https://${GH_TOKEN}@github.com/coreshop/Address.git' }
     - { prefix: src/CoreShop/Bundle/AddressBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/AddressBundle.git' }
+    - { prefix: src/CoreShop/Bundle/ClassDefinitionPatchBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/ClassDefinitionPatchBundle.git' }
     - { prefix: src/CoreShop/Component/Configuration, target: 'https://${GH_TOKEN}@github.com/coreshop/Configuration.git' }
     - { prefix: src/CoreShop/Bundle/ConfigurationBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/ConfigurationBundle.git' }
-    - { prefix: src/CoreShop/Bundle/ClassDefinitionPatchBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/ClassDefinitionPatchBundle.git' }
     - { prefix: src/CoreShop/Component/Core, target: 'https://${GH_TOKEN}@github.com/coreshop/Core.git' }
     - { prefix: src/CoreShop/Bundle/CoreBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/CoreBundle.git' }
     - { prefix: src/CoreShop/Component/Currency, target: 'https://${GH_TOKEN}@github.com/coreshop/Currency.git' }
     - { prefix: src/CoreShop/Bundle/CurrencyBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/CurrencyBundle.git' }
     - { prefix: src/CoreShop/Component/Customer, target: 'https://${GH_TOKEN}@github.com/coreshop/Customer.git' }
     - { prefix: src/CoreShop/Bundle/CustomerBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/CustomerBundle.git' }
-    - { prefix: src/CoreShop/Bundle/FixtureBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/FixtureBundle.git' }
     - { prefix: src/CoreShop/Bundle/FrontendBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/FrontendBundle.git' }
     - { prefix: src/CoreShop/Component/Index, target: 'https://${GH_TOKEN}@github.com/coreshop/Index.git' }
     - { prefix: src/CoreShop/Bundle/IndexBundle, target: 'https://${GH_TOKEN}@github.com/coreshop/IndexBundle.git' }

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,9 +25,11 @@ use CoreShop\Component\Core\Model\QuantityRangeInterface;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use Doctrine\Common\Collections\Collection;
 use Pimcore\Model\DataObject;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class ProductValidationController extends AdminController
 {
@@ -98,6 +100,13 @@ class ProductValidationController extends AdminController
 
     protected function getProductRepository(): StackRepositoryInterface
     {
-        return $this->get('coreshop.repository.stack.product');
+        return $this->container->get('coreshop.repository.stack.product');
+    }
+
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            new SubscribedService('coreshop.repository.stack.product', StackRepositoryInterface::class, attributes: new Autowire(service:'coreshop.repository.stack.product')),
+        ]);
     }
 }

@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,20 +25,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ConfigurationController extends ResourceController
 {
-    public function saveAllAction(Request $request): Response
+    public function saveAllAction(Request $request, ConfigurationServiceInterface $configurationService): Response
     {
         $values = $this->getParameterFromRequest($request, 'values');
         $values = array_htmlspecialchars($values);
 
         foreach ($values as $key => $value) {
-            $this->getConfigurationService()->set($key, $value);
+            $configurationService->set($key, $value);
         }
 
         return $this->viewHandler->handle(['success' => true]);
-    }
-
-    private function getConfigurationService(): ConfigurationServiceInterface
-    {
-        return $this->get(ConfigurationServiceInterface::class);
     }
 }

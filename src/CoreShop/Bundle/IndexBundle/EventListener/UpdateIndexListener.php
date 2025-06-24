@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -22,7 +22,6 @@ use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
-use Symfony\Component\Intl\Exception\InvalidArgumentException;
 
 final class UpdateIndexListener
 {
@@ -43,7 +42,7 @@ final class UpdateIndexListener
         $workerType = $index->getWorker();
 
         if (!$this->workerServiceRegistry->has($workerType)) {
-            throw new InvalidArgumentException(sprintf('%s Worker not found', $workerType));
+            throw new \InvalidArgumentException(sprintf('%s Worker not found', $workerType));
         }
 
         /**

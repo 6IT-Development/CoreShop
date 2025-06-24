@@ -7,8 +7,8 @@
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,12 +25,8 @@ pimcore.object.tags.coreShopProductUnitDefinitions = Class.create(pimcore.object
         this.unitBuilder = {};
         this.unitStore = pimcore.globalmanager.get('coreshop_product_units');
         this.fieldConfig = fieldConfig;
-        if (pimcore.eventDispatcher !== undefined) {
-            this.eventDispatcherKey = pimcore.eventDispatcher.registerTarget(this.eventDispatcherKey, this);
-        }
-        else {
-            document.addEventListener(pimcore.events.postSaveObject, this.postSaveObjectNew.bind(this));
-        }
+
+        document.addEventListener(pimcore.events.postSaveObject, this.postSaveObjectNew.bind(this));
     },
 
     getGridColumnEditor: function (field) {

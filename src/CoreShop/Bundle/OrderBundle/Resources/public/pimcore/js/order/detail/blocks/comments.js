@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -42,7 +42,7 @@ coreshop.order.order.detail.blocks.comments = Class.create(coreshop.order.order.
         Ext.Ajax.request({
             url: Routing.generate('coreshop_admin_order_comments_list'),
             params: {
-                id: me.sale.o_id
+                id: me.sale.id
             },
             success: function (response) {
                 var res = Ext.decode(response.responseText);
@@ -185,7 +185,7 @@ coreshop.order.order.detail.blocks.comments = Class.create(coreshop.order.order.
 
         var formValues = form.getFieldValues();
 
-        formValues['id'] = me.sale.o_id;
+        formValues['id'] = me.sale.id;
 
         Ext.Ajax.request({
             url: Routing.generate('coreshop_admin_order_comments_add'),

@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GNU General Public License version 3 (GPLv3)
  *
  */
 
@@ -26,6 +26,10 @@ coreshop.broker = {
         }
 
         var list = coreshop.broker._listeners[name];
+
+        list = list.sort(function(a, b) {
+            return a.priority - b.priority;
+        });
 
         //copy arguments
         var args = [];
@@ -59,7 +63,7 @@ coreshop.broker = {
         }
     },
 
-    addListener: function (name, func, scope, once) {
+    addListener: function (name, func, scope, once, priority) {
         if (coreshop.broker._listeners[name] === undefined) {
             coreshop.broker._listeners[name] = [];
         }
@@ -67,7 +71,8 @@ coreshop.broker = {
         coreshop.broker._listeners[name].push({
             func: func,
             scope: scope,
-            once: Ext.isDefined(once) ? once : false
+            once: Ext.isDefined(once) ? once : false,
+            priority: priority ?? 0
         });
     },
 

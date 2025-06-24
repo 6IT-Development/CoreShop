@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -42,7 +42,25 @@ coreshop.paymentproviderrule.item = Class.create(coreshop.rules.item, {
     },
 
     getSettings: function () {
-        var data = this.data;
+        var data = this.data,
+            langTabs = [];
+
+        Ext.each(pimcore.settings.websiteLanguages, function (lang) {
+            var tab = {
+                title: pimcore.available_languages[lang],
+                iconCls: 'pimcore_icon_language_' + lang.toLowerCase(),
+                layout: 'form',
+                items: [{
+                    xtype: 'textfield',
+                    name: 'translations.' + lang + '.label',
+                    fieldLabel: t('coreshop_payment_provider_rule_label'),
+                    width: 400,
+                    value: data.translations && data.translations[lang] ? data.translations[lang].label : ''
+                }]
+            };
+
+            langTabs.push(tab);
+        });
 
         this.settingsForm = Ext.create('Ext.form.Panel', {
             iconCls: 'coreshop_icon_settings',
@@ -61,6 +79,15 @@ coreshop.paymentproviderrule.item = Class.create(coreshop.rules.item, {
                 name: 'active',
                 fieldLabel: t('active'),
                 checked: data.active
+            }, {
+                xtype: 'tabpanel',
+                activeTab: 0,
+                defaults: {
+                    autoHeight: true,
+                    bodyStyle: 'padding:10px;'
+                },
+                width: '100%',
+                items: langTabs
             }]
         });
 

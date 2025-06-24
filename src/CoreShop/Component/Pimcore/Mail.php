@@ -11,14 +11,12 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Component\Pimcore;
-
-use Pimcore\Model\Document\Email;
 
 class Mail extends \Pimcore\Mail
 {
@@ -43,16 +41,6 @@ class Mail extends \Pimcore\Mail
                 foreach ($multiRecipients as $multiRecipient) {
                     $toRecipients[] = [$multiRecipient, ''];
                 }
-            }
-        }
-
-        $document = $this->getDocument();
-
-        if ($document instanceof Email) {
-            //now add recipients from emailDocument, if given.
-            $storedRecipients = array_filter(explode(';', $document->getTo()));
-            foreach ($storedRecipients as $multiRecipient) {
-                $toRecipients[] = [$multiRecipient, ''];
             }
         }
 

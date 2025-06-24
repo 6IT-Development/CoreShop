@@ -11,20 +11,26 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 namespace CoreShop\Bundle\CoreBundle\Fixtures\Data\Demo;
 
+use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
 
-class ProductFixture extends AbstractProductFixture
+class ProductFixture extends AbstractProductFixture implements FixtureGroupInterface
 {
+    public static function getGroups(): array
+    {
+        return ['demo'];
+    }
+
     public function load(ObjectManager $manager): void
     {
-        if (!count($this->container->get('coreshop.repository.product')->findAll())) {
+        if (!count($this->productRepository->findAll())) {
             $productsCount = 25;
 
             for ($i = 0; $i < $productsCount; ++$i) {

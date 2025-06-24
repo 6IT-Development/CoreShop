@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -30,6 +30,8 @@ interface OrderItemInterface extends
     StorageListItemInterface,
     ImmutableInterface
 {
+    public function getId(): ?int;
+
     public function getOrder(): ?OrderInterface;
 
     public function setOrder(OrderInterface $order);
@@ -40,7 +42,7 @@ interface OrderItemInterface extends
 
     public function getName(): ?string;
 
-    public function setName(?string $name, $language = null);
+    public function setName(?string $name, ?string $language = null);
 
     public function getSubtotal(bool $withTax = true): int;
 
@@ -139,6 +141,8 @@ interface OrderItemInterface extends
     public function getConvertedTotalTax(): int;
 
     public function setConvertedTotal(int $total, bool $withTax = true);
+
+    public function setConvertedSubtotal(int $subtotal, bool $withTax = true);
 
     public function getConvertedItemDiscountPrice(bool $withTax = true): int;
 

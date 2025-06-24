@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -25,6 +25,8 @@ use CoreShop\Component\Resource\Model\TranslatableInterface;
 
 interface StateInterface extends ResourceInterface, TranslatableInterface, TimestampableInterface, ToggleableInterface
 {
+    public function getId(): ?int;
+
     /**
      * @return string
      */
@@ -40,7 +42,7 @@ interface StateInterface extends ResourceInterface, TranslatableInterface, Times
      *
      * @return mixed
      */
-    public function getName($language = null);
+    public function getName(?string $language = null);
 
     /**
      * @param string $name
@@ -48,7 +50,7 @@ interface StateInterface extends ResourceInterface, TranslatableInterface, Times
      *
      * @return mixed
      */
-    public function setName($name, $language = null);
+    public function setName($name, ?string $language = null);
 
     /**
      * @return CountryInterface

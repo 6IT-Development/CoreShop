@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -19,12 +19,32 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
         if (!Ext.ClassManager.isCreated(modelName)) {
             Ext.define(modelName, {
                 extend: 'Ext.data.Model',
-                idProperty: 'o_id'
+                idProperty: 'id'
             });
         }
 
+        const allAddresses = this.creationPanel.customerDetail.addresses;
+
         this.addressStore = new Ext.data.JsonStore({
-            data: this.creationPanel.customerDetail.addresses,
+            data: allAddresses,
+            model: modelName
+        });
+
+        const shippingAddresses = allAddresses.filter(addr =>
+            addr.addressIdentifier === 1 // shipping
+        );
+
+        this.shippingAddressStore = new Ext.data.JsonStore({
+            data: shippingAddresses,
+            model: modelName
+        });
+
+        const invoiceAddresses = allAddresses.filter(addr =>
+            addr.addressIdentifier === 2 // invoice
+        );
+
+        this.invoiceAddressStore = new Ext.data.JsonStore({
+            data: invoiceAddresses,
             model: modelName
         });
 
@@ -74,6 +94,15 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
         var key = 'addressPanel' + type;
         var addressKey = 'address' + type;
 
+        var store = this.invoiceAddressStore;
+        if(type === 'shipping') {
+            store = this.shippingAddressStore;
+        }
+
+        if(store.data.items.length <= 0 ){
+            store = this.addressStore
+        }
+
         if (!this[key]) {
             var addressDetailPanelKey = 'addressDetailPanel' + type;
 
@@ -89,13 +118,13 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
                         labelWidth: 150,
                         itemId: 'address',
                         name: type + 'Address',
-                        store: this.addressStore,
+                        store: store,
                         editable: false,
                         triggerAction: 'all',
                         queryMode: 'local',
                         width: 500,
                         displayField: 'name',
-                        valueField: 'o_id',
+                        valueField: 'id',
                         displayTpl: Ext.create('Ext.XTemplate', '<tpl for=".">', '{firstname} {lastname}, {postcode} {city}, {street} {number}', '</tpl>'),
                         listConfig: {
                             itemTpl: Ext.create('Ext.XTemplate', '', '{firstname} {lastname}, {postcode} {city}, {street} {number}', '')
@@ -125,7 +154,8 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
                                 {
                                     prefix: 'address.',
                                     params: {
-                                        customer: this.creationPanel.customerId
+                                        customer: this.creationPanel.customerId,
+                                        mode: 'primary'
                                     }
                                 }, function(id) {
                                     this[key].down('#address').setValue(id);
@@ -157,7 +187,7 @@ coreshop.order.order.create.step.address = Class.create(coreshop.order.order.cre
                         iconCls: 'coreshop_icon_open',
                         text: t('open'),
                         handler: function () {
-                            pimcore.helpers.openObject(address.o_id);
+                            pimcore.helpers.openObject(address.id);
                         }.bind(this)
                     }
                 ]

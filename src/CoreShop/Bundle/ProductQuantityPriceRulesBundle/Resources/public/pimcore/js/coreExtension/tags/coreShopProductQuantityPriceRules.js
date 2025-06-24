@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -46,13 +46,7 @@ pimcore.object.tags.coreShopProductQuantityPriceRules = Class.create(pimcore.obj
         this.conditions = data.conditions;
         this.actions = data.actions;
 
-        if (pimcore.eventDispatcher !== undefined) {
-            this.eventDispatcherKey = pimcore.eventDispatcher.registerTarget(this.eventDispatcherKey, this);
-        }
-        else {
-            document.addEventListener(pimcore.events.postSaveObject, this.postSaveObjectNew.bind(this));
-        }
-
+        document.addEventListener(pimcore.events.postSaveObject, this.postSaveObjectNew.bind(this));
         this.clipboardManager = new coreshop.product_quantity_price_rules.clipboardManager();
     },
 

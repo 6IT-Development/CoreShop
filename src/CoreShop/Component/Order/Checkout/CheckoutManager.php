@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -51,7 +51,7 @@ class CheckoutManager implements CheckoutManagerInterface
         return $step;
     }
 
-    public function getNextStep(string $identifier): CheckoutStepInterface
+    public function getNextStep(string $identifier): ?CheckoutStepInterface
     {
         return $this->serviceRegistry->getNextTo($identifier);
     }

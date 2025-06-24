@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -63,14 +63,14 @@ class StackRepository extends PimcoreRepository implements StackRepositoryInterf
     public function getList()
     {
         $list = new DataObject\Listing();
-        $list->addConditionParam(sprintf('o_className IN (%s)', implode(',', $this->classNames)));
+        $list->addConditionParam(sprintf('className IN (%s)', implode(',', $this->classNames)));
 
         return $list;
     }
 
     public function forceFind($id, bool $force = true)
     {
-        $instance = DataObject::getById($id, $force);
+        $instance = DataObject::getById((int) $id, ['force' => $force]);
 
         if (null === $instance) {
             return null;

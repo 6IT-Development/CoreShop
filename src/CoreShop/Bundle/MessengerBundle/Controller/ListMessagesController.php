@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -27,7 +27,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 
-class ListMessagesController extends \Pimcore\Bundle\AdminBundle\Controller\AdminController
+/**
+ * @psalm-suppress InternalClass
+ */
+class ListMessagesController extends \Pimcore\Bundle\AdminBundle\Controller\AdminAbstractController
 {
     public function listReceiverMessageCountAction(ReceiversRepositoryInterface $receiverLocator): Response
     {

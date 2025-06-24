@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,6 +21,7 @@ namespace CoreShop\Component\Index\Interpreter;
 use CoreShop\Component\Index\Model\IndexableInterface;
 use CoreShop\Component\Index\Model\IndexColumnInterface;
 use Pimcore\Model\DataObject\AbstractObject;
+use Pimcore\Model\DataObject\Data\ObjectMetadata;
 
 class ObjectInterpreter implements RelationInterpreterInterface
 {
@@ -30,6 +31,9 @@ class ObjectInterpreter implements RelationInterpreterInterface
 
         if (is_array($value)) {
             foreach ($value as $v) {
+                if ($v instanceof ObjectMetadata) {
+                    $v = $v->getObject();
+                }
                 if ($v instanceof AbstractObject) {
                     $result[] = new RelationalValue($v->getId(), 'object');
                 }
@@ -47,6 +51,9 @@ class ObjectInterpreter implements RelationInterpreterInterface
 
         if (is_array($value)) {
             foreach ($value as $v) {
+                if ($v instanceof ObjectMetadata) {
+                    $v = $v->getObject();
+                }
                 if ($v instanceof AbstractObject) {
                     $result[] = $v->getId();
                 }

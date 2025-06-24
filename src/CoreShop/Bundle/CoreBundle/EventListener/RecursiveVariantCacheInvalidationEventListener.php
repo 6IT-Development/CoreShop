@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -20,7 +20,6 @@ namespace CoreShop\Bundle\CoreBundle\EventListener;
 
 use CoreShop\Bundle\ResourceBundle\Event\ResourceControllerEvent;
 use CoreShop\Component\Core\Payment\Rule\Condition\ProductsConditionChecker as PaymentRuleProductsConditionChecker;
-use CoreShop\Component\Core\Shipping\Rule\Condition\ProductsConditionChecker as ShippingRuleProductsConditionChecker;
 use CoreShop\Component\Payment\Model\PaymentProviderRuleInterface;
 use CoreShop\Component\Rule\Model\RuleInterface;
 use CoreShop\Component\Shipping\Model\ShippingRuleInterface;
@@ -32,15 +31,15 @@ final class RecursiveVariantCacheInvalidationEventListener implements EventSubsc
     public static function getSubscribedEvents(): array
     {
         return [
-            'coreshop.product_price_rule.post_save' => ['invalidateRuleCache'],
-            'coreshop.product_specific_price_rule.post_save' => ['invalidateRuleCache'],
-            'coreshop.cart_price_rule.post_save' => ['invalidateRuleCache'],
-            'coreshop.payment_provider_rule.post_save' => ['invalidateRuleCache'],
-            'coreshop.shipping_rule.post_save' => ['invalidateRuleCache'],
+            'coreshop.product_price_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
+            'coreshop.product_specific_price_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
+            'coreshop.cart_price_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
+            'coreshop.payment_provider_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
+            'coreshop.shipping_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
         ];
     }
 
-    public function invalidateRuleCache(ResourceControllerEvent $event): void
+    public function invalidateRuleCacheAndPrePopulateCache(ResourceControllerEvent $event): void
     {
         $resource = $event->getSubject();
 
@@ -49,7 +48,7 @@ final class RecursiveVariantCacheInvalidationEventListener implements EventSubsc
         }
 
         foreach ($resource->getConditions() as $condition) {
-            if ($condition->getType() !== 'products') {
+            if ($condition->getId() !== 'products') {
                 continue;
             }
 
@@ -61,15 +60,18 @@ final class RecursiveVariantCacheInvalidationEventListener implements EventSubsc
 
             if ($resource instanceof PaymentProviderRuleInterface) {
                 Cache::clearTag(PaymentRuleProductsConditionChecker::PAYMENT_PROVIDER_RULE_RECURSIVE_VARIANT_CACHE_TAG);
+
                 continue;
             }
 
             if ($resource instanceof ShippingRuleInterface) {
-                Cache::clearTag(ShippingRuleProductsConditionChecker::SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG);
+                Cache::clearTag(PaymentRuleProductsConditionChecker::PAYMENT_PROVIDER_RULE_RECURSIVE_VARIANT_CACHE_TAG);
+
                 continue;
             }
 
             Cache::clearTag(sprintf('cs_rule_variant_%s', $resource->getId()));
+
             break;
         }
     }

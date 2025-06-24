@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -35,7 +35,7 @@ class WishlistRepository extends BaseWishlistRepository implements WishlistRepos
     ): ?WishlistInterface {
         $list = $this->getList();
         $list->setCondition('customer__id = ? AND store = ?', [$customer->getId(), $store->getId()]);
-        $list->setOrderKey('o_creationDate');
+        $list->setOrderKey('creationDate');
         $list->setOrder('DESC');
         $list->load();
 

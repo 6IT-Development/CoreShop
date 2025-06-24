@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -28,7 +28,7 @@ class ResourceSettingsController extends AdminController
 {
     public function getNicePathAction(Request $request): Response
     {
-        $targets = $this->decodeJson($this->getParameterFromRequest($request, 'targets'));
+        $targets = json_decode($this->getParameterFromRequest($request, 'targets'), true);
         $result = [];
 
         foreach ($targets as $target) {
@@ -49,11 +49,11 @@ class ResourceSettingsController extends AdminController
             'stack' => [],
         ];
 
-        if ($this->container->hasParameter('coreshop.all.pimcore_classes')) {
+        if ($this->parameterBag->has('coreshop.all.pimcore_classes')) {
             /**
              * @var array $classes
              */
-            $classes = $this->container->getParameter('coreshop.all.pimcore_classes');
+            $classes = $this->parameterBag->get('coreshop.all.pimcore_classes');
 
             foreach ($classes as $key => $definition) {
                 if (!isset($definition['classes']['type'])) {
@@ -81,7 +81,7 @@ class ResourceSettingsController extends AdminController
             /**
              * @var array $stack
              */
-            $stack = $this->container->getParameter('coreshop.all.stack.pimcore_class_names');
+            $stack = $this->getParameter('coreshop.all.stack.pimcore_class_names');
 
             foreach ($stack as $key => $impl) {
                 $alias = explode('.', $key);

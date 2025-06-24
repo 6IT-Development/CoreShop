@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -36,7 +36,7 @@ class DiscountPriceActionProcessor implements ProductDiscountPriceActionProcesso
 
     public function getDiscountPrice($subject, array $context, array $configuration): int
     {
-        if (!$subject instanceof ProductInterface)  {
+        if (!$subject instanceof ProductInterface) {
             throw new NoDiscountPriceFoundException(__CLASS__);
         }
 

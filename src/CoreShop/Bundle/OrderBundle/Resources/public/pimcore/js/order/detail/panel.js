@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -39,7 +39,7 @@ coreshop.order.order.detail.panel = Class.create({
         me.modules = {};
         me.eventManager = new CoreShop.resource.EventManager();
         me.sale = sale;
-        me.layoutId = 'coreshop_' + this.type + '_' + this.sale.o_id;
+        me.layoutId = 'coreshop_' + this.type + '_' + this.sale.id;
         me.iconCls = 'coreshop_icon_' + this.type;
         me.getLayout();
     },
@@ -57,7 +57,7 @@ coreshop.order.order.detail.panel = Class.create({
         Ext.Ajax.request({
             url: Routing.generate('coreshop_admin_order_get_order'),
             params: {
-                id: me.sale.o_id
+                id: me.sale.id
             },
             success: function (response) {
                 var res = Ext.decode(response.responseText);
@@ -87,7 +87,7 @@ coreshop.order.order.detail.panel = Class.create({
         });
 
         Ext.Ajax.request({
-            url: Routing.generate('coreshop_admin_order_update', {id: me.sale.o_id}),
+            url: Routing.generate('coreshop_admin_order_update', {id: me.sale.id}),
             jsonData: data,
             method: 'post',
             success: function (response) {
@@ -116,7 +116,7 @@ coreshop.order.order.detail.panel = Class.create({
         });
 
         Ext.Ajax.request({
-            url: Routing.generate('coreshop_admin_order_update', {id: me.sale.o_id, preview: true}),
+            url: Routing.generate('coreshop_admin_order_update', {id: me.sale.id, preview: true}),
             jsonData: data,
             method: 'post',
             success: function (response) {

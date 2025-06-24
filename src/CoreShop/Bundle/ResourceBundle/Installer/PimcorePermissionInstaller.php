@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -64,7 +64,7 @@ final class PimcorePermissionInstaller implements ResourceInstallerInterface
 
             $columns = array_map(function (Column $column) {
                 return $column->getName();
-            }, $this->connection->getSchemaManager()->listTableColumns('users_permission_definitions'));
+            }, $this->connection->createSchemaManager()->listTableColumns('users_permission_definitions'));
 
             foreach ($permissionGroups as $group => $permissions) {
                 foreach ($permissions as $permission) {
@@ -73,16 +73,10 @@ final class PimcorePermissionInstaller implements ResourceInstallerInterface
                     $permissionDefinition = Permission\Definition::getByKey($permission);
 
                     if (!$permissionDefinition instanceof Permission\Definition) {
-                        if (in_array('category', $columns, true)) {
-                            $this->connection->insert('users_permission_definitions', [
-                                'key' => $permission,
-                                'category' => sprintf('coreshop_permission_group_%s', $group),
-                            ]);
-                        } else {
-                            $this->connection->insert('users_permission_definitions', [
-                                'key' => $permission,
-                            ]);
-                        }
+                        $this->connection->insert('users_permission_definitions', [
+                            '`key`' => $permission,
+                            'category' => sprintf('coreshop_permission_group_%s', $group),
+                        ]);
                     }
 
                     $progress->advance();

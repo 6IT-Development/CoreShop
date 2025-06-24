@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -20,6 +20,8 @@ namespace CoreShop\Behat\Page\Frontend;
 
 interface HomePageInterface extends FrontendPageInterface
 {
+    public function getRouteName(): string;
+
     public function getContent(): string;
 
     public function hasLogoutButton(): bool;
@@ -39,4 +41,8 @@ interface HomePageInterface extends FrontendPageInterface
     public function switchLocale(string $localeCode): void;
 
     public function getLatestProductsNames(): array;
+
+    public function switchToCategoryOnMenuLeft(string $name): void;
+
+    public function switchToCategoryOnMenuMain(string $name): void;
 }

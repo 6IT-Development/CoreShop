@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -34,6 +34,7 @@ use CoreShop\Bundle\ProductBundle\Form\Type\Rule\Action\PriceConfigurationType;
 use CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition\ProductSpecificPriceNestedConfigurationType;
 use CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition\TimespanConfigurationType;
 use CoreShop\Bundle\ResourceBundle\Form\Registry\FormTypeRegistryInterface;
+use CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType;
 use CoreShop\Component\Address\Model\ZoneInterface;
 use CoreShop\Component\Core\Model\CountryInterface;
 use CoreShop\Component\Core\Model\CurrencyInterface;
@@ -134,6 +135,17 @@ final class ProductSpecificPriceRuleContext implements Context
                 $customer->getId(),
             ],
         ]));
+    }
+
+    /**
+     * @Given /^the (specific price rule "[^"]+") has a condition guest$/
+     * @Given /^the (specific price rule) has a condition guest$/
+     */
+    public function theProductsSpecificPriceRuleHasAGuestCondition(ProductSpecificPriceRuleInterface $rule): void
+    {
+        $this->assertConditionForm(EmptyConfigurationFormType::class, 'guest');
+
+        $this->addCondition($rule, $this->createConditionWithForm('guest', []));
     }
 
     /**

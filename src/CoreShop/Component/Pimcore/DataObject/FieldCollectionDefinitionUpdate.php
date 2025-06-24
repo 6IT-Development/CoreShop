@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -30,20 +30,21 @@ class FieldCollectionDefinitionUpdate extends AbstractDefinitionUpdate
     ) {
         parent::__construct();
 
-        $this->fieldCollectionDefinition = DataObject\Fieldcollection\Definition::getByKey($fieldCollectionKey);
+        $fieldCollectionDefinition = DataObject\Fieldcollection\Definition::getByKey($fieldCollectionKey);
 
-        if (null === $this->fieldCollectionDefinition) {
+        if (null === $fieldCollectionDefinition) {
             throw new ClassDefinitionNotFoundException(sprintf('Fieldcollection Definition %s not found', $fieldCollectionKey));
         }
 
+        $this->fieldCollectionDefinition = $fieldCollectionDefinition;
         $this->fieldDefinitions = $this->fieldCollectionDefinition->getFieldDefinitions();
         /** @psalm-suppress InvalidArgument */
-        $this->jsonDefinition = json_decode(DataObject\ClassDefinition\Service::generateClassDefinitionJson($this->fieldCollectionDefinition), true);
+        $this->jsonDefinition = json_decode(DataObject\ClassDefinition\Service::generateFieldCollectionJson($this->fieldCollectionDefinition), true);
         $this->originalJsonDefinition = $this->jsonDefinition;
     }
 
     public function save(): bool
     {
-        return null !== DataObject\ClassDefinition\Service::importFieldCollectionFromJson($this->fieldCollectionDefinition, json_encode($this->jsonDefinition), true);
+        return DataObject\ClassDefinition\Service::importFieldCollectionFromJson($this->fieldCollectionDefinition, json_encode($this->jsonDefinition), true);
     }
 }

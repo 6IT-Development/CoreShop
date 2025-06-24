@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -56,11 +56,11 @@ final class CartTextProcessor implements CartProcessorInterface
                 $item->setName($product->getName($locale), $locale);
             }
 
-            $item->setObjectId((float)$product->getId());
+            $item->setObjectId((float) $product->getId());
 
             if (($product instanceof AbstractObject) && $product->getType() === AbstractObject::OBJECT_TYPE_VARIANT) {
                 $mainProduct = $this->findVariantMain($product);
-                $item->setMainObjectId((float)$mainProduct->getId());
+                $item->setMainObjectId((float) $mainProduct->getId());
             }
         }
     }

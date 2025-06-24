@@ -11,8 +11,8 @@ declare(strict_types=1);
  * Full copyright and license information is available in
  * LICENSE.md which is distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -30,20 +30,21 @@ class BrickDefinitionUpdate extends AbstractDefinitionUpdate
     ) {
         parent::__construct();
 
-        $this->brickDefinition = DataObject\Objectbrick\Definition::getByKey($brickKey);
+        $brickDefinition = DataObject\Objectbrick\Definition::getByKey($brickKey);
 
-        if (null === $this->brickDefinition) {
+        if (null === $brickDefinition) {
             throw new ClassDefinitionNotFoundException(sprintf('Brick Definition %s not found', $brickKey));
         }
 
+        $this->brickDefinition = $brickDefinition;
         $this->fieldDefinitions = $this->brickDefinition->getFieldDefinitions();
         /** @psalm-suppress InvalidArgument */
-        $this->jsonDefinition = json_decode(DataObject\ClassDefinition\Service::generateClassDefinitionJson($this->brickDefinition), true);
+        $this->jsonDefinition = json_decode(DataObject\ClassDefinition\Service::generateObjectBrickJson($this->brickDefinition), true);
         $this->originalJsonDefinition = $this->jsonDefinition;
     }
 
     public function save(): bool
     {
-        return null !== DataObject\ClassDefinition\Service::importObjectBrickFromJson($this->brickDefinition, json_encode($this->jsonDefinition), true);
+        return DataObject\ClassDefinition\Service::importObjectBrickFromJson($this->brickDefinition, json_encode($this->jsonDefinition), true);
     }
 }

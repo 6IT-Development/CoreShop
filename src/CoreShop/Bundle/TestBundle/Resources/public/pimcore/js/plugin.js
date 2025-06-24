@@ -5,14 +5,14 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
 pimcore.registerNS("coreshop.test");
 pimcore.registerNS("coreshop.test.plugin");
-coreshop.test.plugin = Class.create(pimcore.plugin.admin, {
+coreshop.test.plugin = Class.create({
     getClassName: function () {
         return "coreshop.test.plugin";
     },

@@ -5,8 +5,8 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
- * @license    https://www.coreshop.org/license     GPLv3 and CCL
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.com)
+ * @license    https://www.coreshop.com/license     GPLv3 and CCL
  *
  */
 
@@ -21,6 +21,6 @@ coreshop.order.cart.detail.panel = Class.create(coreshop.order.order.detail.pane
     getLayout: function($super) {
         var layout = $super();
 
-        layout.setTitle(t('coreshop_' + this.type) + ': ' + this.sale.o_id);
+        layout.setTitle(t('coreshop_' + this.type) + ': ' + this.sale.id);
     },
 });

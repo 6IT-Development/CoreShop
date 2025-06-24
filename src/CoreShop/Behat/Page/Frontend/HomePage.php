@@ -19,7 +19,8 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Page\Frontend;
 
 use Behat\Mink\Element\NodeElement;
-use CoreShop\Behat\Service\DriverHelper;
+use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 
 class HomePage extends AbstractFrontendPage implements HomePageInterface
 {
@@ -92,11 +93,15 @@ class HomePage extends AbstractFrontendPage implements HomePageInterface
     public function switchToCategoryOnMenuLeft(string $name): void
     {
         $this->getElement('category_menu_left_selector', ['%name%' => $name])->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     public function switchToCategoryOnMenuMain(string $name): void
     {
         $this->getElement('category_menu_top_selector', ['%name%' => $name])->click();
+
+        DriverHelper::waitForPageToLoad($this->getSession());
     }
 
     protected function getDefinedElements(): array

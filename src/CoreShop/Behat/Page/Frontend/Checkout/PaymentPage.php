@@ -18,8 +18,8 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
-use CoreShop\Behat\Page\Frontend\AbstractFrontendPage;
-use CoreShop\Behat\Service\DriverHelper;
+use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 use CoreShop\Component\Core\Model\PaymentProviderInterface;
 
 class PaymentPage extends AbstractFrontendPage implements PaymentPageInterface

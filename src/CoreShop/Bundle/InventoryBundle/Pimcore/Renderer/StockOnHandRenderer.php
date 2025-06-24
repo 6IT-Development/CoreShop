@@ -22,7 +22,6 @@ use CoreShop\Component\Inventory\Model\StockableInterface;
 use Pimcore\Model\DataObject\ClassDefinition\Layout\DynamicTextLabelInterface;
 use Pimcore\Model\DataObject\Concrete;
 use Twig\Environment;
-use Webmozart\Assert\Assert;
 
 class StockOnHandRenderer implements DynamicTextLabelInterface
 {
@@ -33,7 +32,9 @@ class StockOnHandRenderer implements DynamicTextLabelInterface
 
     public function renderLayoutText(string $data, ?Concrete $object, array $params): string
     {
-        Assert::isInstanceOf($object, StockableInterface::class);
+        if (!$object instanceof StockableInterface) {
+            return '';
+        }
 
         return $this->twig->render('@CoreShopInventory/pimcore/stock_text.html.twig', [
             'stockable' => $object,

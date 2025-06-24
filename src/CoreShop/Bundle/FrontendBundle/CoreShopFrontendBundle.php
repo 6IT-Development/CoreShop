@@ -20,8 +20,8 @@ namespace CoreShop\Bundle\FrontendBundle;
 
 use Composer\InstalledVersions;
 use CoreShop\Bundle\CoreBundle\CoreShopCoreBundle;
+use CoreShop\Bundle\FrontendBundle\DependencyInjection\CompilerPass\FrontendInstallerPass;
 use CoreShop\Bundle\FrontendBundle\DependencyInjection\CompilerPass\RegisterFrontendControllerPass;
-use EmailizrBundle\EmailizrBundle;
 use Pimcore\Extension\Bundle\AbstractPimcoreBundle;
 use Pimcore\HttpKernel\Bundle\DependentBundleInterface;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
@@ -33,7 +33,6 @@ final class CoreShopFrontendBundle extends AbstractPimcoreBundle implements Depe
     public static function registerDependentBundles(BundleCollection $collection): void
     {
         $collection->addBundle(new CoreShopCoreBundle(), 100);
-        $collection->addBundle(new EmailizrBundle(), 1000);
     }
 
     public function build(ContainerBuilder $container): void
@@ -41,6 +40,7 @@ final class CoreShopFrontendBundle extends AbstractPimcoreBundle implements Depe
         parent::build($container);
 
         $container->addCompilerPass(new RegisterFrontendControllerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100);
+        $container->addCompilerPass(new FrontendInstallerPass());
     }
 
     public function getNiceName(): string

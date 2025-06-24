@@ -21,6 +21,11 @@ namespace CoreShop\Bundle\OrderBundle\Renderer\Pdf;
 use Pimcore\Tool\Console;
 use Symfony\Component\Process\Process;
 
+/**
+ * @deprecated Deprecated since CoreShop 4.1, to be removed in CoreShop 5.0. No replacement available, use Pimcore's Web2Print Renderer instead.
+ *
+ * @psalm-suppress DeprecatedInterface
+ */
 final class WkHtmlToPdf implements PdfRendererInterface
 {
     public function __construct(
@@ -31,6 +36,13 @@ final class WkHtmlToPdf implements PdfRendererInterface
 
     public function fromString(string $string, string $header = '', string $footer = '', array $config = []): string
     {
+        trigger_deprecation(
+            'coreshop/order-bundle',
+            '4.1',
+            'The "%s" class is deprecated and will be removed in CoreShop 5.0. No replacement available, use Pimcore\'s Web2Print Renderer instead.',
+            self::class,
+        );
+
         $bodyHtml = $this->createHtmlFile($string);
         $headerHtml = $this->createHtmlFile($header);
         $footerHtml = $this->createHtmlFile($footer);
@@ -92,7 +104,11 @@ final class WkHtmlToPdf implements PdfRendererInterface
         $replacePrefix = '';
 
         //matches all links
-        preg_match_all("@(href|src)\s*=[\"']([^(http|mailto|javascript|data:|#)].*?(css|jpe?g|gif|png)?)[\"']@is", $string, $matches);
+        preg_match_all(
+            "@(href|src)\s*=[\"']([^(http|mailto|javascript|data:|#)].*?(css|jpe?g|gif|png)?)[\"']@is",
+            $string,
+            $matches,
+        );
         if (!empty($matches[0])) {
             foreach ($matches[0] as $key => $value) {
                 $path = $matches[2][$key];
@@ -135,7 +151,7 @@ final class WkHtmlToPdf implements PdfRendererInterface
      * Converts URL to pdf.
      *
      * @param string $httpSource
-     * @param array  $config
+     * @param array $config
      *
      * @return string PDF-Content
      *
@@ -181,7 +197,12 @@ final class WkHtmlToPdf implements PdfRendererInterface
         $process->run();
 
         if (!file_exists($tmpPdfFile)) {
-            throw new \Exception(sprintf('wkhtmltopdf pdf conversion failed. This could be a command error. Executed command was: "%s"', $process->getCommandLine()));
+            throw new \Exception(
+                sprintf(
+                    'wkhtmltopdf pdf conversion failed. This could be a command error. Executed command was: "%s"',
+                    $process->getCommandLine(),
+                ),
+            );
         }
 
         $pdfContent = file_get_contents($tmpPdfFile);

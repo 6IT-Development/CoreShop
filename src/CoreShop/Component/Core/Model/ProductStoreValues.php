@@ -20,6 +20,7 @@ namespace CoreShop\Component\Core\Model;
 
 use CoreShop\Component\Resource\Model\AbstractResource;
 use CoreShop\Component\Store\Model\StoreAwareTrait;
+use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
@@ -30,25 +31,15 @@ class ProductStoreValues extends AbstractResource implements ProductStoreValuesI
 {
     use StoreAwareTrait;
 
-    /**
-     * @var int|null
-     */
-    protected $id;
+    protected ?int $id = null;
 
-    /**
-     * @var string|null
-     */
-    protected $fieldName;
+    protected ?string $fieldName = null;
 
-    /**
-     * @var int
-     */
-    protected $price = 0;
+    protected int $price = 0;
 
-    /**
-     * @var ProductInterface
-     */
-    protected $product;
+    protected ?TaxRuleGroupInterface $taxRule = null;
+
+    protected ?ProductInterface $product = null;
 
     /**
      * @var Collection<int, ProductUnitDefinitionPriceInterface>|ProductUnitDefinitionPriceInterface[]
@@ -65,32 +56,42 @@ class ProductStoreValues extends AbstractResource implements ProductStoreValuesI
         return $this->id;
     }
 
-    public function setId(int $id)
+    public function setId(int $id): void
     {
         $this->id = $id;
     }
 
-    public function getFieldName()
+    public function getFieldName(): ?string
     {
         return $this->fieldName;
     }
 
-    public function setFieldName(?string $fieldName)
+    public function setFieldName(?string $fieldName): void
     {
         $this->fieldName = $fieldName;
     }
 
-    public function getPrice()
+    public function getPrice(): int
     {
         return $this->price;
     }
 
-    public function setPrice(int $price)
+    public function setPrice(int $price): void
     {
         $this->price = $price;
     }
 
-    public function addProductUnitDefinitionPrice(ProductUnitDefinitionPriceInterface $productUnitDefinitionPrice)
+    public function getTaxRule(): ?TaxRuleGroupInterface
+    {
+        return $this->taxRule;
+    }
+
+    public function setTaxRule(?TaxRuleGroupInterface $taxRule): void
+    {
+        $this->taxRule = $taxRule;
+    }
+
+    public function addProductUnitDefinitionPrice(ProductUnitDefinitionPriceInterface $productUnitDefinitionPrice): void
     {
         if (!$this->productUnitDefinitionPrices->contains($productUnitDefinitionPrice)) {
             $productUnitDefinitionPrice->setProductStoreValues($this);
@@ -98,7 +99,7 @@ class ProductStoreValues extends AbstractResource implements ProductStoreValuesI
         }
     }
 
-    public function removeProductUnitDefinitionPrice(ProductUnitDefinitionPriceInterface $productUnitDefinitionPrice)
+    public function removeProductUnitDefinitionPrice(ProductUnitDefinitionPriceInterface $productUnitDefinitionPrice): void
     {
         if ($this->productUnitDefinitionPrices->contains($productUnitDefinitionPrice)) {
             $this->productUnitDefinitionPrices->removeElement($productUnitDefinitionPrice);
@@ -110,12 +111,12 @@ class ProductStoreValues extends AbstractResource implements ProductStoreValuesI
         return $this->productUnitDefinitionPrices;
     }
 
-    public function getProduct()
+    public function getProduct(): ?ProductInterface
     {
         return $this->product;
     }
 
-    public function setProduct(ProductInterface $product)
+    public function setProduct(ProductInterface $product): void
     {
         $this->product = $product;
     }

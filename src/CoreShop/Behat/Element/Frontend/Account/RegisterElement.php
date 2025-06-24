@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Behat\Element\Frontend\Account;
 
 use Behat\Mink\Exception\ElementNotFoundException;
-use CoreShop\Behat\Service\DriverHelper;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 use FriendsOfBehat\PageObjectExtension\Element\Element;
 
 final class RegisterElement extends Element implements RegisterElementInterface

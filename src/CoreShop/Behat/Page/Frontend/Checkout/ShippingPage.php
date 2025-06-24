@@ -18,8 +18,8 @@ declare(strict_types=1);
 
 namespace CoreShop\Behat\Page\Frontend\Checkout;
 
-use CoreShop\Behat\Page\Frontend\AbstractFrontendPage;
-use CoreShop\Behat\Service\DriverHelper;
+use CoreShop\Bundle\TestBundle\Page\Frontend\AbstractFrontendPage;
+use CoreShop\Bundle\TestBundle\Service\DriverHelper;
 
 class ShippingPage extends AbstractFrontendPage implements ShippingPageInterface
 {

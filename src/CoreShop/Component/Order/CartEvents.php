@@ -27,4 +27,8 @@ class CartEvents
     public const PRE_ADD_ITEM = 'coreshop.cart.pre_add_item';
 
     public const POST_ADD_ITEM = 'coreshop.cart.post_add_item';
+
+    public const PRE_UPDATE_ITEM = 'coreshop.cart.pre_update_item';
+
+    public const POST_UPDATE_ITEM = 'coreshop.cart.post_update_item';
 }

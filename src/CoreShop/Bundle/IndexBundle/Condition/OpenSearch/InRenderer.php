@@ -43,7 +43,7 @@ class InRenderer implements DynamicRendererInterface
             $values = $condition->getValue();
         }
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
 
         if (count($values) === 0) {
             return [];

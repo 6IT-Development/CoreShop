@@ -35,7 +35,7 @@ class IsNullRenderer implements DynamicRendererInterface
          */
         Assert::isInstanceOf($condition, IsNullCondition::class);
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $conditionType = $condition instanceof IsNotNullCondition ? 'must' : 'must_not';
 
         return [

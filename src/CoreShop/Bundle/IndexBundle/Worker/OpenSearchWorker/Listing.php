@@ -192,7 +192,7 @@ class Listing extends AbstractListing
         $this->objects = [];
 
         foreach ($result['hits']['hits'] as $hit) {
-            $object = Concrete::getById($hit['_source']['attributes']['o_id']);
+            $object = Concrete::getById($hit['_source']['o_id']);
 
             if ($object instanceof Concrete) {
                 $this->objects[] = $object;
@@ -295,7 +295,7 @@ class Listing extends AbstractListing
             return $results;
         }
 
-        return array_map(static fn ($result) => $result['value'], $results);
+        return array_map(static fn (array $result): mixed => $result['value'], $results);
     }
 
     /**
@@ -443,13 +443,13 @@ class Listing extends AbstractListing
             ];
         }
 
-        foreach ([...$this->conditions, ...$this->relationConditions] as $fieldName => $condArray) {
+        foreach ($this->conditions as $fieldName => $condArray) {
             if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
                 continue;
             }
 
             foreach ($condArray as $cond) {
-                $renderedCondition = $this->worker->renderCondition($cond);
+                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex()]);
 
                 foreach ($renderedCondition as $key => $value) {
                     if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
@@ -462,6 +462,43 @@ class Listing extends AbstractListing
 
                     $renderConditions[$key][] = $value;
                 }
+            }
+        }
+
+        foreach ($this->relationConditions as $fieldName => $condArray) {
+            if ($fieldName === $excludedFieldName || !\is_array($condArray)) {
+                continue;
+            }
+
+            foreach ($condArray as $cond) {
+                $nested = [
+                    'nested' => [
+                        'path' => '_relations',
+                        'query' => [
+                            'bool' => [
+                                'must' => [
+                                    ['term' => ['_relations.fieldname' => $fieldName]]
+                                ]
+                            ]
+                        ]
+                    ]
+                ];
+
+                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex(), 'relation' => true]);
+
+                foreach ($renderedCondition as $key => $value) {
+                    if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {
+                        continue;
+                    }
+
+                    if (!isset($renderConditions[$key])) {
+                        $renderConditions[$key] = [];
+                    }
+
+                    $nested['nested']['query']['bool'][$key][] = $value;
+                }
+
+                $renderConditions['must'][] = $nested;
             }
         }
 

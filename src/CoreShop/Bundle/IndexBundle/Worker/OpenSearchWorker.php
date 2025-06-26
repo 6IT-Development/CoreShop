@@ -32,10 +32,12 @@ use CoreShop\Component\Index\Worker\FilterGroupHelperInterface;
 use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerDeleteableByIdInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
+use CoreShop\Component\Rule\Model\ConditionInterface;
 use OpenSearch\Client;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Webmozart\Assert\Assert;
 use function Symfony\Component\String\u;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -78,6 +80,10 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         $config = $index->getConfiguration();
         $columns = $this->getIndexColumns($index);
 
+        $columns['_relations'] = [
+            'type' => OpenSearchWorkerInterface::FIELD_TYPE_NESTED,
+        ];
+
         $body = [
             'settings' => [
                 'index' => [
@@ -112,12 +118,19 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
      */
     public function deleteIndexStructures(IndexInterface $index): void
     {
-        $this->getClient($index)
-            ->indices()
-            ->delete([
-                'index' => $this->getIndexName($index->getName()),
-            ])
-        ;
+        try {
+            $this->getClient($index)
+                ->indices()
+                ->delete([
+                    'index' => $this->getIndexName($index->getName()),
+                ]);
+        }
+        catch (\Exception $e) {
+            // If the index does not exist, we can ignore the exception
+            if ($e->getCode() !== 404) {
+                throw $e;
+            }
+        }
     }
 
     public function renameIndexStructures(IndexInterface $index, string $oldName, string $newName): void
@@ -279,6 +292,19 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         ];
     }
 
+    public function renderCondition(\CoreShop\Component\Index\Condition\ConditionInterface $condition, array|string $params = [])
+    {
+        $index = $params['index'] ?? null;
+
+        Assert::isInstanceOf($index, IndexInterface::class);
+
+        if ($params['relation'] ?? false) {
+            $params['mappedFieldName'] = '_relations.' . $condition->getFieldName();
+        }
+
+        return parent::renderCondition($condition, $params);
+    }
+
     protected function getLocalizedSystemAttributes(): array
     {
         return [
@@ -344,7 +370,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         $preparedData = $this->prepareData($index, $object);
         $openSearchData = [
             ...$preparedData['data'],
-            ...$preparedData['relation'],
+            '_relations' => $preparedData['relation'],
         ];
 
         foreach ($preparedData['localizedData']['values'] as $language => $localizedValues) {

@@ -35,7 +35,7 @@ class IsRenderer implements DynamicRendererInterface
          */
         Assert::isInstanceOfAny($condition, [IsCondition::class, MatchCondition::class]);
 
-        $fieldName = $condition->getFieldName();
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $value = $condition->getValue();
 
         return [

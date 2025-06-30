@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\IndexBundle\Worker;
 
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Listing;
 use CoreShop\Bundle\IndexBundle\Worker\OpenSearchWorker\Mapping\LanguageAnalyzer;
+use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\ConditionRendererInterface;
 use CoreShop\Component\Index\Extension\IndexColumnsExtensionInterface;
 use CoreShop\Component\Index\Interpreter\LocalizedInterpreterInterface;
@@ -32,7 +33,6 @@ use CoreShop\Component\Index\Worker\FilterGroupHelperInterface;
 use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerDeleteableByIdInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
-use CoreShop\Component\Rule\Model\ConditionInterface;
 use OpenSearch\Client;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
@@ -115,6 +115,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
     /**
      * @inheritDoc
+     *
+     * @throws \Exception
      */
     public function deleteIndexStructures(IndexInterface $index): void
     {
@@ -124,11 +126,10 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 ->delete([
                     'index' => $this->getIndexName($index->getName()),
                 ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $exception) {
             // If the index does not exist, we can ignore the exception
-            if ($e->getCode() !== 404) {
-                throw $e;
+            if ($exception->getCode() !== 404) {
+                throw $exception;
             }
         }
     }
@@ -292,7 +293,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
         ];
     }
 
-    public function renderCondition(\CoreShop\Component\Index\Condition\ConditionInterface $condition, array|string $params = [])
+    public function renderCondition(ConditionInterface $condition, array|string $params = []): mixed
     {
         $index = $params['index'] ?? null;
 

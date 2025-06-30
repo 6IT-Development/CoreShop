@@ -484,7 +484,10 @@ class Listing extends AbstractListing
                     ]
                 ];
 
-                $renderedCondition = $this->worker->renderCondition($cond, ['index' => $this->getIndex(), 'relation' => true]);
+                $renderedCondition = $this->worker->renderCondition($cond, [
+                    'index' => $this->getIndex(),
+                    'relation' => true,
+                ]);
 
                 foreach ($renderedCondition as $key => $value) {
                     if (!in_array($key, ['must', 'must_not', 'should', 'filter'], true)) {

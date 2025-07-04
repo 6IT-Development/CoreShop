@@ -24,7 +24,7 @@ final class Version
 
     public const MINOR_VERSION = '0';
 
-    public const RELEASE_VERSION = '15';
+    public const RELEASE_VERSION = '16';
 
     public const EXTRA_VERSION = '';
 

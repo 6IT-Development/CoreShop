@@ -31,6 +31,7 @@ use CoreShop\Component\Index\Listing\RawResultListingInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
 use CoreShop\Component\Index\Order\OrderInterface;
 use CoreShop\Component\Index\Order\SimpleOrder;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -97,17 +98,14 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
     ) {
         parent::__construct($index, $worker);
 
-        if (!$this->worker instanceof MysqlWorker) {
+        if (!$this->worker instanceof MysqlWorkerInterface) {
             throw new \InvalidArgumentException('Worker needs to be a MysqlWorker');
         }
 
         $this->dao = new Dao($this, $connection);
     }
 
-    /**
-     * @return MysqlWorker
-     */
-    public function getWorker()
+    public function getWorker(): MysqlWorker
     {
         /**
          * @var MysqlWorker $worker
@@ -386,7 +384,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
             $variantMode = $this->getVariantMode();
         }
 
-        $queryBuilder->where($this->getWorker()->renderCondition(new MatchCondition('active', '1'), 'q'));
+        $queryBuilder->where($this->getWorker()->renderCondition(new MatchCondition('active', '1'), ['prefix' => 'q']));
 
         $extensions = $this->getWorker()->getExtensions($this->getIndex());
 
@@ -394,7 +392,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
             if ($extension instanceof MysqlIndexQueryExtensionInterface) {
                 $conditions = $extension->preConditionQuery($this->getIndex());
                 foreach ($conditions as $cond) {
-                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, 'q'));
+                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, ['prefix' => 'q']));
                 }
             }
         }
@@ -428,7 +426,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
         foreach ($this->relationConditions as $fieldName => $condArray) {
             if ($fieldName !== $excludedFieldName && is_array($condArray)) {
                 foreach ($condArray as $cond) {
-                    $cond = $this->getWorker()->renderCondition($cond, 'q');
+                    $cond = $this->getWorker()->renderCondition($cond, ['prefix' => 'q']);
                     $queryBuilder->andWhere('q.o_id IN (SELECT DISTINCT src FROM ' . $relationalTableName . ' q WHERE ' . $cond . ')');
                 }
             }
@@ -436,7 +434,7 @@ class Listing extends AbstractListing implements OrderAwareListingInterface, Ext
         foreach ($this->conditions as $fieldName => $condArray) {
             if ($fieldName !== $excludedFieldName && is_array($condArray)) {
                 foreach ($condArray as $cond) {
-                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, 'q'));
+                    $queryBuilder->andWhere($this->getWorker()->renderCondition($cond, ['prefix' => 'q']));
                 }
             }
         }

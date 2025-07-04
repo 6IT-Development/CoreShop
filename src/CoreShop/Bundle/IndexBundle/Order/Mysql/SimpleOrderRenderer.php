@@ -18,9 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\IndexBundle\Order\Mysql;
 
-use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 use CoreShop\Component\Index\Order\OrderInterface;
 use CoreShop\Component\Index\Order\SimpleOrder;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
@@ -38,6 +38,6 @@ class SimpleOrderRenderer extends AbstractMysqlDynamicRenderer
 
     public function supports(WorkerInterface $worker, OrderInterface $order): bool
     {
-        return $worker instanceof MysqlWorker && $order instanceof SimpleOrder;
+        return $worker instanceof MysqlWorkerInterface && $order instanceof SimpleOrder;
     }
 }

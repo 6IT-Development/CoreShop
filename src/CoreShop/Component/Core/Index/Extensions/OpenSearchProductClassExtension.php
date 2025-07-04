@@ -23,9 +23,9 @@ use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Index\Extension\IndexColumnsExtensionInterface;
 use CoreShop\Component\Index\Model\IndexableInterface;
 use CoreShop\Component\Index\Model\IndexInterface;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 
-final class ProductClassExtension implements IndexColumnsExtensionInterface
+final class OpenSearchProductClassExtension implements IndexColumnsExtensionInterface
 {
     public function __construct(
         private string $productClassName,
@@ -34,15 +34,15 @@ final class ProductClassExtension implements IndexColumnsExtensionInterface
 
     public function supports(IndexInterface $index): bool
     {
-        return $this->productClassName === $index->getClass() && $index->getWorker() === 'mysql';
+        return $this->productClassName === $index->getClass() && $index->getWorker() === 'opensearch';
     }
 
     public function getSystemColumns(): array
     {
         return [
-            'categoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'parentCategoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'stores' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            'categoryIds' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+            'parentCategoryIds' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
+            'stores' => OpenSearchWorkerInterface::FIELD_TYPE_INTEGER,
         ];
     }
 
@@ -73,14 +73,17 @@ final class ProductClassExtension implements IndexColumnsExtensionInterface
             }
 
             /**
-             * @psalm-suppress InvalidArgument
+             * @var int[]|string[] $stores
              */
-            $stores = @implode(',', $indexable->getStores() ?? []);
+            $stores = $indexable->getStores() ?? [];
+            $stores = array_map(static function (int|string $storeId) {
+                return (int) $storeId;
+            }, $stores);
 
             return [
-                'categoryIds' => ',' . implode(',', $categoryIds) . ',',
-                'parentCategoryIds' => ',' . implode(',', $parentCategoryIds) . ',',
-                'stores' => ',' . $stores . ',',
+                'categoryIds' => array_values($categoryIds),
+                'parentCategoryIds' => $parentCategoryIds,
+                'stores' => $stores,
             ];
         }
 

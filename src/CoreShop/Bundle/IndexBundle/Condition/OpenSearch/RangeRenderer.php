@@ -16,32 +16,42 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
+namespace CoreShop\Bundle\IndexBundle\Condition\OpenSearch;
 
 use CoreShop\Component\Index\Condition\ConditionInterface;
+use CoreShop\Component\Index\Condition\DynamicRendererInterface;
 use CoreShop\Component\Index\Condition\RangeCondition;
-use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
+use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Webmozart\Assert\Assert;
 
-class RangeRenderer extends AbstractMysqlDynamicRenderer
+class RangeRenderer implements DynamicRendererInterface
 {
-    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): array
     {
         /**
          * @var RangeCondition $condition
          */
         Assert::isInstanceOf($condition, RangeCondition::class);
 
+        $fieldName = $params['mappedFieldName'] ?? $condition->getFieldName();
         $from = $condition->getFrom();
         $to = $condition->getTo();
 
-        return '' . $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' >= ' . $from . ' AND ' .
-            $this->quoteFieldName($condition->getFieldName(), $params['prefix'] ?? null) . ' <= ' . $to;
+        return [
+            'filter' => [
+                'range' => [
+                    $fieldName => [
+                        'gte' => $from,
+                        'lte' => $to,
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorkerInterface && $condition instanceof RangeCondition;
+        return $worker instanceof OpenSearchWorkerInterface && $condition instanceof RangeCondition;
     }
 }

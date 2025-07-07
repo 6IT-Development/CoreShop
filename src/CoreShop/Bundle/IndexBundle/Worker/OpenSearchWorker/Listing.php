@@ -477,11 +477,11 @@ class Listing extends AbstractListing
                         'query' => [
                             'bool' => [
                                 'must' => [
-                                    ['term' => ['_relations.fieldname' => $fieldName]]
-                                ]
-                            ]
-                        ]
-                    ]
+                                    ['term' => ['_relations.fieldname' => $fieldName]],
+                                ],
+                            ],
+                        ],
+                    ],
                 ];
 
                 $renderedCondition = $this->worker->renderCondition($cond, [

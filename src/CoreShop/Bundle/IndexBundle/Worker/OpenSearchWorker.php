@@ -37,9 +37,9 @@ use OpenSearch\Client;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use Webmozart\Assert\Assert;
 use function Symfony\Component\String\u;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Webmozart\Assert\Assert;
 
 class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterface, WorkerDeleteableByIdInterface
 {
@@ -89,7 +89,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 'index' => [
                     'number_of_shards' => $config['numberOfShards'] ?? 1,
                     'number_of_replicas' => $config['numberOfReplicas'] ?? 1,
-                ]
+                ],
             ],
             'mappings' => [
                 'properties' => $columns,
@@ -125,7 +125,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 ->indices()
                 ->delete([
                     'index' => $this->getIndexName($index->getName()),
-                ]);
+                ])
+            ;
         } catch (\Exception $exception) {
             // If the index does not exist, we can ignore the exception
             if ($exception->getCode() !== 404) {

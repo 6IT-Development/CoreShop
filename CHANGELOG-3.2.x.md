@@ -1,3 +1,6 @@
+# 3.2.20
+* [Messenger] [Messenger] Fix MessageRepository service registration tags by @jdreesen in https://github.com/coreshop/CoreShop/pull/2876
+
 # 3.2.19
 * [Messenger] wrap message details info modal data in `<pre>` tags by @jdreesen in https://github.com/coreshop/CoreShop/pull/2855
 * [Messenger] dispatch `MessageDetailsEvent` to allow customization of message details generation by @jdreesen in https://github.com/coreshop/CoreShop/pull/2854

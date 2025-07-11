@@ -198,6 +198,17 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
         // Delete the document from the index if it is not indexable
         if (!$object->getIndexable($index)) {
+            $documentExists = $client
+                ->exists([
+                    'index' => $indexName,
+                    'id' => $objectId,
+                ])
+            ;
+
+            if (! $documentExists) {
+                return;
+            }
+
             $client
                 ->delete([
                     'index' => $indexName,

@@ -34,6 +34,7 @@ use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerDeleteableByIdInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use OpenSearch\Client;
+use OpenSearch\Exception\NotFoundHttpException;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -198,23 +199,19 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
 
         // Delete the document from the index if it is not indexable
         if (!$object->getIndexable($index)) {
-            $documentExists = $client
-                ->exists([
-                    'index' => $indexName,
-                    'id' => $objectId,
-                ])
-            ;
-
-            if (! $documentExists) {
-                return;
+            try {
+                $client
+                    ->delete([
+                        'index' => $indexName,
+                        'id' => $objectId,
+                    ])
+                ;
+            } catch (NotFoundHttpException) {
+                // If the document does not exist, we can ignore the exception
+            } catch (\Exception $exception) {
+                // If any other exception occurs, we rethrow it
+                throw $exception;
             }
-
-            $client
-                ->delete([
-                    'index' => $indexName,
-                    'id' => $objectId,
-                ])
-            ;
 
             return;
         }

@@ -18,10 +18,10 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\IndexBundle\Condition\Mysql;
 
-use CoreShop\Bundle\IndexBundle\Worker\MysqlWorker;
 use CoreShop\Component\Index\Condition\ConcatCondition;
 use CoreShop\Component\Index\Condition\ConditionInterface;
 use CoreShop\Component\Index\Condition\ConditionRendererInterface;
+use CoreShop\Component\Index\Worker\MysqlWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerInterface;
 use Doctrine\DBAL\Connection;
 use Webmozart\Assert\Assert;
@@ -35,7 +35,7 @@ class ConcatRenderer extends AbstractMysqlDynamicRenderer
         parent::__construct($connection);
     }
 
-    public function render(WorkerInterface $worker, ConditionInterface $condition, string $prefix = null): string
+    public function render(WorkerInterface $worker, ConditionInterface $condition, array $params = []): string
     {
         /**
          * @var ConcatCondition $condition
@@ -50,7 +50,7 @@ class ConcatRenderer extends AbstractMysqlDynamicRenderer
              */
             Assert::isInstanceOf($subCondition, ConditionInterface::class);
 
-            $conditions[] = $this->renderer->render($worker, $subCondition, $prefix);
+            $conditions[] = $this->renderer->render($worker, $subCondition, $params);
         }
 
         if (count($conditions) > 0) {
@@ -62,6 +62,6 @@ class ConcatRenderer extends AbstractMysqlDynamicRenderer
 
     public function supports(WorkerInterface $worker, ConditionInterface $condition): bool
     {
-        return $worker instanceof MysqlWorker && $condition instanceof ConcatCondition;
+        return $worker instanceof MysqlWorkerInterface && $condition instanceof ConcatCondition;
     }
 }

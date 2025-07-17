@@ -206,11 +206,11 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                         'id' => $objectId,
                     ])
                 ;
-            } catch (NotFoundHttpException) {
-                // If the document does not exist, we can ignore the exception
             } catch (\Exception $exception) {
-                // If any other exception occurs, we rethrow it
-                throw $exception;
+                // If the exception is not a "Not Found" HTTP exception, we rethrow it
+                if ($exception->getCode() !== 404) {
+                    throw $exception;
+                }
             }
 
             return;

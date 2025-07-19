@@ -207,7 +207,6 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                     ])
                 ;
             } catch (\Exception $exception) {
-                // If the exception is not a "Not Found" HTTP exception, we rethrow it
                 if ($exception->getCode() !== 404) {
                     throw $exception;
                 }

@@ -34,6 +34,7 @@ use CoreShop\Component\Index\Worker\OpenSearchWorkerInterface;
 use CoreShop\Component\Index\Worker\WorkerDeleteableByIdInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use OpenSearch\Client;
+use OpenSearch\Common\Exceptions\Missing404Exception;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -127,11 +128,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                     'index' => $this->getIndexName($index->getName()),
                 ])
             ;
-        } catch (\Exception $exception) {
-            // If the index does not exist, we can ignore the exception
-            if ($exception->getCode() !== 404) {
-                throw $exception;
-            }
+        } catch (Missing404Exception) {
+            // If the document does not exist, we can ignore the exception
         }
     }
 

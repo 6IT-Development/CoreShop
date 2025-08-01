@@ -129,7 +129,7 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                 ])
             ;
         } catch (Missing404Exception) {
-            // If the document does not exist, we can ignore the exception
+            // If the index does not exist, we can ignore the exception
         }
     }
 
@@ -203,10 +203,8 @@ class OpenSearchWorker extends AbstractWorker implements OpenSearchWorkerInterfa
                         'id' => $objectId,
                     ])
                 ;
-            } catch (\Exception $exception) {
-                if ($exception->getCode() !== 404) {
-                    throw $exception;
-                }
+            } catch (Missing404Exception) {
+                // If the document does not exist, we can ignore the exception
             }
 
             return;

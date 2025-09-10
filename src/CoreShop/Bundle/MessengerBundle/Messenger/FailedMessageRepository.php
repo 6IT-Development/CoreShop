@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\MessengerBundle\Messenger;
 
+use CoreShop\Bundle\MessengerBundle\Event\FailedMessageDetailsEvent;
 use CoreShop\Bundle\MessengerBundle\Exception\ReceiverNotListableException;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\ErrorDetailsStamp;
 use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
@@ -29,6 +31,7 @@ final class FailedMessageRepository implements FailedMessageRepositoryInterface
 {
     public function __construct(
         private FailureReceiversRepositoryInterface $failureReceivers,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -49,13 +52,21 @@ final class FailedMessageRepository implements FailedMessageRepositoryInterface
             /** @var ErrorDetailsStamp|null $lastErrorDetailsStamp */
             $lastErrorDetailsStamp = $envelope->last(ErrorDetailsStamp::class);
 
-            $rows[] = new FailedMessageDetails(
+            $failedMessageDetails = new FailedMessageDetails(
                 $this->getMessageId($envelope),
                 $envelope->getMessage()::class,
                 null !== $lastRedeliveryStamp ? $lastRedeliveryStamp->getRedeliveredAt()->format('Y-m-d H:i:s') : '',
                 null !== $lastErrorDetailsStamp ? $lastErrorDetailsStamp->getExceptionMessage() : '',
                 print_r($envelope->getMessage(), true),
             );
+
+            /** @var FailedMessageDetailsEvent $event */
+            $event = $this->eventDispatcher->dispatch(
+                new FailedMessageDetailsEvent($receiverName, $envelope, $failedMessageDetails),
+                'coreshop.messenger.failed_message_details',
+            );
+
+            $rows[] = $event->getFailedMessageDetails();
         }
 
         return $rows;

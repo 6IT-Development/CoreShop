@@ -62,7 +62,7 @@ services:
   php:
     <<: *php
     container_name: coreshop4.1-php
-    image: coreshop/coreshop:PHP8.2-fpm-debug
+    image: coreshop/coreshop:PHP8.3-fpm-debug
     build:
       target: dev
       args:
@@ -73,7 +73,7 @@ services:
   behat:
     <<: *php
     container_name: coreshop4.1-behat
-    image: coreshop/coreshop:PHP8.2-fpm-debug-behat
+    image: coreshop/coreshop:PHP8.3-fpm-debug-behat
     build:
       target: behat
       args:

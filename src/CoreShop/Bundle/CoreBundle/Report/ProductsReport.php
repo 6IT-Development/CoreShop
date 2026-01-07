@@ -90,8 +90,8 @@ class ProductsReport implements ReportInterface, ExportReportInterface
 
         $orderStateInClause = '';
         $orderStateParams = [];
+        $orderStatePlaceholders = [];
         if ($orderStateFilter !== null) {
-            $orderStatePlaceholders = [];
             foreach ($orderStateFilter as $i => $state) {
                 $orderStatePlaceholders[] = ':orderState' . $i;
                 $orderStateParams['orderState' . $i] = $state;

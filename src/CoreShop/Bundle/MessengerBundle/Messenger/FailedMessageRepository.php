@@ -55,7 +55,7 @@ final class FailedMessageRepository implements FailedMessageRepositoryInterface
             $failedMessageDetails = new FailedMessageDetails(
                 $this->getMessageId($envelope),
                 $envelope->getMessage()::class,
-                $lastRedeliveryStamp?->getRedeliveredAt()->format('Y-m-d H:i:s') ?? '',
+                $lastRedeliveryStamp?->getRedeliveredAt()->format('Y-m-d H:i:s'),
                 $lastErrorDetailsStamp?->getExceptionMessage() ?? '',
                 '<pre>' . print_r($envelope->getMessage(), true) . '</pre>',
             );

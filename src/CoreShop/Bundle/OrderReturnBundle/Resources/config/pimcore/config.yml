@@ -1,0 +1,5 @@
+imports:
+  - { resource: admin.yml }
+
+parameters:
+  test: "CoreShopOrderReturn - OK"

@@ -32,6 +32,7 @@ use CoreShop\Bundle\MenuBundle\CoreShopMenuBundle;
 use CoreShop\Bundle\MoneyBundle\CoreShopMoneyBundle;
 use CoreShop\Bundle\NotificationBundle\CoreShopNotificationBundle;
 use CoreShop\Bundle\OrderBundle\CoreShopOrderBundle;
+use CoreShop\Bundle\OrderReturnBundle\CoreShopOrderReturnBundle;
 use CoreShop\Bundle\PayumBundle\CoreShopPayumBundle;
 use CoreShop\Bundle\ProductBundle\CoreShopProductBundle;
 use CoreShop\Bundle\ProductQuantityPriceRulesBundle\CoreShopProductQuantityPriceRulesBundle;
@@ -80,6 +81,7 @@ final class CoreShopCoreBundle extends AbstractResourceBundle
         $collection->addBundle(new CoreShopMoneyBundle(), 3600);
         $collection->addBundle(new CoreShopConfigurationBundle(), 3300);
         $collection->addBundle(new CoreShopOrderBundle(), 3200);
+        $collection->addBundle(new CoreShopOrderReturnBundle(), 3200);
         $collection->addBundle(new CoreShopCustomerBundle(), 3100);
         $collection->addBundle(new CoreShopUserBundle(), 3050);
         $collection->addBundle(new CoreShopInventoryBundle(), 3000);

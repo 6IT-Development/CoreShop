@@ -240,6 +240,17 @@ class MainMenuBuilder implements MenuBuilderInterface
             ->setExtra('order', 60)
         ;
 
+
+        $ordersMenu
+            ->addChild('coreshop_order_returns')
+            ->setLabel('coreshop_order_returns')
+            ->setAttribute('permission', 'coreshop_permission_order_return_list')
+            ->setAttribute('iconCls', 'coreshop_nav_icon_orders')
+            ->setAttribute('resource', 'coreshop.order')
+            ->setAttribute('function', 'orders')
+            ->setExtra('order', 70)
+        ;
+
         $carriersMenu = $menuItem
             ->addChild('coreshop_shipping')
             ->setLabel('coreshop_shipping')

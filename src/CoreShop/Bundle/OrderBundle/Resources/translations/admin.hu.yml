@@ -1,1 +1,3 @@
----
+coreshop_order: 'Megrendelések'
+coreshop_order_returns: 'Visszaküldött megrendelések'
+coreshop_order_create: 'Megrendelés létrehozása'

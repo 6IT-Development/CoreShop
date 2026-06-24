@@ -1,0 +1,5 @@
+core_shop_order_return:
+    pimcore_admin:
+        js:
+            resource: '/bundles/coreshoporderreturn/pimcore/js/resource.js'
+            plugin: '/bundles/coreshoporderreturn/pimcore/js/plugin.js'

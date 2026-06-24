@@ -20,6 +20,10 @@ coreshop.orderreturn.resource = Class.create(coreshop.resource, {
         if (item) {
             console.log(item);
         }
+
+        if (item === 'order_returns') {
+            console.log('Opening order return resource');
+        }
     },
 });
 

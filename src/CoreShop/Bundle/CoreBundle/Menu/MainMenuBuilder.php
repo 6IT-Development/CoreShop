@@ -246,8 +246,8 @@ class MainMenuBuilder implements MenuBuilderInterface
             ->setLabel('coreshop_order_returns')
             ->setAttribute('permission', 'coreshop_permission_order_return_list')
             ->setAttribute('iconCls', 'coreshop_nav_icon_orders')
-            ->setAttribute('resource', 'coreshop.order')
-            ->setAttribute('function', 'orders')
+            ->setAttribute('resource', 'coreshop.orderreturn.resource')
+            ->setAttribute('function', 'order_returns')
             ->setExtra('order', 70)
         ;
 

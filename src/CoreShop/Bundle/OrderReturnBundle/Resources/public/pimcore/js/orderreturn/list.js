@@ -1,7 +1,7 @@
 pimcore.registerNS('coreshop.orderreturn.orderreturn.list');
 coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
     supportsCreate: true,
-    type: 'order',
+    type: 'order_return',
 
     generateUrl: function() {
         return Routing.generate('coreshop_admin_order_get_folder_configuration', {'saleType': this.type});

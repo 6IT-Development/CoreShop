@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\OrderReturn\Model;
 
-use CoreShop\Component\Resource\Model\ResourceInterface;
+use CoreShop\Component\Resource\Pimcore\Model\PimcoreModelInterface;
 use CoreShop\Component\Core\Model\OrderInterface;
 
-interface OrderReturnInterface extends ResourceInterface
+interface OrderReturnInterface extends PimcoreModelInterface
 {
     public function getFirstName(): ?string;
 

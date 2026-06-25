@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace CoreShop\Component\OrderReturn\Model;
 
 use CoreShop\Component\Core\Model\OrderInterface;
+use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
+use CoreShop\Component\Resource\Model\SetValuesTrait;
 
-class OrderReturn implements OrderReturnInterface
+class OrderReturn extends AbstractPimcoreModel implements OrderReturnInterface
 {
+    use SetValuesTrait;
+
     protected ?int $id = null;
     protected ?string $firstName = null;
     protected ?string $lastName = null;

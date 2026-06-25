@@ -1,3 +1,16 @@
+{% extends '@CoreShopFrontend/layout.html.twig' %}
+
 {% block content %}
-   Order Return Form
+   <div class="container">
+      <h1>Elállás a szerződéstől</h1>
+      <p>Kijelentem, hogy az alábbiakban megjelölt szerződés tekintetében gyakorlom elállási/felmondási jogomat</p>
+
+      {{ form_start(form) }}
+      {{ form_widget(form) }}
+      {{ form_end(form) }}
+
+      <p class="mt-3">
+         Az "Elállás megerősítése" megnyomásával Ön elektronikus úton elállási nyilatkozatot tesz és nyilatkozik, hogy megismerte és elfogadja az elállási funkcióval kapcsolatban az adatkezelési tájékoztatóban írtakat.
+      </p>
+   </div>
 {% endblock %}

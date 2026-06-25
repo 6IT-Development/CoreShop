@@ -6,6 +6,13 @@ routes:
     variables: _locale
     priority: 1
 
+  coreshop_order_return_form:
+    pattern: '/\/order-return$/'
+    reverse: '/order-return'
+    controller: 'CoreShop\Bundle\OrderReturnBundle\Controller\OrderReturnController::returnFormAction'
+    variables: _locale
+    priority: 2
+
   coreshop_cart_summary:
     pattern: '/(\w+)\/shop\/cart$/'
     reverse: '/%_locale/shop/cart'

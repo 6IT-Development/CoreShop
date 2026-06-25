@@ -45,6 +45,8 @@ coreshop.resources = Class.create({
     },
 
     open: function (module, resource) {
+        console.log('open resource:', module, resource);
+        console.log(this.resources);
         this.resources[module].openResource(resource);
     }
 });

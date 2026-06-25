@@ -46,18 +46,6 @@ final class CoreShopOrderReturnBundle extends AbstractResourceBundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
-
-        $this->registerResources(
-            [
-                'order_return' => [
-                    'classes' => [
-                        'model' => \CoreShop\Component\OrderReturn\Model\OrderReturn::class,
-                        'interface' => \CoreShop\Component\OrderReturn\Model\OrderReturnInterface::class,
-                    ],
-                ],
-            ],
-            $container
-        );
     }
 
     public static function registerDependentBundles(BundleCollection $collection): void

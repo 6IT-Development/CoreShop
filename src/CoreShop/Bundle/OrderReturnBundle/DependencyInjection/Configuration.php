@@ -38,6 +38,7 @@ final class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->scalarNode('withdrawal_route')->defaultValue('elallas-a-szerzodestol')->end()
                 ->arrayNode('mapping')
                     ->addDefaultsIfNotSet()
                     ->children()
@@ -50,6 +51,7 @@ final class Configuration implements ConfigurationInterface
         ;
 
         $this->addResourcesSection($rootNode);
+        $this->addPimcoreSection($rootNode);
         $this->addTranslationsSection($rootNode);
         $this->addDriversSection($rootNode);
         $this->addPimcoreResourcesSection($rootNode);
@@ -62,48 +64,34 @@ final class Configuration implements ConfigurationInterface
         $node
             ->children()
                 ->arrayNode('resources')
-                    ->useAttributeAsKey('name')
-                    ->arrayPrototype()
-                        ->children()
-                            ->scalarNode('driver')->defaultValue(CoreShopResourceBundle::DRIVER_DOCTRINE_ORM)->end()
-                            ->variableNode('options')->end()
-                            ->scalarNode('templates')->cannotBeEmpty()->end()
-                            ->arrayNode('classes')
-                                ->isRequired()
-                                ->addDefaultsIfNotSet()
-                                ->children()
-                                    ->scalarNode('model')->isRequired()->cannotBeEmpty()->end()
-                                    ->scalarNode('interface')->cannotBeEmpty()->end()
-                                    ->scalarNode('admin_controller')->defaultValue(ResourceController::class)->cannotBeEmpty()->end()
-                                    ->scalarNode('repository')->cannotBeEmpty()->end()
-                                    ->scalarNode('factory')->defaultValue(Factory::class)->end()
-                                ->end()
-                            ->end()
-                            ->arrayNode('translation')
-                                ->children()
-                                    ->variableNode('options')->end()
-                                    ->arrayNode('graphql')
-                                            ->addDefaultsIfNotSet()
-                                            ->children()
-                                                ->booleanNode('enabled')->defaultTrue()->end()
-                                            ->end()
-                                        ->end()
-                                    ->arrayNode('classes')
-                                        ->isRequired()
-                                        ->addDefaultsIfNotSet()
-                                        ->children()
-                                            ->scalarNode('model')->isRequired()->cannotBeEmpty()->end()
-                                            ->scalarNode('interface')->cannotBeEmpty()->end()
-                                            ->scalarNode('controller')->defaultValue(ResourceController::class)->cannotBeEmpty()->end()
-                                            ->scalarNode('repository')->cannotBeEmpty()->end()
-                                            ->scalarNode('factory')->defaultValue(Factory::class)->end()
-                                        ->end()
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('order_return')
+                            ->addDefaultsIfNotSet()
+                            ->children()
+                                ->variableNode('options')->end()
+                                ->arrayNode('classes')
+                                    ->addDefaultsIfNotSet()
+                                    ->children()
+                                        ->scalarNode('model')->defaultValue(\CoreShop\Component\OrderReturn\Model\OrderReturn::class)->cannotBeEmpty()->end()
+                                        ->scalarNode('interface')->defaultValue(\CoreShop\Component\OrderReturn\Model\OrderReturnInterface::class)->cannotBeEmpty()->end()
+                                        ->scalarNode('admin_controller')->defaultValue(ResourceController::class)->cannotBeEmpty()->end()
+                                        ->scalarNode('repository')->cannotBeEmpty()->end()
+                                        ->scalarNode('factory')->defaultValue(Factory::class)->end()
                                     ->end()
                                 ->end()
                             ->end()
                         ->end()
                     ->end()
                 ->end()
+            ->end()
+        ;
+    }
+
+    private function addPimcoreSection(ArrayNodeDefinition $node): void
+    {
+        $node
+            ->children()
                 ->arrayNode('pimcore')
                     ->useAttributeAsKey('name')
                         ->arrayPrototype()

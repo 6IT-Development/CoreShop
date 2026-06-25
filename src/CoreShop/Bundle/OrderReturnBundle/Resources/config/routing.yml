@@ -1,0 +1,5 @@
+coreshop_order_return_withdrawal_form:
+    path: /%coreshop_order_return.withdrawal_route%
+    methods: [GET, POST]
+    defaults:
+        _controller: CoreShop\Bundle\OrderReturnBundle\Controller\WithdrawalController::formAction

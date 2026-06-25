@@ -17,12 +17,8 @@ coreshop.orderreturn.resource = Class.create(coreshop.resource, {
     },
 
     openResource: function (item) {
-        if (item) {
-            console.log(item);
-        }
-
         if (item === 'order_returns') {
-            console.log('Opening order return resource');
+            coreshop.helpers.openResource('order_return', 'coreshop_order_return', 'coreshop_icon_order_return', t('coreshop_order_returns'));
         }
     },
 });

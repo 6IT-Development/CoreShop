@@ -46,10 +46,6 @@ final class CoreShopOrderReturnBundle extends AbstractResourceBundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
-
-        //Example
-        //$container->addCompilerPass(new RegisterCartProcessorPass());
-        //dd($container);
     }
 
     public static function registerDependentBundles(BundleCollection $collection): void

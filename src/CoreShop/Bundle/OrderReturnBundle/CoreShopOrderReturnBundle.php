@@ -18,11 +18,13 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\OrderReturnBundle;
 
+use CoreShop\Bundle\OrderReturnBundle\DependencyInjection\CompilerPass\RegisterOrderReturnControllerPass;
 use CoreShop\Bundle\ResourceBundle\AbstractResourceBundle;
 use CoreShop\Bundle\ResourceBundle\CoreShopResourceBundle;
 use Pimcore\Bundle\WebToPrintBundle\PimcoreWebToPrintBundle;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 
 final class CoreShopOrderReturnBundle extends AbstractResourceBundle
 {
@@ -46,9 +48,10 @@ final class CoreShopOrderReturnBundle extends AbstractResourceBundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
+        $container->addCompilerPass(
+            new RegisterOrderReturnControllerPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100
+        );
 
-        //Example
-        //$container->addCompilerPass(new RegisterCartProcessorPass());
         //dd($container);
     }
 

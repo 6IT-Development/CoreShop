@@ -1,4 +1,4 @@
 imports:
-  - { resource: services/*.yaml }
+  - { resource: services/*.yml }
 
 services:

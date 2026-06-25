@@ -38,6 +38,7 @@ final class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+                ->scalarNode('withdrawal_route')->defaultValue('elallas-a-szerzodestol')->end()
                 ->arrayNode('mapping')
                     ->addDefaultsIfNotSet()
                     ->children()

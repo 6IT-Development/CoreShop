@@ -29,6 +29,8 @@ class CoreShopOrderReturnExtension extends AbstractPimcoreExtension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
+
+        $container->setParameter('coreshop_order_return.withdrawal_route', $configs['withdrawal_route']);
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 

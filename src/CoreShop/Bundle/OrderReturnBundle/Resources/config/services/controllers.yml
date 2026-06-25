@@ -1,0 +1,8 @@
+services:
+    CoreShop\Bundle\OrderReturnBundle\Controller\WithdrawalController:
+        arguments:
+            $orderReturnRepository: '@coreshop.repository.order_return'
+            $orderReturnFactory: '@coreshop.factory.order_return'
+            $orderRepository: '@coreshop.repository.order'
+        tags: ['controller.service_arguments']
+        public: true

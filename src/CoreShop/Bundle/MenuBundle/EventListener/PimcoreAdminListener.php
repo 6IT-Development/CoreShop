@@ -38,6 +38,7 @@ class PimcoreAdminListener implements EventSubscriberInterface
                 $event->getPaths(),
                 [
                     '/bundles/coreshopmenu/pimcore/js/events.js',
+                    '/bundles/coreshoporderreturn/pimcore/js/events.js',
                 ],
             ),
         );

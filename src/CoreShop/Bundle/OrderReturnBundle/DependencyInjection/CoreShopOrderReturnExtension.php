@@ -19,21 +19,32 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\OrderReturnBundle\DependencyInjection;
 
 use CoreShop\Bundle\PimcoreBundle\DependencyInjection\Extension\AbstractPimcoreExtension;
+use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader;
 
 
-class CoreShopOrderReturnExtension extends AbstractPimcoreExtension
+class CoreShopOrderReturnExtension extends AbstractModelExtension
 {
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
-        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
-        $loader->load('services.yml');
+
 
         if (array_key_exists('pimcore_admin', $configs)) {
             $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
         }
+
+        if (array_key_exists('controllers', $configs)) {
+            $container->setParameter('coreshop.orderreturn.controllers', $configs['controllers']);
+
+            foreach ($configs['controllers'] as $key => $value) {
+                $container->setParameter(sprintf('coreshop.orderreturn.controller.%s', $key), $value);
+            }
+        }
+
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
+        $loader->load('services.yml');
     }
 }

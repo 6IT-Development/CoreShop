@@ -2,3 +2,10 @@ imports:
   - { resource: services/*.yaml }
 
 services:
+  CoreShop\Bundle\OrderReturnBundle\Controller\OrderReturnController:
+    public: true
+    autowire: true
+    autoconfigure: true
+    tags:
+      - { name: controller.service_arguments }
+      - { name: container.service_subscriber }

@@ -26,6 +26,7 @@ use CoreShop\Bundle\FrontendBundle\Controller\CustomerController;
 use CoreShop\Bundle\FrontendBundle\Controller\IndexController;
 use CoreShop\Bundle\FrontendBundle\Controller\MailController;
 use CoreShop\Bundle\FrontendBundle\Controller\OrderController;
+use CoreShop\Bundle\FrontendBundle\Controller\OrderReturnController;
 use CoreShop\Bundle\FrontendBundle\Controller\ProductController;
 use CoreShop\Bundle\FrontendBundle\Controller\QuoteController;
 use CoreShop\Bundle\FrontendBundle\Controller\RegisterController;
@@ -96,6 +97,7 @@ final class Configuration implements ConfigurationInterface
                     ->scalarNode('cart')->defaultValue(CartController::class)->end()
                     ->scalarNode('checkout')->defaultValue(CheckoutController::class)->end()
                     ->scalarNode('order')->defaultValue(OrderController::class)->end()
+                    ->scalarNode('orderReturn')->defaultValue(OrderReturnController::class)->end()
                     ->scalarNode('category')->defaultValue(CategoryController::class)->end()
                     ->scalarNode('product')->defaultValue(ProductController::class)->end()
                     ->scalarNode('quote')->defaultValue(QuoteController::class)->end()

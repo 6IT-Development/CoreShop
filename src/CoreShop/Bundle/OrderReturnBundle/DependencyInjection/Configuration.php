@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\OrderReturnBundle\DependencyInjection;
 
+use CoreShop\Bundle\OrderReturnBundle\Controller\OrderReturnController;
 use CoreShop\Bundle\ResourceBundle\Controller\ResourceController;
 use CoreShop\Bundle\ResourceBundle\CoreShopResourceBundle;
 use CoreShop\Bundle\ResourceBundle\Pimcore\PimcoreRepository;
@@ -50,6 +51,7 @@ final class Configuration implements ConfigurationInterface
         ;
 
         $this->addResourcesSection($rootNode);
+        $this->addControllerSection($rootNode);
         $this->addTranslationsSection($rootNode);
         $this->addDriversSection($rootNode);
         $this->addPimcoreResourcesSection($rootNode);
@@ -131,6 +133,18 @@ final class Configuration implements ConfigurationInterface
                             ->end()
                         ->end()
                     ->end()
+                ->end()
+            ->end()
+        ;
+    }
+
+    private function addControllerSection(ArrayNodeDefinition $node): void
+    {
+        $node->children()
+            ->arrayNode('controllers')
+                ->addDefaultsIfNotSet()
+                ->children()
+                    ->scalarNode('orderReturn')->defaultValue(OrderReturnController::class)->end()
                 ->end()
             ->end()
         ;

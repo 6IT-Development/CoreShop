@@ -42,8 +42,8 @@
         "datatype": "layout",
         "children": [
           {
-            "name": "createdAt",
-            "title": "Created At",
+            "name": "returnedAt",
+            "title": "Returned At",
             "tooltip": "",
             "mandatory": false,
             "noteditable": true,

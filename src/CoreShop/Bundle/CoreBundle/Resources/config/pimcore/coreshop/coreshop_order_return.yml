@@ -1,6 +1,8 @@
 core_shop_order_return:
     pimcore:
         order_return:
+            path:
+                order_return: coreshop/order_returns
             classes:
                 model: Pimcore\Model\DataObject\CoreShopOrderReturn
                 interface: CoreShop\Component\OrderReturn\Model\OrderReturnInterface

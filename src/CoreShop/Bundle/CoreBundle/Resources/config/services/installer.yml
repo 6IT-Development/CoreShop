@@ -21,5 +21,6 @@ services:
                 '%coreshop.folder.customer%',
                 '%coreshop.folder.customer_group%',
                 '%coreshop.folder.order%',
+                '%coreshop.folder.order_return%',
                 '%coreshop.folder.quote%'
               ]

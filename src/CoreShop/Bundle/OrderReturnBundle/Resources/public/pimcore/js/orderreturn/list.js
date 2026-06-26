@@ -18,8 +18,11 @@ coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
         );
     },
 
-    open: function (id) {
-        console.log('Opening order return with ID:', id);
+    open: function (id, callback) {
+        console.log(callback);
         pimcore.helpers.openObject(id);
+        if (typeof callback === 'function') {
+            callback();
+        }
     }
 });

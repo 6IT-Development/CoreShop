@@ -1,9 +1,4 @@
 core_shop_order_return:
-    resources:
-        order_return:
-            classes:
-                model: CoreShop\Component\OrderReturn\Model\OrderReturn
-                interface: CoreShop\Component\OrderReturn\Model\OrderReturnInterface
     pimcore:
         order_return:
             classes:

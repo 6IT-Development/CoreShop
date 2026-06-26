@@ -66,8 +66,4 @@ final class CoreShopOrderReturnBundle extends AbstractResourceBundle
 
     }
 
-    protected function getModelNamespace(): string
-    {
-        return 'CoreShop\Component\OrderReturn\Model';
-    }
 }

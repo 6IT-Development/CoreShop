@@ -19,10 +19,15 @@ coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
     },
 
     open: function (id, callback) {
-        console.log(callback);
-        pimcore.helpers.openObject(id);
-        if (typeof callback === 'function') {
-            callback();
+        try {
+            pimcore.helpers.openObject(id, 'object');
+        } catch (e) {
+            console.error(e);
+            pimcore.helpers.showNotification(t('error'), t('problem_opening_new_target'), 'error');
+        } finally {
+            if (typeof callback === 'function') {
+                callback();
+            }
         }
     }
 });

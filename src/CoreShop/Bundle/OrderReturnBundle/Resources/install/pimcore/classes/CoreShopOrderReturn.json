@@ -58,7 +58,7 @@
             "visibleGridView": true,
             "visibleSearch": true,
             "forbidden": false,
-            "width": "",
+            "width": "200",
             "calculatorClass": "CoreShop\\Bundle\\OrderReturnBundle\\Calculator\\OrderReturnCreatedAtCalculator",
             "calculatorType": "class",
             "columnLength": 190

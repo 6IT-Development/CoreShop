@@ -13,13 +13,13 @@ coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
             function (id) {
                 this.open(id);
             }.bind(this),
-            [coreshop.class_map.coreshop.order],
+            [coreshop.class_map.coreshop.order_return],
             this.getGridPaginator()
         );
     },
 
-    open: function (id, callback) {
-        console.log('Opening order with ID:', id);
-        coreshop.order.helper.openOrder(id, callback);
+    open: function (id) {
+        console.log('Opening order return with ID:', id);
+        pimcore.helpers.openObject(id);
     }
 });

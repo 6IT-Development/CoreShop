@@ -185,6 +185,11 @@ class OrderController extends PimcoreController
         $type = $this->getParameterFromRequest($request, 'saleType', 'order');
 
         $orderClassId = (string) $this->getParameter('coreshop.model.order.pimcore_class_name');
+
+        if ($type === 'order_return') {
+            $orderClassId = (string) $this->getParameter('coreshop.model.order_return.pimcore_class_name');
+        }
+
         $folderPath = (string) $this->getParameter('coreshop.folder.' . $type);
         $orderClassDefinition = DataObject\ClassDefinition::getByName($orderClassId);
 

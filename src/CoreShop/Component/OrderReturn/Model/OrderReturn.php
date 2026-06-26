@@ -21,6 +21,11 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
         return $this->firstName;
     }
 
+    public function getReturnedAt(): mixed
+    {
+        return $this->formatDate($this->getCreationDate());
+    }
+
     public function formatDate($date): string
     {
         if ($date instanceof \DateTimeInterface) {

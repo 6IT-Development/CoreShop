@@ -11,6 +11,8 @@ interface OrderReturnInterface extends ResourceInterface
 {
     public function getFirstName(): ?string;
 
+    public function getReturnedAt(): mixed;
+
     public function setFirstName(?string $firstName);
 
     public function getLastName(): ?string;

@@ -146,6 +146,11 @@
             "defaultValueGenerator": ""
           },
           {
+            "fieldtype": "coreShopRelation",
+            "width": "",
+            "relationType": true,
+            "pathFormatterClass": "",
+            "stack": "coreshop.order",
             "name": "order",
             "title": "Order",
             "tooltip": "",
@@ -156,23 +161,9 @@
             "style": "",
             "permissions": null,
             "datatype": "data",
-            "fieldtype": "href",
-            "relationType": true,
             "invisible": false,
             "visibleGridView": true,
-            "visibleSearch": true,
-            "forbidden": false,
-            "width": "",
-            "assetUploadPath": "",
-            "objectsAllowed": true,
-            "assetsAllowed": false,
-            "documentsAllowed": false,
-            "classes": [
-              {
-                "classes": "CoreShopOrder"
-              }
-            ],
-            "pathFormatterClass": ""
+            "visibleSearch": true
           },
           {
             "name": "comment",

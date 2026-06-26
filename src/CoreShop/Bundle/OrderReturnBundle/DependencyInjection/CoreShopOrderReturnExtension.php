@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\OrderReturnBundle\DependencyInjection;
 
 use CoreShop\Bundle\PimcoreBundle\DependencyInjection\Extension\AbstractPimcoreExtension;
+use CoreShop\Bundle\ResourceBundle\CoreShopResourceBundle;
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -31,6 +32,8 @@ class CoreShopOrderReturnExtension extends AbstractModelExtension
     {
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
 
+        $this->registerResources('coreshop', CoreShopResourceBundle::DRIVER_DOCTRINE_ORM, $configs['resources'], $container);
+        $this->registerPimcoreModels('coreshop', $configs['pimcore'], $container);
 
         if (array_key_exists('pimcore_admin', $configs)) {
             $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);

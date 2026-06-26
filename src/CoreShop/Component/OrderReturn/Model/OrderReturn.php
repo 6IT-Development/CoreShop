@@ -4,29 +4,24 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\OrderReturn\Model;
 
-use CoreShop\Component\Core\Model\OrderInterface;
+use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
 
-abstract class OrderReturn implements OrderReturnInterface
+abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnInterface
 {
-    protected ?int $id = null;
-    protected ?string $firstName = null;
-    protected ?string $lastName = null;
-    protected ?string $orderNumber = null;
-    protected ?OrderInterface $order = null;
-    protected ?string $email = null;
-    protected ?string $comment = null;
-
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    protected $firstName = null;
+    protected $lastName = null;
+    protected $orderNumber = null;
+    protected $order = null;
+    protected $email = null;
+    protected $comment = null;
 
     public function getFirstName(): ?string
     {
         return $this->firstName;
     }
 
-    public function setFirstName(?string $firstName): void
+    public function setFirstName(?string $firstName)
     {
         $this->firstName = $firstName;
     }
@@ -36,7 +31,7 @@ abstract class OrderReturn implements OrderReturnInterface
         return $this->lastName;
     }
 
-    public function setLastName(?string $lastName): void
+    public function setLastName(?string $lastName)
     {
         $this->lastName = $lastName;
     }
@@ -46,7 +41,7 @@ abstract class OrderReturn implements OrderReturnInterface
         return $this->orderNumber;
     }
 
-    public function setOrderNumber(?string $orderNumber): void
+    public function setOrderNumber(?string $orderNumber)
     {
         $this->orderNumber = $orderNumber;
     }
@@ -56,7 +51,7 @@ abstract class OrderReturn implements OrderReturnInterface
         return $this->order;
     }
 
-    public function setOrder(?OrderInterface $order): void
+    public function setOrder(?OrderInterface $order)
     {
         $this->order = $order;
     }
@@ -66,7 +61,7 @@ abstract class OrderReturn implements OrderReturnInterface
         return $this->email;
     }
 
-    public function setEmail(?string $email): void
+    public function setEmail(?string $email)
     {
         $this->email = $email;
     }
@@ -76,7 +71,7 @@ abstract class OrderReturn implements OrderReturnInterface
         return $this->comment;
     }
 
-    public function setComment(?string $comment): void
+    public function setComment(?string $comment)
     {
         $this->comment = $comment;
     }

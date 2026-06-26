@@ -43,7 +43,7 @@
         "children": [
           {
             "name": "createdAt",
-            "title": "createdAt",
+            "title": "Created At",
             "tooltip": "",
             "mandatory": false,
             "noteditable": true,

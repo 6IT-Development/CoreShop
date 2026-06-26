@@ -1,6 +1,6 @@
 pimcore.registerNS('coreshop.orderreturn.orderreturn.list');
 coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
-    supportsCreate: true,
+    supportsCreate: false,
     type: 'order_return',
 
     generateUrl: function() {
@@ -9,7 +9,7 @@ coreshop.orderreturn.orderreturn.list = Class.create(coreshop.resource.list, {
 
     setupContextMenuPlugin: function () {
         this.contextMenuPlugin = new coreshop.pimcore.plugin.grid(
-            'coreshop_order_returns',
+            'coreshop_order_return',
             function (id) {
                 this.open(id);
             }.bind(this),

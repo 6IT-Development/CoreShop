@@ -11,11 +11,11 @@ coreshop.orderreturn.resource = Class.create(coreshop.resource, {
     },
     openOrderReturns: function () {
         try {
-            pimcore.globalmanager.get('coreshop_order_returns').activate();
+            pimcore.globalmanager.get('coreshop_order_return').activate();
         }
         catch (e) {
             pimcore.globalmanager.add(
-                'coreshop_order_returns', new coreshop.orderreturn.orderreturn.list()
+                'coreshop_order_return', new coreshop.orderreturn.orderreturn.list()
             );
         }
     },

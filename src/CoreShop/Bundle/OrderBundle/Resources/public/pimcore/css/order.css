@@ -12,15 +12,15 @@
  *
  */
 
-.coreshop_icon_orders, .coreshop_icon_order {
+.coreshop_icon_orders, .coreshop_icon_order, .coreshop_icon_order_returns, .coreshop_icon_order_return {
     background: url(../img/orders.svg) center center no-repeat !important;
 }
 
-.coreshop_nav_icon_order, .coreshop_nav_icon_orders {
+.coreshop_nav_icon_order, .coreshop_nav_icon_orders, .coreshop_nav_icon_order_return, .coreshop_nav_icon_order_returns {
     background: url(../img/orders.svg) center center no-repeat !important;
 }
 
-body.pimcore_version_11 .coreshop_nav_icon_order, body.pimcore_version_11 .coreshop_nav_icon_orders {
+body.pimcore_version_11 .coreshop_nav_icon_order, body.pimcore_version_11 .coreshop_nav_icon_orders, body.pimcore_version_11 .coreshop_nav_icon_order_return, body.pimcore_version_11 .coreshop_nav_icon_order_returns {
     background: url(../img/orders_white.svg) center center no-repeat !important;
 }
 

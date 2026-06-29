@@ -1,0 +1,10 @@
+coreshop.ui.order_return: order return
+coreshop.ui.order_return.form.title: Withdrawal from the contract
+coreshop.ui.order_return.form.desc: I declare that I exercise my right of withdrawal/termination with respect to the contract indicated below.
+coreshop.ui.order_return.form.lname: Last name
+coreshop.ui.order_return.form.fname: First name
+coreshop.ui.order_return.form.ordnum: Order number
+coreshop.ui.order_return.form.email: Email address
+coreshop.ui.order_return.form.comment: Comment
+coreshop.ui.order_return.form.confirm: By clicking "Confirm withdrawal", you make an electronic declaration of withdrawal and declare that you have read and accept the terms of the data processing information regarding the withdrawal function.
+coreshop.ui.order_return.form.confirm.button: Confirm withdrawal

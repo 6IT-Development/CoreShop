@@ -19,30 +19,30 @@ final class OrderReturnType extends AbstractResourceType
     {
         $builder
         ->add('lastName', TextType::class, [
-        'label' => 'Fogyasztó vezetékneve',
+        'label' => 'coreshop.ui.order_return.form.lname',
         'constraints' => [new NotBlank(['groups' => ['coreshop']])],
     ])
         ->add('firstName', TextType::class, [
-            'label' => 'Fogyasztó keresztneve',
+            'label' => 'coreshop.ui.order_return.form.fname',
             'constraints' => [new NotBlank(['groups' => ['coreshop']])],
         ])
         ->add('orderNumber', TextType::class, [
-            'label' => 'Megrendelés azonosító',
+            'label' => 'coreshop.ui.order_return.form.ordnum',
             'constraints' => [new NotBlank(['groups' => ['coreshop']])],
         ])
         ->add('email', EmailType::class, [
-            'label' => 'Email cím',
+            'label' => 'coreshop.ui.order_return.form.email',
             'constraints' => [
                 new NotBlank(['groups' => ['coreshop']]),
                 new Email(['groups' => ['coreshop']])
             ],
         ])
         ->add('comment', TextareaType::class, [
-            'label' => 'Megjegyzés',
+            'label' => 'coreshop.ui.order_return.form.comment',
             'required' => false,
         ])
         ->add('submit', SubmitType::class, [
-            'label' => 'Elállás megerősítése',
+            'label' => 'coreshop.ui.order_return.form.confirm.button',
         ]);
     }
 

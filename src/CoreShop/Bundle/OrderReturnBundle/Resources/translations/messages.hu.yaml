@@ -1,0 +1,10 @@
+oreshop.ui.order_return: rendelés visszatérítése
+coreshop.ui.order_return.form.title: Elállás a szerződéstől
+coreshop.ui.order_return.form.desc: Kijelentem, hogy az alábbiakban megjelölt szerződés tekintetében gyakorlom elállási/felmondási jogomat
+coreshop.ui.order_return.form.lname: Fogyasztó vezetékneve
+coreshop.ui.order_return.form.fname: Fogyasztó keresztneve
+coreshop.ui.order_return.form.ordnum: Megrendelés azonosító
+coreshop.ui.order_return.form.email: Email cím
+coreshop.ui.order_return.form.comment: Megjegyzés
+coreshop.ui.order_return.form.confirm: Az "Elállás megerősítése" megnyomásával Ön elektronikus úton elállási nyilatkozatot tesz és nyilatkozik, hogy megismerte és elfogadja az elállási funkcióval kapcsolatban az adatkezelési tájékoztatóban írtakat.
+coreshop.ui.order_return.form.confirm.button: Elállás megerősítése

@@ -65,7 +65,6 @@ class OrderReturnController extends FrontendController
                 $asset->setFilename($filename);
                 $asset->setParent($folder);
                 $asset->setData($pdfContent);
-                $asset->setPublished(true);
                 $asset->save();
 
                 $orderReturn->setPdfAttachment($asset);

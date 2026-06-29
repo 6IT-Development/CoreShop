@@ -3,7 +3,7 @@ services:
         public: true
 
     CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface:
-        alias: 'CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\WkHtmlToPdf'
+        alias: 'CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\MpdfRenderer'
         deprecated:
             package: 'coreshop/order-bundle'
             version: '4.1'

@@ -9,7 +9,7 @@ use CoreShop\Bundle\OrderReturnBundle\Form\Type\OrderReturnType;
 use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
-use CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface;
+use CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\PdfRendererInterface;
 use Pimcore\Model\Element\DuplicateFullPathException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf;
 
-use CoreShop\Bundle\OrderRetuenBundle\Renderer\Pdf\PdfRendererInterface;
+use CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\PdfRendererInterface;
 use Mpdf\Mpdf;
 use Mpdf\Config\ConfigVariables;
 use Mpdf\Config\FontVariables;

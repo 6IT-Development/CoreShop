@@ -6,5 +6,5 @@ services:
         arguments:
             - '%kernel.cache_dir%'
 
-    CoreShop\Bundle\OrderBundleReturn\Renderer\Pdf\PdfRendererInterface:
+    CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\PdfRendererInterface:
         alias: 'CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\MpdfRenderer'

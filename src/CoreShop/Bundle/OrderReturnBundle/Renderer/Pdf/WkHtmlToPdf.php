@@ -68,7 +68,21 @@ final class WkHtmlToPdf implements PdfRendererInterface
             if ($this->getWkHtmlToPdfBinary()) {
                 $pdfContent = $this->convert($bodyHtml, $config);
             } else {
-                $pdfContent = Processor::getInstance()->getPdfFromString($this->replaceUrls($string), $config);
+                $container = \Pimcore::getContainer();
+                $webToPrintGeneralTool = null;
+
+                if ($container->hasParameter('pimcore_web_to_print')) {
+                    $webToPrintParams = $container->getParameter('pimcore_web_to_print');
+                    if (is_array($webToPrintParams) && isset($webToPrintParams['generalTool']) && $webToPrintParams['generalTool']) {
+                        $webToPrintGeneralTool = $webToPrintParams['generalTool'];
+                    }
+                }
+
+                if ($webToPrintGeneralTool) {
+                    $pdfContent = Processor::getInstance()->getPdfFromString($this->replaceUrls($string), $config);
+                } else {
+                    throw new \Exception("Neither 'wkhtmltopdf' nor Pimcore 'WebToPrint' is configured. Please install 'wkhtmltopdf' or configure 'WebToPrint' in Pimcore Settings.");
+                }
             }
         } catch (\Exception $e) {
             $this->unlinkFile($bodyHtml);
@@ -194,7 +208,7 @@ final class WkHtmlToPdf implements PdfRendererInterface
         }
 
         // use xvfb if possible
-        if ($xvfb = self::getXvfbBinary()) {
+        if ($xvfb = $this->getXvfbBinary()) {
             $command = $xvfb . ' --auto-servernum --server-args="-screen 0, 1280x1024x24" ' . $wkHtmlTopPfBinary . ' --use-xserver ' . $options;
         } else {
             $command = $wkHtmlTopPfBinary . $options;
@@ -235,11 +249,15 @@ final class WkHtmlToPdf implements PdfRendererInterface
 
     private function getWkHtmlToPdfBinary(): ?string
     {
-        return Console::getExecutable('wkhtmltopdf');
+        $executable = Console::getExecutable('wkhtmltopdf');
+
+        return is_string($executable) ? $executable : null;
     }
 
-    private function getXvfbBinary(): string
+    private function getXvfbBinary(): ?string
     {
-        return (string) Console::getExecutable('xvfb-run');
+        $executable = Console::getExecutable('xvfb-run');
+
+        return is_string($executable) ? $executable : null;
     }
 }

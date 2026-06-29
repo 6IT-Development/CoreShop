@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CoreBundle\Command;
 
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 final class InstallResourcesCommand extends AbstractInstallCommand
@@ -33,12 +34,24 @@ final class InstallResourcesCommand extends AbstractInstallCommand
 The <info>%command.name%</info> command creates CoreShop Resources.
 EOT
             )
+            ->addOption(
+                'update-classes',
+                null,
+                InputOption::VALUE_NONE,
+                'Set this option to update class definitions if they already exist',
+            )
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->runCommands(['coreshop:resources:install' => ['--application-name' => 'coreshop']], $output, false, true);
+        $params = ['--application-name' => 'coreshop'];
+
+        if ($input->getOption('update-classes')) {
+            $params['--update-classes'] = true;
+        }
+
+        $this->runCommands(['coreshop:resources:install' => $params], $output, false, true);
 
         return 0;
     }

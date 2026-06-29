@@ -21,6 +21,7 @@ namespace CoreShop\Bundle\CoreBundle\Command;
 use CoreShop\Bundle\CoreBundle\Installer;
 use CoreShop\Bundle\CoreBundle\Installer\Checker\CommandDirectoryChecker;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -64,6 +65,12 @@ final class InstallCommand extends AbstractInstallCommand
 The <info>%command.name%</info> command installs CoreShop.
 EOT
             )
+            ->addOption(
+                'update-classes',
+                null,
+                InputOption::VALUE_NONE,
+                'Set this option to update class definitions if they already exist',
+            )
         ;
     }
 
@@ -89,7 +96,13 @@ EOT
                         $command['message'],
                     ),
                 );
-                $this->commandExecutor->runCommand('coreshop:install:' . $command['command'], [], $output);
+
+                $params = [];
+                if ($command['command'] === 'resources' && $input->getOption('update-classes')) {
+                    $params['--update-classes'] = true;
+                }
+
+                $this->commandExecutor->runCommand('coreshop:install:' . $command['command'], $params, $output);
             } catch (RuntimeException) {
                 $errored = true;
             }

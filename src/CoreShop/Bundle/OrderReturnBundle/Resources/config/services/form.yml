@@ -1,0 +1,13 @@
+parameters:
+    coreshop.form.type.order_return.validation_groups: [coreshop]
+
+services:
+    _defaults:
+        public: true
+
+    CoreShop\Bundle\OrderReturnBundle\Form\Type\OrderReturnType:
+        arguments:
+            - '%coreshop.model.order_return.class%'
+            - '%coreshop.form.type.order_return.validation_groups%'
+        tags:
+            - { name: form.type }

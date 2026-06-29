@@ -15,6 +15,11 @@ use Symfony\Component\Validator\Constraints\Email;
 
 final class OrderReturnType extends AbstractResourceType
 {
+    public function __construct(string $dataClass, array $validationGroups = [])
+    {
+        parent::__construct($dataClass, $validationGroups);
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -41,5 +46,10 @@ final class OrderReturnType extends AbstractResourceType
         ->add('submit', SubmitType::class, [
             'label' => 'Elállás megerősítése',
         ]);
+    }
+
+    public function getBlockPrefix(): string
+    {
+        return 'coreshop_order_return';
     }
 }

@@ -10,12 +10,20 @@ use CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface;
 use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
+use Pimcore\Model\Element\DuplicateFullPathException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class OrderReturnController extends FrontendController
 {
+    /**
+     * @throws NotFoundExceptionInterface
+     * @throws ContainerExceptionInterface
+     * @throws DuplicateFullPathException
+     */
     public function returnFormAction(Request $request): Response
     {
         $locale = \Pimcore\Tool::getDefaultLanguage();

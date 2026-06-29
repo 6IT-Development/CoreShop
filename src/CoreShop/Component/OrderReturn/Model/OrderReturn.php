@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\OrderReturn\Model;
 
+use Carbon\Carbon;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
 
@@ -110,12 +111,12 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
         return $this;
     }
 
-    public function getNotificationSentAt(): ?\DateTimeInterface
+    public function getNotificationSentAt(): ?Carbon
     {
         return $this->notificationSentAt;
     }
 
-    public function setNotificationSentAt(?\DateTimeInterface $notificationSentAt): static
+    public function setNotificationSentAt(?Carbon $notificationSentAt): static
     {
         $this->notificationSentAt = $notificationSentAt;
 

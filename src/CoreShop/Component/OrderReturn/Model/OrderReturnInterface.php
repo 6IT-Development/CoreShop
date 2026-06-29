@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\OrderReturn\Model;
 
+use Carbon\Carbon;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 
@@ -39,9 +40,9 @@ interface OrderReturnInterface extends ResourceInterface
 
     public function setNotificationSent(bool $notificationSent): static;
 
-    public function getNotificationSentAt(): ?\DateTimeInterface;
+    public function getNotificationSentAt(): ?Carbon;
 
-    public function setNotificationSentAt(?\DateTimeInterface $notificationSentAt): static;
+    public function setNotificationSentAt(?Carbon $notificationSentAt): static;
 
     public function getNotificationData(): ?string;
 

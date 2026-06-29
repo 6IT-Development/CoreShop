@@ -47,7 +47,7 @@ final class WkHtmlToPdf implements PdfRendererInterface
         $headerHtml = $this->createHtmlFile($header);
         $footerHtml = $this->createHtmlFile($footer);
 
-        if (!is_array($config['options'])) {
+        if (!isset($config['options']) || !is_array($config['options'])) {
             $config['options'] = [];
         }
 
@@ -163,7 +163,7 @@ final class WkHtmlToPdf implements PdfRendererInterface
         $options = ' ';
         $optionConfig = [];
 
-        if (is_array($config['options'])) {
+        if (isset($config['options']) && is_array($config['options'])) {
             foreach ($config['options'] as $argument => $value) {
                 // there is no value only the option
                 if (is_numeric($argument)) {

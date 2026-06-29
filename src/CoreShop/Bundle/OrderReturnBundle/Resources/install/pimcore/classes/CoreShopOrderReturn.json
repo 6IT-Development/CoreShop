@@ -210,8 +210,8 @@
             "showNonEditablePlaceholder": false
           },
           {
-            "name": "notificationSended",
-            "title": "Notification Sended",
+            "name": "notificationSent",
+            "title": "Notification Sent",
             "tooltip": "",
             "mandatory": false,
             "noteditable": false,
@@ -228,6 +228,27 @@
             "forbidden": false,
             "width": "",
             "defaultValue": 0,
+            "defaultValueGenerator": ""
+          },
+          {
+            "name": "notificationSentAt",
+            "title": "Notification Sent At",
+            "tooltip": "",
+            "mandatory": false,
+            "noteditable": false,
+            "index": false,
+            "locked": false,
+            "style": "",
+            "permissions": null,
+            "datatype": "data",
+            "fieldtype": "datetime",
+            "relationType": false,
+            "invisible": false,
+            "visibleGridView": true,
+            "visibleSearch": true,
+            "forbidden": false,
+            "width": "",
+            "defaultValue": null,
             "defaultValueGenerator": ""
           },
           {

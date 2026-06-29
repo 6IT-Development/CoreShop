@@ -35,9 +35,13 @@ interface OrderReturnInterface extends ResourceInterface
 
     public function setComment(?string $comment);
 
-    public function isNotificationSended(): bool;
+    public function isNotificationSent(): bool;
 
-    public function setNotificationSended(bool $notificationSended): static;
+    public function setNotificationSent(bool $notificationSent): static;
+
+    public function getNotificationSentAt(): ?\DateTimeInterface;
+
+    public function setNotificationSentAt(?\DateTimeInterface $notificationSentAt): static;
 
     public function getNotificationData(): ?string;
 

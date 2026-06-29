@@ -15,7 +15,8 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
     protected $order = null;
     protected $email = null;
     protected $comment = null;
-    protected $notificationSended = false;
+    protected $notificationSent = false;
+    protected $notificationSentAt = null;
     protected $notificationData = null;
     protected $pdfAttachment = null;
 
@@ -97,14 +98,26 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
         $this->comment = $comment;
     }
 
-    public function isNotificationSended(): bool
+    public function isNotificationSent(): bool
     {
-        return (bool)$this->notificationSended;
+        return (bool)$this->notificationSent;
     }
 
-    public function setNotificationSended(bool $notificationSended): static
+    public function setNotificationSent(bool $notificationSent): static
     {
-        $this->notificationSended = $notificationSended;
+        $this->notificationSent = $notificationSent;
+
+        return $this;
+    }
+
+    public function getNotificationSentAt(): ?\DateTimeInterface
+    {
+        return $this->notificationSentAt;
+    }
+
+    public function setNotificationSentAt(?\DateTimeInterface $notificationSentAt): static
+    {
+        $this->notificationSentAt = $notificationSentAt;
 
         return $this;
     }

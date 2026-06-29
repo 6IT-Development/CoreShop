@@ -68,15 +68,14 @@ class OrderReturnController extends FrontendController
                 $asset->save();
 
                 $orderReturn->setPdfAttachment($asset);
-                $orderReturn->setNotificationSended(true);
-                $orderReturn->setNotificationData($html);
+                
                 $orderReturn->save();
 
                 return $this->render(
                     '@CoreShopOrderReturn/OrderReturn/return-form.html.twig',
                     [
                         'success' => true,
-                        'pdfUrl' => $asset->getRealFullPath(),
+                        'pdfUrl' => $asset->getFullPath(),
                         'form' => $form->createView(),
                     ]
                 );

@@ -1,0 +1,12 @@
+services:
+    _defaults:
+        public: true
+
+    CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\WkHtmlToPdf:
+        arguments:
+            - '%kernel.cache_dir%'
+            - '%kernel.project_dir%'
+        deprecated:
+            package: 'coreshop/order-return-bundle'
+            version: '1.0'
+            message: 'The "%service_id%" service is deprecated and will be removed in CoreShop 5.0'

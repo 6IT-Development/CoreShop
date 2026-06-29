@@ -16,7 +16,10 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\OrderBundle\Renderer\Pdf;
+namespace CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf;
+
+use CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface;
+use Pimcore\Bundle\WebToPrintBundle\Processor;
 
 use Pimcore\Tool\Console;
 use Symfony\Component\Process\Process;
@@ -62,7 +65,11 @@ final class WkHtmlToPdf implements PdfRendererInterface
         $pdfContent = null;
 
         try {
-            $pdfContent = $this->convert($bodyHtml, $config);
+            if ($this->getWkHtmlToPdfBinary()) {
+                $pdfContent = $this->convert($bodyHtml, $config);
+            } else {
+                $pdfContent = Processor::getInstance()->getPdfFromString($this->replaceUrls($string), $config);
+            }
         } catch (\Exception $e) {
             $this->unlinkFile($bodyHtml);
             $this->unlinkFile($headerHtml);
@@ -226,9 +233,9 @@ final class WkHtmlToPdf implements PdfRendererInterface
         unlink($file);
     }
 
-    private function getWkHtmlToPdfBinary(): string
+    private function getWkHtmlToPdfBinary(): ?string
     {
-        return (string) Console::getExecutable('wkhtmltopdf', true);
+        return Console::getExecutable('wkhtmltopdf');
     }
 
     private function getXvfbBinary(): string

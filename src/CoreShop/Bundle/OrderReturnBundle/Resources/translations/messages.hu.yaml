@@ -1,4 +1,4 @@
-oreshop.ui.order_return: rendelés visszatérítése
+coreshop.ui.order_return: rendelés visszatérítése
 coreshop.ui.order_return.form.title: Elállás a szerződéstől
 coreshop.ui.order_return.form.desc: Kijelentem, hogy az alábbiakban megjelölt szerződés tekintetében gyakorlom elállási/felmondási jogomat
 coreshop.ui.order_return.form.lname: Fogyasztó vezetékneve

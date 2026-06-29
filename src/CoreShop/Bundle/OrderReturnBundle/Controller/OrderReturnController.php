@@ -69,7 +69,7 @@ class OrderReturnController extends FrontendController
                 }
 
                 $orderReturn->save();
-                
+
                 $htmlPdf = $this->renderView('@CoreShopOrderReturn/OrderReturn/pdf.html.twig', [
                     'orderReturn' => $orderReturn,
                 ]);
@@ -98,20 +98,24 @@ class OrderReturnController extends FrontendController
                 
                 $orderReturn->save();
 
-                return $this->render(
-                    '@CoreShopOrderReturn/OrderReturn/return-form.html.twig',
-                    [
-                        'success' => true,
-                        'pdfUrl' => $asset->getFullPath(),
-                        'form' => $form->createView(),
-                    ]
-                );
+                return $this->redirectToRoute('coreshop_order_return_form', [
+                    'success' => true,
+                    'pdfUrl' => $asset->getFullPath(),
+                ]);
             }
         }
 
         $params = [
             'form' => $form->createView(),
         ];
+
+        if ($request->query->get('success')) {
+            $params['success'] = true;
+        }
+
+        if ($request->query->get('pdfUrl')) {
+            $params['pdfUrl'] = $request->query->get('pdfUrl');
+        }
 
         return $this->render(
             '@CoreShopOrderReturn/OrderReturn/return-form.html.twig', $params

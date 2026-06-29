@@ -16,8 +16,11 @@ declare(strict_types=1);
  *
  */
 
-namespace CoreShop\Bundle\OrderBundle\Renderer\Pdf;
+namespace CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf;
 
+/**
+ * @deprecated Deprecated since CoreShop 4.1, to be removed in CoreShop 5.0. No replacement available, use Pimcore's Web2Print Renderer instead.
+ */
 interface PdfRendererInterface
 {
     public function fromString(string $string, string $header = '', string $footer = '', array $config = []): string;

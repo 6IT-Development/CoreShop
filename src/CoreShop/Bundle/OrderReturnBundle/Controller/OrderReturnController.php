@@ -18,12 +18,12 @@ class OrderReturnController extends FrontendController
 {
     public function returnFormAction(Request $request): Response
     {
-        $shopperContext = $this->container->get(\CoreShop\Component\Core\Context\ShopperContextInterface::class);
-        $locale = $shopperContext->getLocaleCode();
-        
-        $request->setLocale($locale);
-        $request->attributes->set('_locale', $locale);
-        $this->container->get('translator')->setLocale($locale);
+        $locale = \Pimcore\Tool::getDefaultLanguage();
+        if($locale){
+            $request->setLocale($locale);
+            $request->attributes->set('_locale', $locale);
+            $this->container->get('translator')->setLocale($locale);
+        }
 
         /** @var FactoryInterface $factory */
         $factory = $this->container->get('coreshop.factory.order_return');

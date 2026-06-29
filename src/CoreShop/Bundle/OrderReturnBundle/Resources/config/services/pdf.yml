@@ -5,3 +5,10 @@ services:
     CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\MpdfRenderer:
         arguments:
             - '%kernel.cache_dir%'
+
+    CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface:
+        alias: 'CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\MpdfRenderer'
+        deprecated:
+            package: 'coreshop/order-bundle'
+            version: '4.1'
+            message: 'The "%alias_id%" service is deprecated and will be removed in CoreShop 5.0'

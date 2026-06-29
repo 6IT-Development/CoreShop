@@ -3,12 +3,20 @@ services:
         public: true
 
     CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface:
-        alias: 'CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\MpdfRenderer'
+        alias: 'CoreShop\Bundle\OrderBundle\Renderer\Pdf\WkHtmlToPdf'
         deprecated:
             package: 'coreshop/order-bundle'
             version: '4.1'
             message: 'The "%alias_id%" service is deprecated and will be removed in CoreShop 5.0'
 
+    CoreShop\Bundle\OrderBundle\Renderer\Pdf\WkHtmlToPdf:
+        arguments:
+            - '%kernel.cache_dir%'
+            - '%kernel.project_dir%'
+        deprecated:
+            package: 'coreshop/order-bundle'
+            version: '4.1'
+            message: 'The "%service_id%" service is deprecated and will be removed in CoreShop 5.0'
 
     coreshop.renderer.order.pdf:
         alias: 'CoreShop\Component\Order\Renderer\OrderDocumentRendererInterface'

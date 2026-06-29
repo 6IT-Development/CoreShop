@@ -10,6 +10,7 @@ use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Bundle\OrderReturnBundle\Renderer\Pdf\PdfRendererInterface;
+use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use Pimcore\Model\Element\DuplicateFullPathException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -54,6 +55,17 @@ class OrderReturnController extends FrontendController
                 $orderReturn->setParent($objectService->createFolderByPath(
                     (string) $this->getParameter('coreshop.folder.order_return')
                 ));
+
+                $orderNumber = $orderReturn->getOrderNumber();
+                if ($orderNumber) {
+                    /** @var OrderRepositoryInterface $orderRepository */
+                    $orderRepository = $this->container->get('coreshop.repository.order');
+                    $order = $orderRepository->findOneBy(['orderNumber' => $orderNumber]);
+
+                    if ($order) {
+                        $orderReturn->setOrder($order);
+                    }
+                }
 
                 $orderReturn->save();
 
@@ -110,6 +122,7 @@ class OrderReturnController extends FrontendController
     {
         return array_merge(parent::getSubscribedServices(), [
             'coreshop.factory.order_return' => FactoryInterface::class,
+            'coreshop.repository.order' => OrderRepositoryInterface::class,
             ObjectServiceInterface::class => ObjectServiceInterface::class,
             PdfRendererInterface::class => PdfRendererInterface::class,
         ]);

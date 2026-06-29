@@ -7,8 +7,9 @@ namespace CoreShop\Component\OrderReturn\Model;
 use Carbon\Carbon;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
+use Pimcore\Model\DataObject\PreGetValueHookInterface;
 
-abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnInterface
+abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnInterface, PreGetValueHookInterface
 {
     protected $firstName = null;
     protected $lastName = null;
@@ -20,18 +21,46 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
     protected $notificationSentAt = null;
     protected $notificationData = null;
     protected $pdfAttachment = null;
+    protected $returnedAt = null;
 
     public function getFirstName(): ?string
     {
         return $this->firstName;
     }
 
-    public function getReturnedAt(): ?Carbon
+    protected function calculateReturnedAt(): ?Carbon
     {
+        if ($this->returnedAt instanceof \DateTimeInterface) {
+            return Carbon::instance($this->returnedAt);
+        }
+
         $creationDate = $this->getCreationDate();
 
+        if ($creationDate instanceof \DateTimeInterface) {
+            return Carbon::instance($creationDate);
+        }
 
-        return $this->notificationSentAt;
+        if (is_numeric($creationDate) && $creationDate > 0) {
+            return Carbon::createFromTimestamp((int)$creationDate);
+        }
+
+        return null;
+    }
+
+    public function preGetValue(string $name): mixed
+    {
+        if ($name === 'returnedAt') {
+            return $this->calculateReturnedAt();
+        }
+
+        return null;
+    }
+
+    public function preSave($isUpdate)
+    {
+        $this->returnedAt = $this->calculateReturnedAt() ?? Carbon::now();
+
+        parent::preSave($isUpdate);
     }
 
     public function setFirstName(?string $firstName)

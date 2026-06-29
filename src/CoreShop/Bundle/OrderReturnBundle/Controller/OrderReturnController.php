@@ -5,50 +5,44 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\OrderReturnBundle\Controller;
 
 use CoreShop\Bundle\FrontendBundle\Controller\FrontendController;
+use CoreShop\Bundle\OrderReturnBundle\Form\Type\OrderReturnType;
+use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
+use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
+use CoreShop\Component\Resource\Factory\FactoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Email;
 
 class OrderReturnController extends FrontendController
 {
     public function returnFormAction(Request $request): Response
     {
-        $form = $this->createFormBuilder()
-            ->add('lastName', TextType::class, [
-                'label' => 'Fogyasztó vezetékneve',
-                'constraints' => [new NotBlank()],
-            ])
-            ->add('firstName', TextType::class, [
-                'label' => 'Fogyasztó keresztneve',
-                'constraints' => [new NotBlank()],
-            ])
-            ->add('orderNumber', TextType::class, [
-                'label' => 'Megrendelés azonosító',
-                'constraints' => [new NotBlank()],
-            ])
-            ->add('email', EmailType::class, [
-                'label' => 'Email cím',
-                'constraints' => [new NotBlank(), new Email()],
-            ])
-            ->add('comment', TextareaType::class, [
-                'label' => 'Megjegyzés',
-                'required' => false,
-            ])
-            ->add('submit', SubmitType::class, [
-                'label' => 'Elállás megerősítése',
-            ])
-            ->getForm();
+        /** @var FactoryInterface $factory */
+        $factory = $this->container->get('coreshop.factory.order_return');
+        /** @var OrderReturnInterface $orderReturn */
+        $orderReturn = $factory->createNew();
 
-        $form->handleRequest($request);
+        $form = $this->container->get('form.factory')->createNamed(
+            'coreshop', OrderReturnType::class, $orderReturn
+        );
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $orderReturn = $form->getData();
+        if (in_array($request->getMethod(), ['POST'], true)) {
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                /** @var ObjectServiceInterface $objectService */
+                $objectService = $this->container->get(ObjectServiceInterface::class);
+
+                $orderReturn->setPublished(true);
+                $orderReturn->setKey(uniqid('order-return-'));
+                $orderReturn->setParent($objectService->createFolderByPath(
+                    (string) $this->getParameter('coreshop.folder.order_return')
+                ));
+
+                $orderReturn->save();
+
+                return $this->redirectToRoute($request->attributes->get('_route'), $request->attributes->get('_route_params'));
+            }
         }
 
         $params = [
@@ -60,4 +54,11 @@ class OrderReturnController extends FrontendController
         );
     }
 
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            'coreshop.factory.order_return' => FactoryInterface::class,
+            ObjectServiceInterface::class => ObjectServiceInterface::class,
+        ]);
+    }
 }

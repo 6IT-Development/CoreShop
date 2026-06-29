@@ -37,13 +37,13 @@ interface OrderReturnInterface extends ResourceInterface
 
     public function isNotificationSended(): bool;
 
-    public function setNotificationSended(bool $notificationSended);
+    public function setNotificationSended(bool $notificationSended): static;
 
     public function getNotificationData(): ?string;
 
-    public function setNotificationData(?string $notificationData);
+    public function setNotificationData(?string $notificationData): static;
 
-    public function getPdfAttachment(): mixed;
+    public function getPdfAttachment(): ?\Pimcore\Model\Element\AbstractElement;
 
-    public function setPdfAttachment(mixed $pdfAttachment);
+    public function setPdfAttachment(?\Pimcore\Model\Element\AbstractElement $pdfAttachment): static;
 }

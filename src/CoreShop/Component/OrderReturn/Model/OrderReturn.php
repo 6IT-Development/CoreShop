@@ -102,9 +102,11 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
         return (bool)$this->notificationSended;
     }
 
-    public function setNotificationSended(bool $notificationSended)
+    public function setNotificationSended(bool $notificationSended): static
     {
         $this->notificationSended = $notificationSended;
+
+        return $this;
     }
 
     public function getNotificationData(): ?string
@@ -112,18 +114,22 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
         return $this->notificationData;
     }
 
-    public function setNotificationData(?string $notificationData)
+    public function setNotificationData(?string $notificationData): static
     {
         $this->notificationData = $notificationData;
+
+        return $this;
     }
 
-    public function getPdfAttachment(): mixed
+    public function getPdfAttachment(): ?\Pimcore\Model\Element\AbstractElement
     {
         return $this->pdfAttachment;
     }
 
-    public function setPdfAttachment(mixed $pdfAttachment)
+    public function setPdfAttachment(?\Pimcore\Model\Element\AbstractElement $pdfAttachment): static
     {
         $this->pdfAttachment = $pdfAttachment;
+
+        return $this;
     }
 }

@@ -263,22 +263,24 @@
             "style": "",
             "permissions": null,
             "datatype": "data",
-            "fieldtype": "href",
-            "relationType": false,
+            "fieldtype": "manyToOneRelation",
+            "relationType": true,
             "invisible": false,
             "visibleGridView": true,
             "visibleSearch": true,
             "forbidden": false,
             "width": "",
             "assetTypes": [
-              "document"
-            ],
-            "allowedTypes": [
-              "asset"
+              {
+                "assetTypes": "document"
+              }
             ],
             "objectsAllowed": false,
             "assetsAllowed": true,
-            "documentsAllowed": false
+            "documentsAllowed": false,
+            "documentTypes": [],
+            "classes": [],
+            "pathFormatterClass": ""
           }
         ]
       }

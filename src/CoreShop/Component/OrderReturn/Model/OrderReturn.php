@@ -30,10 +30,6 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
 
     protected function calculateReturnedAt(): ?Carbon
     {
-        if ($this->returnedAt instanceof \DateTimeInterface) {
-            return Carbon::instance($this->returnedAt);
-        }
-
         $creationDate = $this->getCreationDate();
 
         if ($creationDate instanceof \DateTimeInterface) {

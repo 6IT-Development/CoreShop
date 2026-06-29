@@ -15,29 +15,27 @@ use Symfony\Component\Validator\Constraints\Email;
 
 final class OrderReturnType extends AbstractResourceType
 {
-    public function __construct(string $dataClass, array $validationGroups = [])
-    {
-        parent::__construct($dataClass, $validationGroups);
-    }
-
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
         ->add('lastName', TextType::class, [
         'label' => 'Fogyasztó vezetékneve',
-        'constraints' => [new NotBlank()],
+        'constraints' => [new NotBlank(['groups' => ['coreshop']])],
     ])
         ->add('firstName', TextType::class, [
             'label' => 'Fogyasztó keresztneve',
-            'constraints' => [new NotBlank()],
+            'constraints' => [new NotBlank(['groups' => ['coreshop']])],
         ])
         ->add('orderNumber', TextType::class, [
             'label' => 'Megrendelés azonosító',
-            'constraints' => [new NotBlank()],
+            'constraints' => [new NotBlank(['groups' => ['coreshop']])],
         ])
         ->add('email', EmailType::class, [
             'label' => 'Email cím',
-            'constraints' => [new NotBlank(), new Email()],
+            'constraints' => [
+                new NotBlank(['groups' => ['coreshop']]),
+                new Email(['groups' => ['coreshop']])
+            ],
         ])
         ->add('comment', TextareaType::class, [
             'label' => 'Megjegyzés',

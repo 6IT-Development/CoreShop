@@ -6,6 +6,7 @@ namespace CoreShop\Bundle\OrderReturnBundle\Controller;
 
 use CoreShop\Bundle\FrontendBundle\Controller\FrontendController;
 use CoreShop\Bundle\OrderReturnBundle\Form\Type\OrderReturnType;
+use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
@@ -62,21 +63,20 @@ class OrderReturnController extends FrontendController
                     $orderRepository = $this->container->get('coreshop.repository.order');
                     $order = $orderRepository->findOneBy(['orderNumber' => $orderNumber]);
 
-                    if ($order) {
+                    if ($order instanceof OrderInterface) {
                         $orderReturn->setOrder($order);
                     }
                 }
 
                 $orderReturn->save();
-
-                // PDF Generation
-                $html = $this->renderView('@CoreShopOrderReturn/OrderReturn/pdf.html.twig', [
+                
+                $htmlPdf = $this->renderView('@CoreShopOrderReturn/OrderReturn/pdf.html.twig', [
                     'orderReturn' => $orderReturn,
                 ]);
 
                 /** @var PdfRendererInterface $pdfRenderer */
                 $pdfRenderer = $this->container->get(PdfRendererInterface::class);
-                $pdfContent = $pdfRenderer->fromString($html);
+                $pdfContent = $pdfRenderer->fromString($htmlPdf);
 
                 $folderPath = '/coreshop_order_return/' . uniqid('pdf-');
                 $folder = \Pimcore\Model\Asset\Service::createFolderByPath($folderPath);

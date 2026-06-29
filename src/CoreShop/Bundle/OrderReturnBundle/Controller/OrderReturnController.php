@@ -6,6 +6,7 @@ namespace CoreShop\Bundle\OrderReturnBundle\Controller;
 
 use CoreShop\Bundle\FrontendBundle\Controller\FrontendController;
 use CoreShop\Bundle\OrderReturnBundle\Form\Type\OrderReturnType;
+use CoreShop\Bundle\OrderBundle\Renderer\Pdf\PdfRendererInterface;
 use CoreShop\Component\OrderReturn\Model\OrderReturnInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
@@ -41,7 +42,45 @@ class OrderReturnController extends FrontendController
 
                 $orderReturn->save();
 
-                return $this->redirectToRoute($request->attributes->get('_route'), $request->attributes->get('_route_params'));
+                // PDF Generation
+                $html = $this->renderView('@CoreShopOrderReturn/OrderReturn/pdf.html.twig', [
+                    'orderReturn' => $orderReturn,
+                ]);
+
+                /** @var PdfRendererInterface $pdfRenderer */
+                $pdfRenderer = $this->container->get(PdfRendererInterface::class);
+                $pdfContent = $pdfRenderer->fromString($html);
+
+                $folderPath = '/coreshop_order_return/' . uniqid('pdf-');
+                $folder = \Pimcore\Model\Asset\Service::createFolderByPath($folderPath);
+
+                $filename = sprintf('%s-%s-order-return-%s.pdf',
+                    $orderReturn->getFirstName(),
+                    $orderReturn->getLastName(),
+                    $orderReturn->getOrderNumber()
+                );
+                $filename = \Pimcore\File::getValidFilename($filename);
+
+                $asset = new \Pimcore\Model\Asset();
+                $asset->setFilename($filename);
+                $asset->setParent($folder);
+                $asset->setData($pdfContent);
+                $asset->setPublished(true);
+                $asset->save();
+
+                $orderReturn->setPdfAttachment($asset);
+                $orderReturn->setNotificationSended(true);
+                $orderReturn->setNotificationData($html);
+                $orderReturn->save();
+
+                return $this->render(
+                    '@CoreShopOrderReturn/OrderReturn/return-form.html.twig',
+                    [
+                        'success' => true,
+                        'pdfUrl' => $asset->getRealFullPath(),
+                        'form' => $form->createView(),
+                    ]
+                );
             }
         }
 
@@ -59,6 +98,7 @@ class OrderReturnController extends FrontendController
         return array_merge(parent::getSubscribedServices(), [
             'coreshop.factory.order_return' => FactoryInterface::class,
             ObjectServiceInterface::class => ObjectServiceInterface::class,
+            PdfRendererInterface::class => PdfRendererInterface::class,
         ]);
     }
 }

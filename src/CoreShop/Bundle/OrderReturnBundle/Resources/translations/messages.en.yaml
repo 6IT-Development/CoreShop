@@ -8,3 +8,8 @@ coreshop.ui.order_return.form.email: Email address
 coreshop.ui.order_return.form.comment: Comment
 coreshop.ui.order_return.form.confirm: By clicking "Confirm withdrawal", you make an electronic declaration of withdrawal and declare that you have read and accept the terms of the data processing information regarding the withdrawal function.
 coreshop.ui.order_return.form.confirm.button: Confirm withdrawal
+coreshop.ui.order_return.form.success: Thank you for your inquiry, our colleagues will respond to you soon.
+coreshop.ui.order_return.form.download_pdf: Download PDF
+coreshop.ui.order_return.pdf.title: Withdrawal Declaration
+coreshop.ui.order_return.pdf.greeting: Thank you for your inquiry, we will respond soon.
+coreshop.ui.order_return.pdf.data: Submitted data:

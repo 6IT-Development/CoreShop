@@ -8,3 +8,8 @@ coreshop.ui.order_return.form.email: Email cím
 coreshop.ui.order_return.form.comment: Megjegyzés
 coreshop.ui.order_return.form.confirm: Az "Elállás megerősítése" megnyomásával Ön elektronikus úton elállási nyilatkozatot tesz és nyilatkozik, hogy megismerte és elfogadja az elállási funkcióval kapcsolatban az adatkezelési tájékoztatóban írtakat.
 coreshop.ui.order_return.form.confirm.button: Elállás megerősítése
+coreshop.ui.order_return.form.success: Köszönjük megkeresését, kollégáink hamarosan válaszolnak Önnek.
+coreshop.ui.order_return.form.download_pdf: PDF letöltése
+coreshop.ui.order_return.pdf.title: Elállási nyilatkozat
+coreshop.ui.order_return.pdf.greeting: Köszönjük megkeresését, hamarosan válaszolunk.
+coreshop.ui.order_return.pdf.data: Beküldött adatok:

@@ -16,12 +16,25 @@
       <h1>{{ 'coreshop.ui.order_return.form.title'|trans }}</h1>
       <p>{{ 'coreshop.ui.order_return.form.desc'|trans }}</p>
 
-      {{ form_start(form) }}
-      {{ form_widget(form) }}
-      {{ form_end(form) }}
+      {% if success|default(false) %}
+          <div class="alert alert-success mt-4">
+              {{ 'coreshop.ui.order_return.form.success'|trans }}
+          </div>
+          {% if pdfUrl is defined %}
+              <div class="mt-4">
+                  <a href="{{ pdfUrl }}" class="btn btn-primary" target="_blank">
+                      <i class="fa fa-file-pdf-o"></i> {{ 'coreshop.ui.order_return.form.download_pdf'|trans }}
+                  </a>
+              </div>
+          {% endif %}
+      {% else %}
+          {{ form_start(form) }}
+          {{ form_widget(form) }}
+          {{ form_end(form) }}
 
-      <p class="order-return-confirm mt-3">
-         {{ 'coreshop.ui.order_return.form.confirm'|trans }}
-      </p>
+          <p class="order-return-confirm mt-3">
+             {{ 'coreshop.ui.order_return.form.confirm'|trans }}
+          </p>
+      {% endif %}
    </div>
 {% endblock %}

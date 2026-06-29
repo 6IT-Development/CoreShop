@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        h1 {
+            font-size: 18px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
+        }
+        .data-section {
+            margin-top: 20px;
+        }
+        .data-row {
+            margin-bottom: 5px;
+        }
+        .label {
+            font-weight: bold;
+        }
+        .greeting {
+            margin-top: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ 'coreshop.ui.order_return.pdf.title'|trans }}</h1>
+
+    <div class="data-section">
+        <p class="label">{{ 'coreshop.ui.order_return.pdf.data'|trans }}</p>
+        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.lname'|trans }}:</span> {{ orderReturn.lastName }}</div>
+        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.fname'|trans }}:</span> {{ orderReturn.firstName }}</div>
+        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.email'|trans }}:</span> {{ orderReturn.email }}</div>
+        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.ordnum'|trans }}:</span> {{ orderReturn.orderNumber }}</div>
+        {% if orderReturn.comment %}
+            <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.comment'|trans }}:</span> {{ orderReturn.comment }}</div>
+        {% endif %}
+    </div>
+
+    <div class="greeting">
+        {{ 'coreshop.ui.order_return.pdf.greeting'|trans }}
+    </div>
+</body>
+</html>

@@ -34,4 +34,16 @@ interface OrderReturnInterface extends ResourceInterface
     public function getComment(): ?string;
 
     public function setComment(?string $comment);
+
+    public function isNotificationSended(): bool;
+
+    public function setNotificationSended(bool $notificationSended);
+
+    public function getNotificationData(): ?string;
+
+    public function setNotificationData(?string $notificationData);
+
+    public function getPdfAttachment(): mixed;
+
+    public function setPdfAttachment(mixed $pdfAttachment);
 }

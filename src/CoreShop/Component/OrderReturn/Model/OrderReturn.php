@@ -15,6 +15,9 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
     protected $order = null;
     protected $email = null;
     protected $comment = null;
+    protected $notificationSended = false;
+    protected $notificationData = null;
+    protected $pdfAttachment = null;
 
     public function getFirstName(): ?string
     {
@@ -92,5 +95,35 @@ abstract class OrderReturn extends AbstractPimcoreModel implements OrderReturnIn
     public function setComment(?string $comment)
     {
         $this->comment = $comment;
+    }
+
+    public function isNotificationSended(): bool
+    {
+        return (bool)$this->notificationSended;
+    }
+
+    public function setNotificationSended(bool $notificationSended)
+    {
+        $this->notificationSended = $notificationSended;
+    }
+
+    public function getNotificationData(): ?string
+    {
+        return $this->notificationData;
+    }
+
+    public function setNotificationData(?string $notificationData)
+    {
+        $this->notificationData = $notificationData;
+    }
+
+    public function getPdfAttachment(): mixed
+    {
+        return $this->pdfAttachment;
+    }
+
+    public function setPdfAttachment(mixed $pdfAttachment)
+    {
+        $this->pdfAttachment = $pdfAttachment;
     }
 }

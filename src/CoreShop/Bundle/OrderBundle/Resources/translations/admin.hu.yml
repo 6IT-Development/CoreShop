@@ -2,3 +2,5 @@ coreshop_order: 'Rendelések'
 coreshop_order_return: 'Visszaküldött rendelések'
 coreshop_order_returns: 'Visszaküldött rendelések'
 coreshop_order_create: 'Rendelés létrehozása'
+coreshop_order_return_id: Elállás azonosító
+coreshop_order_return_date: Elállás ideje

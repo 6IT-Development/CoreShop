@@ -480,3 +480,5 @@ coreshop.order.converted_payment_total: 'Converted Payment Total'
 coreshop.order.payment_total: 'Payment Total'
 coreshop.order.carrier: 'Carrier'
 coreshop.order.weight: 'Weight'
+coreshop_order_return_id: Order return ID
+coreshop_order_return_date: Order return date/time

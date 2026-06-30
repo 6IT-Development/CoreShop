@@ -32,9 +32,24 @@
     <h1>{{ 'coreshop.ui.order_return.pdf.title'|trans }}</h1>
 
     <div class="data-section">
-        <p class="label">{{ 'coreshop.ui.order_return.pdf.data'|trans }}</p>
-        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.lname'|trans }}:</span> {{ orderReturn.lastName }}</div>
-        <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.fname'|trans }}:</span> {{ orderReturn.firstName }}</div>
+        <p class="label">{{ 'coreshop.ui.order_return.pdf.data'|trans }}:</p>
+        <div class="data-row">
+            <span class="label">
+                {{ 'coreshop.ui.order_return.object.creation_date'|trans }}:
+            </span>
+            {{ orderReturn.creationDate }}
+        </div>
+        <div class="data-row">
+            <span class="label">
+                {{ 'coreshop.ui.order_return.form.lname'|trans }}:
+            </span>
+            {{ orderReturn.lastName }}
+        </div>
+        <div class="data-row">
+            <span class="label">
+                {{ 'coreshop.ui.order_return.form.fname'|trans }}:
+            </span> {{ orderReturn.firstName }}
+        </div>
         <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.email'|trans }}:</span> {{ orderReturn.email }}</div>
         <div class="data-row"><span class="label">{{ 'coreshop.ui.order_return.form.ordnum'|trans }}:</span> {{ orderReturn.orderNumber }}</div>
         {% if orderReturn.comment %}

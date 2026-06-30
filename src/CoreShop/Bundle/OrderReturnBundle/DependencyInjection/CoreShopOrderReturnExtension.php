@@ -32,6 +32,8 @@ class CoreShopOrderReturnExtension extends AbstractModelExtension
     {
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
 
+        $container->setParameter('coreshop.order_return.enabled', $configs['enabled']);
+
         $this->registerResources('coreshop', CoreShopResourceBundle::DRIVER_DOCTRINE_ORM, $configs['resources'], $container);
         $this->registerPimcoreModels('coreshop', $configs['pimcore'], $container);
 

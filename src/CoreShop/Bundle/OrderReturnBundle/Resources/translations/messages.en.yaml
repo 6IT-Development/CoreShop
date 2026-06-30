@@ -12,4 +12,5 @@ coreshop.ui.order_return.form.success: Thank you for your inquiry, our colleague
 coreshop.ui.order_return.form.download_pdf: Download PDF
 coreshop.ui.order_return.pdf.title: Withdrawal Declaration
 coreshop.ui.order_return.pdf.greeting: Thank you for your inquiry, we will respond soon.
-coreshop.ui.order_return.pdf.data: Submitted data:
+coreshop.ui.order_return.pdf.data: "Submitted data"
+coreshop.ui.order_return.object.creation_date: Order return date

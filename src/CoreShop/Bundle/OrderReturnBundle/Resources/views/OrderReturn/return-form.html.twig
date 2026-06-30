@@ -9,7 +9,9 @@
             <li class="breadcrumb-item">
                <a href="{{ path('coreshop_index') }}">{{ 'coreshop.ui.home'|trans }}</a>
             </li>
-            <li class="breadcrumb-item active">{{ 'coreshop.ui.order_return'|trans }}</li>
+            <li class="breadcrumb-item active">
+                <a href="{{ path('coreshop_order_return_form') }}">{{ 'coreshop.ui.order_return'|trans }}</a>
+            </li>
          </ol>
       </nav>
 

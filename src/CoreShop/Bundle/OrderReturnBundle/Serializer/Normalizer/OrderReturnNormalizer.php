@@ -14,6 +14,10 @@ class OrderReturnNormalizer implements NormalizerInterface
      */
     public function normalize($object, ?string $format = null, array $context = []): array
     {
+        if(!$object instanceof OrderReturn) {
+            return [];
+        }
+
         $pdfAttachment = $object->getPdfAttachment();
         $pdfPath = ($pdfAttachment && $pdfAttachment->getFullPath()) ? \Pimcore\Tool::getHostUrl() . $pdfAttachment->getFullPath() : '';
 
@@ -28,7 +32,7 @@ class OrderReturnNormalizer implements NormalizerInterface
             ],
             'pdfPath' => $pdfPath,
             'notification' => [
-                'sent' => $object->getNotificationSent(),
+                'sent' => $object->isNotificationSent(),
                 'sentAt' => $object->getNotificationSentAt(),
                 'data' => $object->getNotificationData(),
             ],

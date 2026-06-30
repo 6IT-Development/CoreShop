@@ -19,11 +19,22 @@ class OrderReturnNormalizer implements NormalizerInterface
 
         return [
             'returnedAt' => $object->getReturnedAt(),
-            'orderNumber' => $object->getOrderNumber(),
-            'firstname' => $object->getFirstName(),
-            'lastname' => $object->getLastName(),
-            'email' => $object->getEmail(),
+            'customer' => [
+                'firstname' => $object->getFirstName(),
+                'lastname' => $object->getLastName(),
+                'fullName' => $object->getFirstName() . ' ' . $object->getLastName(),
+                'email' => $object->getEmail(),
+            ],
             'pdfPath' => $pdfPath,
+            'notification' => [
+                'sent' => $object->getNotificationSent(),
+                'sentAt' => $object->getNotificationSentAt(),
+                'data' => $object->getNotificationData(),
+            ],
+            'order' => [
+                'id' => $object->getOrder()->getId(),
+                'number' => $object->getOrder()->getOrderNumber(),
+            ],
         ];
     }
 

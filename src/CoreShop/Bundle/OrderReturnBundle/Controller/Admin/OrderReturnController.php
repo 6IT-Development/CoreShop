@@ -23,7 +23,7 @@ class OrderReturnController extends AdminController
             return $this->viewHandler->handle(['success' => false, 'message' => 'Order not found']);
         }
 
-        $returns = $this->getOrderReturnRepository()->findBy(['order__id' => $order], ['creationDate' => 'DESC']);
+        $returns = $this->getOrderReturnRepository()->findBy(['order__id' => $order->getId()], ['creationDate' => 'DESC']);
 
         $parsedData = [];
         /** @var OrderReturnInterface $return */

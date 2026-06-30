@@ -14,3 +14,5 @@ coreshop.ui.order_return.pdf.title: Withdrawal Declaration
 coreshop.ui.order_return.pdf.greeting: Thank you for your inquiry, we will respond soon.
 coreshop.ui.order_return.pdf.data: "Submitted data"
 coreshop.ui.order_return.object.creation_date: Order return date
+coreshop_order_return_id: Order return ID
+coreshop_order_return_date: Order return date/time

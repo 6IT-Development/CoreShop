@@ -18,6 +18,7 @@ class OrderReturnNormalizer implements NormalizerInterface
         $pdfPath = ($pdfAttachment && $pdfAttachment->getFullPath()) ? \Pimcore\Tool::getHostUrl() . $pdfAttachment->getFullPath() : '';
 
         return [
+            'id' => $object->getId(),
             'returnedAt' => $object->getReturnedAt(),
             'customer' => [
                 'firstname' => $object->getFirstName(),

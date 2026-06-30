@@ -1,0 +1,6 @@
+services:
+    CoreShop\Bundle\OrderReturnBundle\Twig\OrderReturnDateExtension:
+        arguments:
+            - '@CoreShop\Component\Locale\Context\LocaleContextInterface'
+        tags:
+            - { name: twig.extension }

@@ -13,4 +13,4 @@ coreshop.ui.order_return.form.download_pdf: PDF letöltése
 coreshop.ui.order_return.pdf.title: Elállási nyilatkozat
 coreshop.ui.order_return.pdf.greeting: Köszönjük megkeresését, hamarosan válaszolunk.
 coreshop.ui.order_return.pdf.data: Beküldött adatok
-coreshop.ui.order_return.object.creation_date: Visszatérítés dátuma
+coreshop.ui.order_return.object.creation_date: Elállás dátuma

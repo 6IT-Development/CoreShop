@@ -1,0 +1,7 @@
+services:
+    _defaults:
+        public: true
+
+    CoreShop\Bundle\OrderReturnBundle\Serializer\Normalizer\OrderReturnNormalizer:
+        tags:
+            - { name: serializer.normalizer }

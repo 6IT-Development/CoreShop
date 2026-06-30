@@ -64,6 +64,19 @@ coreshop.order.order.detail.blocks.returns = Class.create(coreshop.order.order.d
         //Add return to list
     },
 
+    open: function (id, callback) {
+        try {
+            pimcore.helpers.openObject(id, 'object');
+        } catch (e) {
+            console.error(e);
+            pimcore.helpers.showNotification(t('error'), t('problem_opening_new_target'), 'error');
+        } finally {
+            if (typeof callback === 'function') {
+                callback();
+            }
+        }
+    },
+
     getPriority: function () {
         return 20;
     },

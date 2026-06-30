@@ -1,0 +1,5 @@
+coreshop_admin_order_return_list:
+    path: /%coreshop.admin.route.base%/order-return/list
+    defaults: { _controller: 'coreshop.pimcore_controller.order_return::listAction'}
+    options:
+        expose: true

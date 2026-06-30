@@ -42,7 +42,7 @@ coreshop.order.order.detail.blocks.returns = Class.create(coreshop.order.order.d
                 me.layout.setLoading(false);
 
                 if (res.success) {
-                    if (res.comments.length === 0) {
+                    if (res.returns.length === 0) {
                         me.layout.add({
                             'xtype': 'panel',
                             'html': '<span class="coreshop-order-return-nothing-found">' + t('coreshop_order_return_nothing_found') + '</span>'
@@ -61,7 +61,26 @@ coreshop.order.order.detail.blocks.returns = Class.create(coreshop.order.order.d
     },
 
     addReturnToList: function (ret) {
-        //Add return to list
+        var me = this;
+
+        var date = new Date(ret.creationDate * 1000);
+        var dateString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+        var item = Ext.create('Ext.Component', {
+            html: '<div class="coreshop-order-return-box" style="border: 1px solid #666; padding: 10px; margin-bottom: 10px; border-radius: 3px; cursor: pointer; background-color: #f9f9f9;">' +
+                '<div style="font-weight: bold; margin-bottom: 5px;">' + t('coreshop_order_return_id') + ': ' + ret.id + '</div>' +
+                '<div>' + t('coreshop_order_return_date') + ': ' + dateString + '</div>' +
+                '</div>',
+            listeners: {
+                render: function (c) {
+                    c.getEl().on('click', function () {
+                        me.open(ret.id);
+                    });
+                }
+            }
+        });
+
+        me.layout.add(item);
     },
 
     open: function (id, callback) {

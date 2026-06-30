@@ -1,0 +1,9 @@
+services:
+    _defaults:
+        public: true
+        autowire: true
+        autoconfigure: true
+
+    coreshop.pimcore_controller.order_return:
+        class: CoreShop\Bundle\OrderReturnBundle\Controller\Admin\OrderReturnController
+        tags: ['container.service_subscriber']

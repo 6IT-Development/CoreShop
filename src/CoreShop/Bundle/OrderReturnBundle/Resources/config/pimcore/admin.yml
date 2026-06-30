@@ -4,3 +4,4 @@ core_shop_order_return:
             resource: '/bundles/coreshoporderreturn/pimcore/js/resource.js'
             plugin: '/bundles/coreshoporderreturn/pimcore/js/plugin.js'
             order_return_list: '/bundles/coreshoporderreturn/pimcore/js/orderreturn/list.js'
+            order_detail_block_returns: '/bundles/coreshoporderreturn/pimcore/js/order/detail/blocks/returns.js'

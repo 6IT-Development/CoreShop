@@ -1,4 +1,4 @@
-coreshop_order: 'Megrendelések'
-coreshop_order_return: 'Visszaküldött megrendelések'
-coreshop_order_returns: 'Visszaküldött megrendelések'
-coreshop_order_create: 'Megrendelés létrehozása'
+coreshop_order: 'Rendelések'
+coreshop_order_return: 'Visszaküldött rendelések'
+coreshop_order_returns: 'Visszaküldött rendelések'
+coreshop_order_create: 'Rendelés létrehozása'

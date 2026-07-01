@@ -10,8 +10,11 @@ To enable or disable the bundle, use the `enabled` option in your configuration:
 core_shop_order_return:
     enabled: true
 ```
-
 Default value is `true`.
+
+**Configure Storage Folder**: The bundle requires a folder to store the generated return objects.
+This is configured via the `coreshop.folder.order_return` parameter. Ensure this folder exists or is automatically created.
+Default value is `coreshop/order_returns`.
 
 ## Serializer / Normalizer
 
@@ -47,11 +50,12 @@ This route provides the entry point for customers to submit their return request
 
 If you are adding the Order Return Bundle to an existing CoreShop installation:
 
+**Import Class Definitions**: You need to import the `CoreShopOrderReturn` class definition. The JSON definition is located at:
 
-1. **Import Class Definitions**: You need to import the `CoreShopOrderReturn` class definition. The JSON definition is located at:
-   `src/CoreShop/Bundle/OrderReturnBundle/Resources/install/pimcore/classes/CoreShopOrderReturn.json`
+```src/CoreShop/Bundle/OrderReturnBundle/Resources/install/pimcore/classes/CoreShopOrderReturn.json```
 
-    You can use the Pimcore CLI to rebuild the class:
+You can use the Pimcore CLI to rebuild the class:
+
    ```bash
    bin/console pimcore:deployment:classes-rebuild -c CoreShopOrderReturn
    ```
@@ -63,9 +67,6 @@ If you are adding the Order Return Bundle to an existing CoreShop installation:
    ```bash
    bin/console coreshop:install --update-classes
    ```
-    
-2. **Configure Storage Folder**: The bundle requires a folder to store the generated return objects. This is configured via the `coreshop.folder.order_return` parameter. Ensure this folder exists or is automatically created. Default value is `coreshop/order_returns`.
-3. **Static Routes**: The frontend route `/order-return` is typically defined in `staticroutes.yml`. Ensure this is imported or manually added to your Pimcore installation.
 
 ## Generated Objects and Assets
 
@@ -78,3 +79,6 @@ A PDF document is automatically generated for each return request using the `@Co
 - **Storage Location**: The PDF is saved as a Pimcore Asset under `/coreshop_order_return/pdf-[uniqid]/`.
 - **Filename Format**: `[Firstname]-[Lastname]-order-return-[OrderNumber].pdf` (sanitized).
 - **Association**: The generated asset is automatically linked to the `OrderReturn` object in the `pdfAttachment` field.
+
+## EventListener
+You can use a simple Symfony EventListener to perform the operation when the object is updated.

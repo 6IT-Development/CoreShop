@@ -32,7 +32,6 @@ final class CoreShopPayumExtension extends AbstractModelExtension
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
 
         $loader->load('services.yml');
-        $loader->load('payum.yml');
 
         $container->setParameter('payum.template.layout', $configs['template']['layout']);
         $container->setParameter('payum.template.obtain_credit_card', $configs['template']['obtain_credit_card']);

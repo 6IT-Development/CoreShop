@@ -32,7 +32,7 @@ final class AddMultipleToCartType extends AbstractResourceType
             'entry_type' => AddToCartType::class,
             'allow_add' => true,
             'constraints' => [
-                new Valid(['groups' => $this->validationGroups]),
+                new Valid(groups: $this->validationGroups),
             ],
         ]);
     }

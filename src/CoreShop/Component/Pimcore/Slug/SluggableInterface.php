@@ -36,5 +36,5 @@ interface SluggableInterface
      */
     public function setSlug(?array $slug, ?string $language = null);
 
-    public function getNameForSlug(string $language = null): ?string;
+    public function getNameForSlug(?string $language = null): ?string;
 }

@@ -41,7 +41,9 @@ final class CoreShopCustomerExtension extends AbstractModelExtension
         $this->registerPimcoreModels('coreshop', $configs['pimcore'], $container);
         $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
         $this->registerStack('coreshop', $configs['stack'], $container);
-        $this->registerDependantBundles('coreshop', [PimcoreNewsletterBundle::class], $container);
+        if (class_exists(PimcoreNewsletterBundle::class)) {
+            $this->registerDependantBundles('coreshop', [PimcoreNewsletterBundle::class], $container);
+        }
 
         $container->setParameter('coreshop.customer.security.login_identifier', $configs['login_identifier']);
 

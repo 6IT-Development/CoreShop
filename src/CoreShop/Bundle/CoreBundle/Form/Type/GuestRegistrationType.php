@@ -78,7 +78,7 @@ class GuestRegistrationType extends AbstractResourceType
                     'class' => 'cs-address',
                 ],
                 'constraints' => [
-                    new Valid(['groups' => $this->validationGroups]),
+                    new Valid(groups: $this->validationGroups),
                 ],
             ])
             ->add('termsAccepted', CheckboxType::class, [

@@ -21,7 +21,6 @@ namespace CoreShop\Bundle\PayumBundle\DependencyInjection;
 use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 final class CoreShopPayumExtension extends AbstractModelExtension
@@ -31,10 +30,9 @@ final class CoreShopPayumExtension extends AbstractModelExtension
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
-        $xmlLoader = new XmlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
 
         $loader->load('services.yml');
-        $xmlLoader->load('payum.xml');
+        $loader->load('payum.yml');
 
         $container->setParameter('payum.template.layout', $configs['template']['layout']);
         $container->setParameter('payum.template.obtain_credit_card', $configs['template']['obtain_credit_card']);

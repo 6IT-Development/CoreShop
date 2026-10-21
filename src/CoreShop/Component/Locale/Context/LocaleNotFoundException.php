@@ -22,7 +22,7 @@ final class LocaleNotFoundException extends \RuntimeException
 {
     public function __construct(
         $message = null,
-        \Exception $previousException = null,
+        ?\Exception $previousException = null,
     ) {
         parent::__construct($message ?: 'Locale could not be found!', 0, $previousException);
     }

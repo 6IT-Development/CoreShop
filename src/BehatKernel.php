@@ -35,7 +35,7 @@ class BehatKernel extends PimcoreKernel
         \Pimcore::setKernel($this);
     }
 
-    protected function build(\Symfony\Component\DependencyInjection\ContainerBuilder $container)
+    protected function build(\Symfony\Component\DependencyInjection\ContainerBuilder $container): void
     {
         parent::build($container);
 

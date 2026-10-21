@@ -23,7 +23,7 @@ use ProcessManagerBundle\Process\Pimcore;
 
 final class IndexProcess extends Pimcore
 {
-    public function run(ExecutableInterface $executable, array $params = null): int
+    public function run(ExecutableInterface $executable, ?array $params = null): int
     {
         $settings = $executable->getSettings();
 

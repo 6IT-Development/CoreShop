@@ -28,7 +28,7 @@ x-php: &php
     PIMCORE_INSTALL_MYSQL_PASSWORD: "pimcore"
     PIMCORE_INSTALL_MYSQL_DATABASE: "pimcore"
     PIMCORE_INSTALL_MYSQL_PORT: "3306"
-    PIMCORE_INSTALL_INSTALL_BUNDLES: "PimcoreApplicationLoggerBundle,PimcoreCustomReportsBundle,PimcoreGlossaryBundle,PimcoreSeoBundle,PimcoreSimpleBackendSearchBundle,PimcoreStaticRoutesBundle,PimcoreTinymceBundle,PimcoreUuidBundle,PimcoreWordExportBundle,PimcoreXliffBundle"
+    PIMCORE_INSTALL_INSTALL_BUNDLES: "PimcoreApplicationLoggerBundle,PimcoreCustomReportsBundle,PimcoreGlossaryBundle,PimcoreSeoBundle,PimcoreSimpleBackendSearchBundle,PimcoreStaticRoutesBundle,PimcoreQuillBundle,PimcoreUuidBundle,PimcoreWordExportBundle,PimcoreXliffBundle"
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
@@ -62,7 +62,7 @@ services:
   php:
     <<: *php
     container_name: coreshop4.1-php
-    image: coreshop/coreshop:PHP8.3-fpm-debug
+    image: coreshop/coreshop:PHP8.4-fpm-debug
     build:
       target: dev
       args:
@@ -73,7 +73,7 @@ services:
   behat:
     <<: *php
     container_name: coreshop4.1-behat
-    image: coreshop/coreshop:PHP8.3-fpm-debug-behat
+    image: coreshop/coreshop:PHP8.4-fpm-debug-behat
     build:
       target: behat
       args:

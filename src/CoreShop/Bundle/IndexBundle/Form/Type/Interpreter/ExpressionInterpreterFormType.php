@@ -38,7 +38,7 @@ final class ExpressionInterpreterFormType extends AbstractType
         $builder
             ->add('expression', TextType::class, [
                 'constraints' => [
-                    new NotBlank(['groups' => $this->validationGroups]),
+                    new NotBlank(groups: $this->validationGroups),
                 ],
             ])
         ;

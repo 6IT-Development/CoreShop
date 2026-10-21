@@ -24,17 +24,20 @@ use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
 use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Yaml\Yaml;
 
 final class ResourceLoader implements LoaderInterface
 {
+    private ?LoaderResolverInterface $resolver = null;
+
     public function __construct(
         private RegistryInterface $modelRegistry,
         private RouteFactoryInterface $routeFactory,
     ) {
     }
 
-    public function load($resource, $type = null)
+    public function load(mixed $resource, ?string $type = null): RouteCollection
     {
         $processor = new Processor();
         $configurationDefinition = new Configuration();
@@ -100,22 +103,23 @@ final class ResourceLoader implements LoaderInterface
         return $routes;
     }
 
-    public function supports($resource, $type = null): bool
+    public function supports(mixed $resource, ?string $type = null): bool
     {
         return 'coreshop.resources' === $type;
     }
 
-    /**
-     * @psalm-suppress InvalidReturnType Symfony docblocks are messing with us
-     */
-    public function getResolver()
+    public function getResolver(): LoaderResolverInterface
     {
-        // Intentionally left blank.
+        if (null === $this->resolver) {
+            throw new \LogicException('No loader resolver has been set.');
+        }
+
+        return $this->resolver;
     }
 
     public function setResolver(LoaderResolverInterface $resolver): void
     {
-        // Intentionally left blank.
+        $this->resolver = $resolver;
     }
 
     private function createRoute(MetadataInterface $metadata, array $configuration, $path, $actionName, array $methods, array $options): Route

@@ -34,23 +34,23 @@ final class PaypalGatewayConfigurationType extends AbstractType
         $builder
             ->add('username', TextType::class, [
                 'constraints' => [
-                    new NotBlank([
-                        'groups' => 'coreshop',
-                    ]),
+                    new NotBlank(
+                        groups: ['coreshop'],
+                    ),
                 ],
             ])
             ->add('password', PasswordType::class, [
                 'constraints' => [
-                    new NotBlank([
-                        'groups' => 'coreshop',
-                    ]),
+                    new NotBlank(
+                        groups: ['coreshop'],
+                    ),
                 ],
             ])
             ->add('signature', TextType::class, [
                 'constraints' => [
-                    new NotBlank([
-                        'groups' => 'coreshop',
-                    ]),
+                    new NotBlank(
+                        groups: ['coreshop'],
+                    ),
                 ],
             ])
             ->add('sandbox', CheckboxType::class, [

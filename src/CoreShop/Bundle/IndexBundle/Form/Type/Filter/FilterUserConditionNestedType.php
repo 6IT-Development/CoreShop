@@ -39,7 +39,7 @@ final class FilterUserConditionNestedType extends AbstractType
     {
         $builder
             ->add('conditions', FilterUserConditionCollectionType::class, [
-                'constraints' => [new Valid(['groups' => $this->validationGroups])],
+                'constraints' => [new Valid(groups: $this->validationGroups)],
                 'nested' => true,
             ])
         ;

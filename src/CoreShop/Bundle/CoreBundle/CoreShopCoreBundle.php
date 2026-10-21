@@ -99,7 +99,9 @@ final class CoreShopCoreBundle extends AbstractResourceBundle
         $collection->addBundle(new CoreShopWishlistBundle(), 1500);
         $collection->addBundle(new CoreShopClassDefinitionPatchBundle(), 1400);
         $collection->addBundle(new PimcoreCustomReportsBundle(), 20000);
-        $collection->addBundle(new PimcoreNewsletterBundle(), 20000);
+        if (class_exists(PimcoreNewsletterBundle::class)) {
+            $collection->addBundle(new PimcoreNewsletterBundle(), 20000);
+        }
     }
 
     public function getPackageName(): string

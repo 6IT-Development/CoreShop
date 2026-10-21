@@ -22,13 +22,9 @@ use CoreShop\Component\Core\Model\OrderInterface;
 use CoreShop\Component\Pimcore\BatchProcessing\BatchListing;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
-final class Version20231004120900 extends AbstractMigration implements ContainerAwareInterface
+final class Version20231004120900 extends AbstractMigration
 {
-    use ContainerAwareTrait;
-
     public function getDescription(): string
     {
         return '';
@@ -36,7 +32,7 @@ final class Version20231004120900 extends AbstractMigration implements Container
 
     public function up(Schema $schema): void
     {
-        $listing = $this->container->get('coreshop.repository.order')->getList();
+        $listing = \Pimcore::getContainer()->get('coreshop.repository.order')->getList();
         $listing->setCondition('saleState = \'order\'');
 
         $batchListing = new BatchListing($listing, 50);

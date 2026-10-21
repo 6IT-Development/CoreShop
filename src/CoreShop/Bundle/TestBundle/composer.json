@@ -24,8 +24,7 @@
     }
   ],
   "require": {
-    "pimcore/pimcore": "^11.0",
-    "pimcore/newsletter-bundle": "^1.0",
+    "six-it/pimcore-source": "^2.0",
     "coreshop/pimcore": "^4.0.0",
     "behat/behat": "^3.8",
     "robertfausk/behat-panther-extension": "^1.0",

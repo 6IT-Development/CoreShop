@@ -48,13 +48,19 @@ class ObjectUserProvider implements UserProviderInterface
         throw new UserNotFoundException(sprintf('User with email address or username "%s" was not found', $identifier));
     }
 
-    public function refreshUser(UserInterface $user): ?UserInterface
+    public function refreshUser(UserInterface $user): UserInterface
     {
         if (!$user instanceof \CoreShop\Component\Core\Model\UserInterface) {
             throw new UnsupportedUserException();
         }
 
-        return $this->userRepository->find($user->getId());
+        $refreshedUser = $this->userRepository->find($user->getId());
+
+        if (!$refreshedUser instanceof UserInterface) {
+            throw new UserNotFoundException(sprintf('User with id "%s" was not found', $user->getId()));
+        }
+
+        return $refreshedUser;
     }
 
     public function supportsClass($class): bool

@@ -30,7 +30,9 @@ final class CoreShopTrackingBundle extends Bundle implements DependentBundleInte
 {
     public static function registerDependentBundles(BundleCollection $collection): void
     {
-        $collection->addBundle(new PimcoreGoogleMarketingBundle(), 1000);
+        if (class_exists(PimcoreGoogleMarketingBundle::class)) {
+            $collection->addBundle(new PimcoreGoogleMarketingBundle(), 1000);
+        }
     }
 
     public function build(ContainerBuilder $container): void

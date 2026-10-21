@@ -25,7 +25,7 @@
   ],
   "require": {
     "coreshop/resource": "^4.0",
-    "pimcore/pimcore": "^11.0",
+    "six-it/pimcore-source": "^2.0",
     "laminas/laminas-stdlib": "^3.6"
   },
   "require-dev": {

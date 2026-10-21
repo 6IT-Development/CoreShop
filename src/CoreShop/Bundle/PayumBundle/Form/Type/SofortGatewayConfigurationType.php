@@ -32,9 +32,9 @@ final class SofortGatewayConfigurationType extends AbstractType
         $builder
             ->add('config_key', TextType::class, [
                 'constraints' => [
-                    new NotBlank([
-                        'groups' => 'coreshop',
-                    ]),
+                    new NotBlank(
+                        groups: ['coreshop'],
+                    ),
                 ],
             ])
             ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {

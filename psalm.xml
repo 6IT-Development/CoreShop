@@ -188,7 +188,11 @@
         
         <UndefinedClass>
             <errorLevel type="info">
-                <referencedClass name="OpenSearch\Client" />
+                <referencedClass name="OpenSearch\*" />
+                <!-- optional packages, see "suggest" in composer.json -->
+                <referencedClass name="Pimcore\Bundle\GoogleMarketingBundle\*" />
+                <referencedClass name="Pimcore\Bundle\NewsletterBundle\*" />
+                <referencedClass name="Pimcore\Bundle\WebToPrintBundle\*" />
             </errorLevel>
         </UndefinedClass>
         
@@ -248,6 +252,10 @@
                 <referencedFunction name="Symfony\Component\EventDispatcher\EventDispatcherInterface::dispatch" />
                 <referencedFunction name="Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken::__construct" />
             </errorLevel>
+            <errorLevel type="info">
+                <!-- Symfony 7.4 config builder generics -->
+                <file name="src/CoreShop/Bundle/WorkflowBundle/DependencyInjection/Configuration.php" />
+            </errorLevel>
         </InvalidArgument>
 
         <!-- level 8 issues - some fatal errors in PHP -->
@@ -256,6 +264,12 @@
 
         <!-- Custom -->
         <MissingOverrideAttribute errorLevel="info" />
+        <MissingClassConstType errorLevel="info" />
+        <ArgumentTypeCoercion>
+            <errorLevel type="info">
+                <referencedFunction name="Symfony\Component\Form\FormBuilderInterface::create" />
+            </errorLevel>
+        </ArgumentTypeCoercion>
         <ClassMustBeFinal errorLevel="info" />
         <PossiblyUnusedMethod errorLevel="info" />
         <UnusedClass errorLevel="info" />

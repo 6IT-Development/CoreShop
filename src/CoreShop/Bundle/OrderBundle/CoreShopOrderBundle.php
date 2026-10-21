@@ -84,7 +84,9 @@ final class CoreShopOrderBundle extends AbstractResourceBundle
         $collection->addBundle(new CoreShopMoneyBundle(), 1550);
         $collection->addBundle(new CoreShopStorageListBundle(), 100);
 
-        $collection->addBundle(new PimcoreWebToPrintBundle(), 70);
+        if (class_exists(PimcoreWebToPrintBundle::class)) {
+            $collection->addBundle(new PimcoreWebToPrintBundle(), 70);
+        }
     }
 
     protected function getModelNamespace(): string

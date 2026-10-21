@@ -29,7 +29,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
-use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\DependencyInjection\Extension\Extension;
 
 final class CoreShopTrackingExtension extends Extension
 {
@@ -39,6 +39,10 @@ final class CoreShopTrackingExtension extends Extension
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
+
+        if (array_key_exists('PimcoreGoogleMarketingBundle', $container->getParameter('kernel.bundles'))) {
+            $loader->load('services/google.yml');
+        }
 
         $this->configureTrackers($configs, $container);
 

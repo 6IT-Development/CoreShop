@@ -33,7 +33,7 @@ class ResourceList extends Resource
     {
         $parentResolver = parent::getResolver($attribute, $fieldDefinition, $class);
 
-        return function ($value = null, $args = [], $context = [], ResolveInfo $resolveInfo = null) use (
+        return function ($value = null, $args = [], $context = [], ?ResolveInfo $resolveInfo = null) use (
             $parentResolver
         ) {
             $value = $parentResolver($value, $args, $context, $resolveInfo);

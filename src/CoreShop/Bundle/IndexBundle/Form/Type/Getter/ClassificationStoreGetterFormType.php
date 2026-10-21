@@ -38,7 +38,7 @@ final class ClassificationStoreGetterFormType extends AbstractType
         $builder
             ->add('classificationStoreField', TextType::class, [
                 'constraints' => [
-                    new NotBlank(['groups' => $this->validationGroups]),
+                    new NotBlank(groups: $this->validationGroups),
                 ],
             ])
         ;

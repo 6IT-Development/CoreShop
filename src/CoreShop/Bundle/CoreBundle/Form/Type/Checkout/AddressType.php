@@ -65,7 +65,7 @@ final class AddressType extends AbstractResourceType
 
         $builder
             ->add('shippingAddress', AddressChoiceType::class, [
-                'constraints' => [new NotBlank(['groups' => $this->validationGroups])],
+                'constraints' => [new NotBlank(groups: $this->validationGroups)],
                 'customer' => $options['customer']->getId(),
                 'label' => 'coreshop.form.address.shipping',
                 'allowed_address_identifier' => [null, 'shipping'],
@@ -78,7 +78,7 @@ final class AddressType extends AbstractResourceType
                 'empty_data' => $defaultShippingAddress,
             ])
             ->add('invoiceAddress', AddressChoiceType::class, [
-                'constraints' => [new NotBlank(['groups' => $this->validationGroups])],
+                'constraints' => [new NotBlank(groups: $this->validationGroups)],
                 'customer' => $options['customer']->getId(),
                 'label' => 'coreshop.form.address.invoice',
                 'allowed_address_identifier' => [null, 'invoice'],

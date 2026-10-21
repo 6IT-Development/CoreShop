@@ -49,6 +49,7 @@ use CoreShop\Component\Order\Cart\Rule\Condition\CartRuleConditionCheckerInterfa
 use CoreShop\Component\Order\Renderer\OrderDocumentRendererInterface;
 use CoreShop\Component\Registry\Autoconfiguration;
 use Pimcore\Bundle\WebToPrintBundle\PimcoreWebToPrintBundle;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
@@ -66,9 +67,18 @@ final class CoreShopOrderExtension extends AbstractModelExtension
 
         $this->registerResources('coreshop', CoreShopResourceBundle::DRIVER_DOCTRINE_ORM, $configs['resources'], $container);
         $this->registerPimcoreModels('coreshop', $configs['pimcore'], $container);
-        $this->registerDependantBundles('coreshop', [PimcoreWebToPrintBundle::class], $container);
+
+        $hasWebToPrint = array_key_exists('PimcoreWebToPrintBundle', $container->getParameter('kernel.bundles'));
+
+        if ($hasWebToPrint) {
+            $this->registerDependantBundles('coreshop', [PimcoreWebToPrintBundle::class], $container);
+        }
 
         if ($configs['use_pimcore_pdf_rendering']) {
+            if (!$hasWebToPrint) {
+                throw new InvalidConfigurationException('core_shop_order.use_pimcore_pdf_rendering requires the six-it/web-to-print-bundle package.');
+            }
+
             $container->setAlias(OrderDocumentRendererInterface::class, PimcoreOrderDocumentPdfRenderer::class);
         } else {
             /**
@@ -101,6 +111,10 @@ final class CoreShopOrderExtension extends AbstractModelExtension
         }
 
         $loader->load('services.yml');
+
+        if (!$hasWebToPrint) {
+            $container->removeDefinition(PimcoreOrderDocumentPdfRenderer::class);
+        }
 
         Autoconfiguration::registerForAutoConfiguration(
             $container,

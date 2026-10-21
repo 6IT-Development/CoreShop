@@ -44,6 +44,10 @@ final class CoreShopPimcoreExtension extends AbstractPimcoreExtension
             $loader->load('services/data_hub.yml');
         }
 
+        if (array_key_exists('PimcoreWebToPrintBundle', $bundles)) {
+            $loader->load('services/print.yaml');
+        }
+
         $this->registerPimcoreResources('coreshop', $configs['pimcore_admin'], $container);
 
         $loader->load('services.yml');

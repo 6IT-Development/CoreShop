@@ -21,13 +21,9 @@ namespace CoreShop\Bundle\CoreBundle\Migrations;
 use CoreShop\Component\Pimcore\DataObject\ClassUpdate;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
-final class Version20230928104945 extends AbstractMigration implements ContainerAwareInterface
+final class Version20230928104945 extends AbstractMigration
 {
-    use ContainerAwareTrait;
-
     public function getDescription(): string
     {
         return '';
@@ -36,7 +32,7 @@ final class Version20230928104945 extends AbstractMigration implements Container
     public function up(Schema $schema): void
     {
         $classUpdater = new ClassUpdate(
-            $this->container->getParameter('coreshop.model.order.pimcore_class_name'),
+            \Pimcore::getContainer()->getParameter('coreshop.model.order.pimcore_class_name'),
         );
 
         if ($classUpdater->hasField('immutable')) {

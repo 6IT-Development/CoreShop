@@ -1,0 +1,64 @@
+# Remove once this is merged: https://github.com/Payum/PayumBundle/pull/517
+services:
+    Payum\Bundle\PayumBundle\Controller\AuthorizeController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\CancelController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\CaptureController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\NotifyController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\PayoutController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\RefundController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }
+
+    Payum\Bundle\PayumBundle\Controller\SyncController:
+        public: true
+        arguments:
+            - '@payum'
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: container.service_subscriber }

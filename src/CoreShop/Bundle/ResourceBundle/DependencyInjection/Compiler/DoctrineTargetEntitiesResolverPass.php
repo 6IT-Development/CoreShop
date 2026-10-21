@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\ResourceBundle\DependencyInjection\Compiler;
 
 use CoreShop\Component\Resource\Model\ResourceInterface;
-use Doctrine\Common\EventSubscriber;
+use Doctrine\ORM\Events;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
@@ -44,13 +44,12 @@ final class DoctrineTargetEntitiesResolverPass implements CompilerPassInterface
             $resolveTargetEntityListener->addMethodCall('addResolveTargetEntity', [$interface, $model, []]);
         }
 
-        $resolveTargetEntityListenerClass = $container->getParameterBag()->resolveValue($resolveTargetEntityListener->getClass());
-        if (is_a($resolveTargetEntityListenerClass, EventSubscriber::class, true)) {
-            if (!$resolveTargetEntityListener->hasTag('doctrine.event_subscriber')) {
-                $resolveTargetEntityListener->addTag('doctrine.event_subscriber');
+        // Symfony 7 no longer supports the doctrine.event_subscriber tag, so register it as a listener
+        $taggedEvents = array_column($resolveTargetEntityListener->getTag('doctrine.event_listener'), 'event');
+        foreach ([Events::loadClassMetadata, Events::onClassMetadataNotFound] as $event) {
+            if (!in_array($event, $taggedEvents, true)) {
+                $resolveTargetEntityListener->addTag('doctrine.event_listener', ['event' => $event]);
             }
-        } elseif (!$resolveTargetEntityListener->hasTag('doctrine.event_listener')) {
-            $resolveTargetEntityListener->addTag('doctrine.event_listener', ['event' => 'loadClassMetadata']);
         }
     }
 

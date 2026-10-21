@@ -10,13 +10,13 @@ services:
         arguments:
             - '@CoreShop\Component\Resource\Metadata\RegistryInterface'
         tags:
-            - { name: doctrine.event_subscriber, priority: 8192 }
+            - { name: doctrine.event_listener, event: loadClassMetadata, priority: 8192 }
 
     CoreShop\Bundle\ResourceBundle\EventListener\ORMRepositoryClassSubscriber:
         arguments:
             - '@CoreShop\Component\Resource\Metadata\RegistryInterface'
         tags:
-            - { name: doctrine.event_subscriber, priority: 8192 }
+            - { name: doctrine.event_listener, event: loadClassMetadata, priority: 8192 }
 
     CoreShop\Bundle\ResourceBundle\Doctrine\ResourceMappingDriverChain:
         decorates: 'doctrine.orm.default_metadata_driver'

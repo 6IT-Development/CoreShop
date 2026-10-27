@@ -1,0 +1,35 @@
+# SEOBundle – TODO 1: Critical Errors
+
+Target: **Symfony 7.4**, **PHP 8.4**. Scan date: 2026-10-27 (branch `s74-p84`).
+Scope: all PHP in this bundle (5 files: `CoreShopSEOBundle.php`, `Attribute/AsSEOExtractor.php`, `DependencyInjection/{Configuration,CoreShopSEOExtension}.php`, `DependencyInjection/Compiler/ExtractorRegistryServicePass.php`), `composer.json` and all of `Resources/config/**` (`services.yml`, `services/extractor.yml`). The bundle has no code of its own beyond DI wiring, so the whole `Component/SEO` (extractors, models, `SEOPresentation`, `composer.json`) was scanned as well. Call paths were followed into `Component/Registry` (`RegisterSimpleRegistryTypePass`, `PrioritizedServiceRegistry`, `PriorityMap`, `Autoconfiguration`), `PimcoreBundle` (`RegisterTypeHintRegistriesPass`), `CoreBundle` (`CoreShopCoreExtension::prepend()`, `CoreShopCoreBundle`, `Application/Version`), `Component/Core` and `Component/Product` (`Product`, `Category` SEO getters, `getImage()`), `FrontendBundle` (`ProductController`, `CategoryController`, `FrontendController`, `install/pimcore/image-thumbnails.yml`, `DependencyInjection/Configuration.php`), `ResourceBundle` (`PimcoreImageThumbnailsInstaller`), the Behat `SEOContext` / `features/domain/seo/seo.feature`, and the docs (`docs/03_Bundles/SEO_Bundle.md`).
+
+Reference for API checks: `vendor/` (`symfony/*` 7.4.21, `six-it/pimcore-source`, `webmozart/assert`), the compiled dev container `../pimcore2teszt10211524/var/cache/dev/App_KernelDevDebugContainer.xml` (+ its `…Deprecations.log`), the generated config builders in `…/var/cache/dev/Symfony/Config/` and `../pimcore2teszt10211524/config/reference.php`. This bundle and `Component/SEO` are byte-identical to the vendored `six-it/core-shop` copies (`diff -r` is empty).
+
+"Critical" here means: a security issue, data loss or data written wrongly, or an error that takes down every request, a whole area, or the install or upgrade path once it is triggered.
+Paths are relative to the bundle root unless noted otherwise. Paths starting with a bundle or component name are relative to `src/CoreShop/`. `vendor/` means `../pimcore2teszt10211524/vendor/`. Items marked **(dependent)** have their root cause or part of the fix outside this bundle. Items marked **(plausible)** follow from the code but were not reproduced against a running shop. Items marked **(verified)** were confirmed by running code against the vendored libraries or by reading the vendored library source or the compiled container.
+
+**Symfony 7.4 / PHP 8.4 compatibility:** no hard blockers. `php -l` (PHP 8.4.27) passes on every PHP file in the bundle and in `Component/SEO`, every service definition resolves in the compiled container, and the container deprecation log has no entry for this bundle or the component. There are no implicitly nullable parameters (PHP 8.4 deprecation). The modernisation and forward-compatibility items are in TODO-3 (**I-01** to **I-06**).
+
+**Checked and not an issue:** output escaping. `HeadMeta::itemToString()` and `HeadTitle::toString()` pass every value through `htmlspecialchars()` (`vendor/six-it/pimcore-source/lib/Twig/Extension/Templating/HeadMeta.php:305-330`, `Placeholder/AbstractExtension.php:122-125`, `_autoEscape` defaults to `true`), so editor-controlled names/descriptions in `<title>` / `<meta>` cannot inject HTML. The bundle writes nothing to the database.
+
+Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3-IMPROVEMENTS.md)
+
+---
+
+## Error that takes down a whole area
+
+### C-01 — A missing `coreshop_seo` thumbnail definition turns every product detail page that has an image into a 500 — (verified code path, plausible trigger) (dependent)
+- **Where:**
+  - `Component/SEO/Extractor/ImageExtractor.php:45` calls `$object->getImage()->getThumbnail('coreshop_seo')` without any guard.
+  - `vendor/six-it/pimcore-source/models/Asset/Image/Thumbnail.php:44-49,430-439`: the constructor calls `createConfig()`, which throws `Pimcore\Model\Exception\NotFoundException('Thumbnail definition "coreshop_seo" does not exist')` when the name cannot be resolved (`Thumbnail/Config.php:160-171` only logs and returns `null`, `createConfig()` then throws).
+  - The definition is **not** shipped by this bundle or by `Component/SEO`. It only exists in `FrontendBundle/Resources/install/pimcore/image-thumbnails.yml:92-96` and is installed by `ResourceBundle/Installer/PimcoreImageThumbnailsInstaller.php` via the `core_shop_frontend.pimcore_admin.install.image_thumbnails` default (`FrontendBundle/DependencyInjection/Configuration.php:129-133`).
+  - Caller: `SEOPresentation::updateSeoMetadata()` → `ImageExtractor::updateMetadata()` for every object that implements `SEOImageAwareInterface` and has an image. `Component/Core/Model/ProductInterface` implements it, so this runs in `FrontendBundle/Controller/ProductController.php:48,66` (both product detail actions), before the template is rendered.
+- **Impact:** the extractor is part of the SEO bundle, but its only dependency lives in the optional frontend bundle's installer. Every one of these situations takes all product detail pages with an image down (`NotFoundException` is not caught anywhere on the way):
+  - projects that do not use the CoreShop frontend installer (headless / own frontend that still calls `SEOPresentationInterface`, which is the documented usage, `docs/03_Bundles/SEO_Bundle.md:33-40`), or that override `core_shop_frontend.pimcore_admin.install.image_thumbnails`;
+  - a thumbnail definition that is deleted or renamed in the Pimcore admin ("Thumbnails" settings), or that is not deployed (Pimcore 11 keeps definitions in the settings store or in `var/config/image-thumbnails/*.yaml`, depending on `pimcore.config_location`; a missing directory on a new server is enough).
+  - Product listing / category pages are not affected (`Category` does not implement `SEOImageAwareInterface`), so the failure is easy to miss in a smoke test.
+- **Fix:**
+  - The SEO image must never be able to break the page: in `ImageExtractor::updateMetadata()` catch `Pimcore\Model\Exception\NotFoundException` (and `\Throwable` from thumbnail generation if a non-deferred thumbnail is used later), log a warning once and fall back to the original asset URL (`$image->getFrontendFullPath()`), or skip `og:image`.
+  - Make the thumbnail name configurable in this bundle (`core_shop_seo.image_thumbnail`, default `coreshop_seo`, see TODO-3 **I-02**) and inject it into `ImageExtractor`; check `Thumbnail\Config::getByName()` once and fall back to an inline array config (`['items' => [['method' => 'scaleByWidth', 'arguments' => ['width' => 1200]]]]`) when the named definition is missing.
+  - Optional: ship the definition with this bundle (own `pimcore_admin.install.image_thumbnails` entry) instead of relying on FrontendBundle.
+  - Add a Behat/unit case "product with image, thumbnail definition missing" (the current `features/domain/seo/seo.feature` has no image scenario at all).

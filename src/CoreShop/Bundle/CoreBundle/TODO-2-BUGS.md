@@ -64,6 +64,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** skip when `$otherUser->getId() === $user->getId()`, or compare the customer ids. Use `$value->getUser()`, or explicitly limit the constraint to new users (`$user->getId() === null`).
 
 ### B-09 — (reproduced) Malformed e-mail input causes a 500 in registration and guest checkout
+- **Status:** fixed — the `PRE_SUBMIT` listener of `GuestRegistrationType` reads `email.first` only when `email` is an array and `first` is a string; otherwise the new guest gets no e-mail and the form's validation reports the error. A registered customer is still replaced by a new guest in that case. The registration side went away with `CustomerRegistrationFormSubscriber` (B-06).
 - **Where:** `Form/Type/GuestRegistrationType.php:95,102,113` and `Form/EventSubscriber/CustomerRegistrationFormSubscriber.php:54,61`, both reading `$data['email']['first']`.
 - **Problem:** posting `guest[email]=foo` (a string instead of the repeated-type array) makes `'foo'['first']` throw `TypeError: Cannot access offset of type string on string` (reproduced, `scratchpad/t1.php`). If `first` is missing, there is an undefined-key warning and `findGuestByEmail(null)` throws a `TypeError`. Related: FrontendBundle `TODO-2-BUGS.md` B-16 (array/scalar request params crash actions).
 - **Fix:** `$email = $data['email']['first'] ?? null; if (!\is_string($email) || $email === '') return;`.

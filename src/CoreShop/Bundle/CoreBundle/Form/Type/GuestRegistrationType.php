@@ -94,9 +94,12 @@ class GuestRegistrationType extends AbstractResourceType
                 $form = $event->getForm();
                 $formCustomer = $form->getData();
 
-                if (!isset($data['email'])) {
+                if (!\is_array($data) || !isset($data['email'])) {
                     return;
                 }
+
+                // a scalar or incomplete e-mail value is left to the form's own validation
+                $email = \is_array($data['email']) ? ($data['email']['first'] ?? null) : null;
 
                 /**
                  * Never look up an existing guest by the submitted e-mail address: a typed address is
@@ -105,7 +108,7 @@ class GuestRegistrationType extends AbstractResourceType
                  */
                 if (!$formCustomer instanceof CustomerInterface || null !== $formCustomer->getUser()) {
                     $customer = $this->customerFactory->createNew();
-                    $customer->setEmail($data['email']['first']);
+                    $customer->setEmail(\is_string($email) ? $email : null);
                     $form->setData($customer);
                 }
             })

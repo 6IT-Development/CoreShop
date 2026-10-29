@@ -58,6 +58,11 @@ class ConfigurationFixture extends Fixture implements FixtureGroupInterface
         ];
 
         foreach ($configurations as $key => $value) {
+            // keep values that were already configured
+            if (null !== $this->configurationService->get($key, true)) {
+                continue;
+            }
+
             $this->configurationService->set($key, $value);
         }
     }

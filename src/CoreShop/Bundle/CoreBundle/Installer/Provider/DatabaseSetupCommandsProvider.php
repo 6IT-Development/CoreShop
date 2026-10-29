@@ -36,9 +36,7 @@ final class DatabaseSetupCommandsProvider implements DatabaseSetupCommandsProvid
 
     public function getCommands(InputInterface $input, OutputInterface $output, QuestionHelper $questionHelper): array
     {
-        return array_merge($this->getRequiredCommands($input, $output, $questionHelper), [
-            'coreshop:install:fixtures',
-        ]);
+        return $this->getRequiredCommands($input, $output, $questionHelper);
     }
 
     private function getRequiredCommands(InputInterface $input, OutputInterface $output, QuestionHelper $questionHelper): array
@@ -56,8 +54,12 @@ final class DatabaseSetupCommandsProvider implements DatabaseSetupCommandsProvid
     {
         $outputStyle = new SymfonyStyle($input, $output);
 
+        // fixtures only run together with create-tables, they would overwrite the data of an existing shop
         if (!$this->isSchemaPresent()) {
-            return ['coreshop:resources:create-tables' => ['application-name' => 'coreshop', '--force' => true]];
+            return [
+                'coreshop:resources:create-tables' => ['application-name' => 'coreshop', '--force' => true],
+                'coreshop:install:fixtures',
+            ];
         }
 
         $outputStyle->writeln('Seems like your database contains schema.');
@@ -67,6 +69,7 @@ final class DatabaseSetupCommandsProvider implements DatabaseSetupCommandsProvid
             return [
                 'coreshop:resources:drop-tables' => ['application-name' => 'coreshop', '--force' => true],
                 'coreshop:resources:create-tables' => ['application-name' => 'coreshop', '--force' => true],
+                'coreshop:install:fixtures',
             ];
         }
 

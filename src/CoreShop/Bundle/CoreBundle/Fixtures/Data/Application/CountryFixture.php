@@ -109,9 +109,14 @@ class CountryFixture extends Fixture implements DependentFixtureInterface, Fixtu
                  */
                 $newCountry = $this->countryRepository->findByCode($country->getIsoAlpha2());
 
-                if (null === $newCountry) {
-                    $newCountry = $this->countryFactory->createNew();
+                // never overwrite a country that already exists
+                if (null !== $newCountry) {
+                    $this->setReference('country_' . $country->getIsoAlpha2(), $newCountry);
+
+                    continue;
                 }
+
+                $newCountry = $this->countryFactory->createNew();
 
                 foreach ($languages as $lang) {
                     $translation = $country->getTranslation($alpha3CodeMap[$lang]);
@@ -188,11 +193,11 @@ class CountryFixture extends Fixture implements DependentFixtureInterface, Fixtu
         $manager->persist($store);
         $manager->flush();
 
-        if ($this->hasReference('currency_EUR')) {
+        if (null === $store->getCurrency() && $this->hasReference('currency_EUR')) {
             $store->setCurrency($this->getReference('currency_EUR'));
         }
 
-        if ($this->hasReference('country_AT')) {
+        if (null === $store->getBaseCountry() && $this->hasReference('country_AT')) {
             $store->setBaseCountry($this->getReference('country_AT'));
         }
 

@@ -52,6 +52,11 @@ class AddressIdentifierFixture extends Fixture implements FixtureGroupInterface
              * @var AddressIdentifierInterface $addressIdentifier
              */
             $addressIdentifier = $this->addressIdentifierFactory->createNew();
+
+            if (null !== $manager->getRepository($addressIdentifier::class)->findOneBy(['name' => $entry['name']])) {
+                continue;
+            }
+
             $addressIdentifier->setName($entry['name']);
             $addressIdentifier->setActive(true);
             $manager->persist($addressIdentifier);

@@ -54,6 +54,11 @@ class ZoneFixture extends Fixture implements FixtureGroupInterface
 
         foreach ($continents as $continent) {
             $zone = $this->zoneFactory->createNew();
+
+            if (null !== $manager->getRepository($zone::class)->findOneBy(['name' => $continent])) {
+                continue;
+            }
+
             $zone->setName($continent);
             $zone->setActive(true);
 

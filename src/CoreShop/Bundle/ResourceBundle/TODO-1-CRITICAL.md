@@ -27,3 +27,11 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - Add a functional test: a user without the resource permission gets 403 on `list` (TODO-3 **I-24**).
 
 > `ResourceSettingsController::getNicePathAction()` (path lookup without element permission checks) was checked as a security candidate. Pimcore's own `ElementController::getNicePathAction()` behaves the same way, so it is tracked as hardening in TODO-2 **B-04**, not as a critical item.
+
+---
+
+## Scan 2 (2026-10-29): `DataHub/`, `DeepCopy/`, `DependencyInjection/`, `Doctrine/`, `Event/`
+
+Scope: 31 PHP files (about 2,900 lines). Config they depend on: `Resources/config/services/{data_hub,integrations/doctrine/orm}.yml`, `CoreShopResourceBundle::build()` (compiler pass order). Call paths were followed into `CoreBundle/CoreExtension/StoreValues.php` (the only `EntityMerger` user), `Pimcore/ObjectManager.php`, `EventListener/ORMMappedSuperClassSubscriber.php`, `Controller/{ResourceController,EventDispatcher}.php`, `Component/Resource/Metadata/Metadata.php`, and the vendored Doctrine ORM 2.20.13 / DoctrineBundle / DeepCopy. DI findings were checked against the compiled dev container `../pimcore2teszt10211524/var/cache/dev/App_KernelDevDebugContainer.xml`.
+
+**No critical item and no Symfony 7.4 / PHP 8.4 blocker was found in this scan.** All 31 files pass `php -l` on 8.4.27 and declare `strict_types=1`. The extensions extend `Symfony\Component\DependencyInjection\Extension\Extension` (through `AbstractPimcoreExtension`), not the `HttpKernel` class that Symfony 7.1 deprecated. The Doctrine ORM 3 blockers found here are tracked in TODO-2 **B-21**. The new bugs are TODO-2 **B-19** to **B-26**, the new improvements TODO-3 **I-25** to **I-37**.

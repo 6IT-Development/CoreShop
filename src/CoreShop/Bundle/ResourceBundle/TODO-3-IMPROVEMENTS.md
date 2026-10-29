@@ -179,3 +179,114 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
   - `Select::getDataForSearchIndex()` returns the selected resource's ID (TODO-2 **B-16**).
   - `AsPimcoreModel` registration produces the same metadata as the equivalent YAML (TODO-2 **B-12**, **B-13**).
 - Cache: saving an object with `force: true` leaves the in-memory object unchanged, and a load returns entities again (TODO-2 **B-18**).
+
+---
+
+# Scan 2 (2026-10-29): `DataHub/`, `DeepCopy/`, `DependencyInjection/`, `Doctrine/`, `Event/`
+
+Scope and evidence: see the "Scan 2" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+---
+
+## Doctrine
+
+### I-25 — Replace `EntityMerger` with explicit "load managed entity and copy fields" logic
+- **Where:** `Doctrine/ORM/EntityMerger.php` (400 lines), only user `CoreBundle/CoreExtension/StoreValues.php:438`
+- The class re-implements the `EntityManager::merge()` that ORM 3 removed, using internal `UnitOfWork` APIs, reflection on `PersistentCollection`'s private `collection` / `snapshot` properties, and the `isCascadeMerge` flag (TODO-2 **B-19**, **B-20**, **B-21**). It is hard to reason about. For example, it swaps the managed instance in the identity map (`:94-95`), but other entities still reference the old instance.
+- `StoreValues` only needs to apply the submitted values of a `ProductStoreValues` (and its `productUnitDefinitionPrices`) onto the managed row. Do this explicitly (`find()` the managed entity, copy scalar fields, sync the child collection by ID), or use a form / Symfony `ObjectMapper`. Then delete the class.
+- Until then: `spl_object_hash()` → `spl_object_id()` (`:56`, `:82`, `:187`); type `object $entity` instead of `@param mixed`; remove `$newData = &$newCollection;` (`:200`, the code's own `@todo`); replace the reflection on `collection` with `PersistentCollection::unwrap()`; drop the `setAccessible(true)` calls (no-op since PHP 8.1, deprecated in PHP 8.5).
+
+### I-26 — `EntityRepository`: remove dead helpers and the extra query
+- **Where:** `Doctrine/ORM/EntityRepository.php`
+- `getAll()` duplicates `findAll()` and is not part of `RepositoryInterface`. `getPropertyName()` is never called anywhere in `src/`. Remove both, or document them as extension points.
+- `remove()` runs `find($resource->getId())` before `remove()` to check existence. Use `$this->getEntityManager()->contains($resource)`, or just remove the entity.
+- `add()` / `remove()` flush the whole unit of work on every call. Document this, or offer a `$flush = true` flag (as Sylius does).
+
+### I-27 — `ResourceMappingDriverChain`: limited reach and overlap with `ORMMappedSuperClassSubscriber`
+- **Where:** `Doctrine/ResourceMappingDriverChain.php`, `Resources/config/services/integrations/doctrine/orm.yml` (`decorates: doctrine.orm.default_metadata_driver`), `EventListener/ORMMappedSuperClassSubscriber.php`
+- Only the **default** entity manager's driver is decorated. Resources configured with `options.object_manager` (supported by `AbstractDoctrineDriver::getObjectManagerName()`) on another manager never get the mapped-superclass → entity conversion. Decorate per manager, or move the logic into the existing `loadClassMetadata` subscriber (which already handles mapped superclasses for associations) and drop the decorator.
+- `isset($metadata->isMappedSuperclass)` on the persistence `ClassMetadata` interface (needs a Psalm suppression) → check `$metadata instanceof \Doctrine\ORM\Mapping\ClassMetadata` first.
+- `loadMetadataForClass($className, …)` → `string $className`.
+
+---
+
+## Event
+
+### I-28 — `ResourceControllerEvent`: typed API
+- **Where:** `Event/ResourceControllerEvent.php`
+- PHP 8.3+ typed constants (`public const string TYPE_ERROR = 'error';`), or a backed enum `MessageType` used by `stop()`.
+- `setMessageType($messageType)` → `string`. `getResponse(): ?Response` (TODO-2 **B-22**).
+- Default `$errorCode = 500` for a listener veto is misleading. A vetoed action is a 4xx (`409` / `422`). Change the default together with B-22.
+- `isStopped()` is just an alias of `isPropagationStopped()`. Keep it for BC, but document it as the veto check.
+
+---
+
+## DataHub
+
+### I-29 — Remove or register the unused DataHub query types and resolvers
+- **Where:** `DataHub/QueryType/{Select,Multiselect}.php`, `DataHub/Resolver/{ResourceResolver,MultiResourceResolver}.php`; `Resources/config/services/data_hub.yml` (registers only `CoreShopRelation` / `CoreShopRelations`)
+- No service definition in any bundle uses these four classes. The `coreShop*` select fields are served by `Component/Resource/DataHub/QueryType/Resource(List)`. Delete them, or register them if they are meant as the generators for `CoreExtension\Select` / `Multiselect`.
+- If kept: `MultiResourceResolver` runs one `find()` per ID only to return the same IDs (use one `findBy(['id' => $ids])` or return the ints directly). Both resolvers read `$value[$name]` without `??` (undefined-key warning). `protected $repository` → promoted `private readonly`. The method signatures are untyped.
+- pimcore/data-hub is not installed in the reference project (`vendor/`), so the overridden `Href` / `Multihref` / `Base` / `Input` signatures could not be checked against the DataHub version for six-it/pimcore-source 2.x. Check this before the next DataHub upgrade.
+
+---
+
+## DeepCopy
+
+### I-30 — `PimcoreFieldCollectionDefinition*`: typed, cheaper, explicit about copying
+- **Where:** `DeepCopy/PimcoreFieldCollectionDefinitionMatcher.php`, `DeepCopy/PimcoreFieldCollectionDefinitionReplaceFilter.php`; used in `EventListener/DeepCopySubscriber.php` for version (un)marshalling
+- The matcher calls `Fieldcollection\Definition::getByKey()` for **every property** of every field-collection item it sees during a version copy. Memoize per type.
+- The filter looks the definition up a second time (`getDefinition()`). Pass the field definition from the matcher, or cache it.
+- A matching non-chainable filter stops DeepCopy from copying the property (`vendor/myclabs/deep-copy/src/DeepCopy/DeepCopy.php:245-267`). The early `return`s in `apply()` therefore leave the clone sharing the original value, and the callback's return value is never deep-copied. Today the matcher makes those paths unreachable and the callbacks return IDs or managed entities, which is fine. Document this, or call `$objectCopier($value)` for non-marshalled values.
+- `apply($object, $property, $objectCopier)` → add native types. Remove `setAccessible(true)` (no-op since 8.1, deprecated in 8.5). `protected \Closure $callback` → `private readonly`.
+
+---
+
+## DependencyInjection
+
+### I-31 — Small dead code and inconsistencies in the driver / compiler-pass layer
+- **Where:** `DependencyInjection/Driver/DriverProvider.php`, `Driver/Exception/*.php`, `Compiler/*.php`
+- `DriverProvider::$drivers` is checked but never written, so a new driver is created on every call. Either store the instance or remove the static cache.
+- `InvalidDriverException` is not used anywhere. Both exception constructors take untyped `$driver` / `$className` → `string`.
+- `RegisterInstallersPass::__construct()` has an empty parameter list split over two lines (`__construct(\n        )`). Reformat it to `public function __construct()`.
+- `StackRepositoryPass` checks `hasParameter('coreshop.all.stack.pimcore_class_names')` but reads `coreshop.all.stack.fqcns`. Check the parameter it reads.
+- `StackRepositoryPass:61`, `PimcoreDriver:164`, `:200` hard-code `doctrine.dbal.default_connection`. Make the connection configurable or use the `Doctrine\DBAL\Connection` alias.
+- `StackClassesPass:52` uses `@` error suppression. Remove it together with TODO-2 **B-24**.
+
+### I-32 — Remove duplicated registration logic
+- **Where:** `CoreShopResourceExtension::loadResources()` vs `Extension/AbstractModelExtension::registerResources()`; `CoreShopResourceExtension::loadPimcoreModels()` vs `AbstractModelExtension::registerPimcoreModels()` (identical `pimcore_class` `match` block); `DoctrineORMDriver::addRepository()` vs `PimcoreDriver::addRepository()`; Pimcore class-name derivation in `StackClassesPass:59-64` and `Controller/ResourceSettingsController.php:71-76`
+- Extract one `ResourceRegistrar` (or a trait) used by both extensions, a single `PimcoreClassName::fromModel(string $fqcn, string $type)` helper, and pull `addRepository()` up into `AbstractDriver` with a `getDefaultRepositoryClass()` / `getRepositoryArguments()` hook. The duplicate class-name logic has already drifted: `StackClassesPass` uses `!empty()`, the controller uses `isset()` (TODO-2 **B-12**).
+
+### I-33 — `DoctrineTargetEntitiesResolverPass` resolves unrelated third-party interfaces
+- **Where:** `DependencyInjection/Compiler/DoctrineTargetEntitiesResolverPass.php:56-90`
+- Every interface implemented by exactly one resource model becomes a resolve-target. The compiled container includes `Payum\Core\Security\CryptedInterface`, `Payum\Core\Security\TokenInterface`, `Payum\Core\Model\DetailsAwareInterface` and `DetailsAggregateInterface`. A project entity that maps an association to one of those (or a second model implementing it, which silently drops the mapping) gets surprising behaviour. Limit the automatic mapping to interfaces in the model's own vendor namespace, or to the configured `classes.interface` plus an explicit allow-list.
+- The comment "Symfony 7 no longer supports the doctrine.event_subscriber tag" refers to DoctrineBundle, not Symfony. Fix the wording.
+
+### I-34 — `ValidatorAutoMappingFixPass` is a Symfony 4 workaround; check it against Symfony 7.4 and remove it
+- **Where:** `DependencyInjection/Compiler/ValidatorAutoMappingFixPass.php`; origin: commit `fd16b25dd` "[Symfony4] introduce AutoMapping Validator fix until the issue is actually sorted"
+- When `framework.validation.auto_mapping` is empty, the pass replaces it with `['AppBundle\Entity' => …]`. The compiled container shows the resulting regex `{^AppBundle\\Entity$}` on three loaders. The pattern matches nothing in a current project (`App\Entity`), so the net effect is "auto mapping configured but matching nothing". With Symfony 7.4, an empty `auto_mapping` already means "only classes with `#[EnableAutoMapping]`". Verify that removing the pass changes no constraints on CoreShop entities (run the validator metadata dump before and after), then delete it.
+
+### I-35 — `AbstractModelExtension`: types and a parameter-append helper
+- **Where:** `DependencyInjection/Extension/AbstractModelExtension.php`
+- Untyped `$applicationName`, `$driver`, `$bundleResources`, `$bundles` (only covered by `@param` docblocks) → `string` / `array`.
+- The "read parameter or `[]`, merge, write back" pattern appears in most methods of the class. Use a private `appendToParameter(ContainerBuilder $c, string $name, array $values)`.
+- `registerResources()` / `registerPimcoreModels()` reassign the `$resources` / `$models` variables they are iterating over (`:42`, `:96`). This works (`foreach` iterates a copy), but it reads like a bug. Rename them.
+- Remove the commented-out `$aliasParameter` line (`:139`).
+
+### I-36 — `Configuration`: validate what the drivers require
+- **Where:** `DependencyInjection/Configuration.php`
+- `pimcore.*.classes` → `isRequired()`. `classes.interface` → `isRequired()` or default `ResourceInterface::class` (TODO-2 **B-24**).
+- `->prototype('scalar')` (7×) → `->scalarPrototype()`.
+- `drivers` defaults to `[doctrine/orm]`, while the Pimcore driver is always used for `pimcore` models. Document this, so nobody "enables" `pimcore` in `drivers` expecting it to matter.
+- `#[AsPimcoreModel]` writes keys the tree does not define (`slug`, `route`, `admin_controller`, TODO-2 **B-13**). Add them to the `pimcore` prototype so attribute and YAML go through the same schema.
+
+---
+
+## Tests
+
+### I-37 — Tests for the scan 2 findings
+- **Where:** none exist
+- Container: compile the kernel and assert that no `…RepositoryInterface $xRepositoryFactory` alias points to a factory (TODO-2 **B-23**), that a Pimcore model without `interface` compiles (**B-24**), and that `coreshop.resources` contains resources of a bundle registered before `CoreShopResourceBundle` (**B-26**).
+- `ResourceController`: a `pre_save` listener calling `stop()` prevents the flush and returns the listener's message (**B-22**).
+- `EntityMerger` (as long as it exists): merge an entity with a non-merge one-to-many and initialize the collection afterwards (**B-19**). Merge `ProductStoreValues` with changed unit-definition prices (the `StoreValues` regression path).
+- `ValidatorAutoMappingFixPass` removal: compare validator metadata of all CoreShop entities with and without the pass (**I-34**).

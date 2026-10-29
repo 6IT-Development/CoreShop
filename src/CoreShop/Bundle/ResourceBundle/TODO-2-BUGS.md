@@ -136,3 +136,71 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
   - Effect 1: after a cache write, the in-memory object (still in Pimcore's runtime cache) holds marshalled data in `StoreValues`, `MoneyCurrency`, `ProductSpecificPriceRules`, `ProductUnitDefinition(s)`, `ProductQuantityPriceRules` and every `Select` field. Queued writes happen in `Pimcore::shutdown()` (`register_shutdown_function`, `lib/Kernel.php:166-177`), so only other shutdown functions running after it see the mutated object. Forced writes (`pimcore:cache:warming`, `Cache::setForceImmediateWrite(true)`, CLI with `handleCli`) mutate objects that code is still using.
   - Effect 2: because the root `Concrete` is never deep-copied, the filters Pimcore adds afterwards never run for anything inside the object: `SetDumpStateFilter` on nested elements and Pimcore's own `CacheMarshallerInterface` replacement (for example `BlockElement::marshalForCache()`). Nested data is therefore serialized unmarshalled.
 - **Fix:** marshal a **copy**. Options: (a) override `storeCacheData()` (or `prepareCacheData()`) in `CoreCacheHandlerDecorator`: let the parent deep-copy run first, then marshal the copy (the class already extends `CoreCacheHandler`), and remove the type filter from `DeepCopySubscriber`; or (b) replace the type filter with a property filter plus matcher (like `PimcoreFieldCollectionDefinitionReplaceFilter`) so that DeepCopy keeps recursing and the callback only gets copied property values. Add a test: after `Cache::save($product, …, force: true)`, `$product->getStoreValues()` still returns entities.
+
+---
+
+# Scan 2 (2026-10-29): `DataHub/`, `DeepCopy/`, `DependencyInjection/`, `Doctrine/`, `Event/`
+
+Scope and evidence: see the "Scan 2" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md). "Compiled container" means `../pimcore2teszt10211524/var/cache/dev/App_KernelDevDebugContainer.xml`.
+
+---
+
+## Doctrine
+
+### B-19 — `EntityMerger` builds `PersistentCollection`s with a class-name string or the wrong metadata: loading them later crashes — (reproduced, mechanism) (dependent)
+- **Where:** `Doctrine/ORM/EntityMerger.php:322` (`new PersistentCollection($this->em, $assoc['targetEntity'], …)`: a **string**), `:171-175` (MANY_TO_MANY: passes the **owner's** `$class` instead of the target's metadata). Only user: `CoreBundle/CoreExtension/StoreValues.php:438`. Doctrine: `vendor/doctrine/orm/src/PersistentCollection.php:107-113`, `:140-205`.
+- **Problem:**
+  - `cascadeMerge()` resets every to-many association that is **not** `cascade merge` to an uninitialized `PersistentCollection` whose type class is the target **class name**. `PersistentCollection::__construct()` does not type `$class`, so nothing fails at that point. When the collection is initialized later, the hydrator calls `hydrateAdd()`. For a bidirectional one-to-many, that runs `$this->typeClass->reflFields[...]` → `Error: Call to a member function setValue() on null`, and `getTypeClass()` → `TypeError: Return value must be of type ClassMetadataInfo, string returned`. Both were reproduced with ORM 2.20.13 on PHP 8.4.27.
+  - For MANY_TO_MANY, the new collection carries the owner's metadata, so `matching()` and `indexBy` handling use the wrong class.
+  - This is latent today: `ProductStoreValues` has one to-many (`productUnitDefinitionPrices`, `cascade-all`, so it includes merge) and no many-to-many. Any new non-merge to-many association on a merged entity, or a project-level extension of `ProductStoreValues`, triggers it.
+- **Fix:** pass `$this->em->getClassMetadata($assoc['targetEntity'])` in both places (as `getData()` already does at `:400`).
+
+### B-20 — `EntityMerger` looks up the identity map with the wrong class/metadata, which creates duplicate instances for inherited or composite-key entities — (plausible) (dependent)
+- **Where:** `Doctrine/ORM/EntityMerger.php:109`, `:336` (`tryGetById($id, $class->getName())`); `:209` (`flattenIdentifier($class, $origId)`, where `$class` is the owner, not `$assocClass`).
+- **Problem:** Doctrine keys the identity map by **root** entity name. For an entity in an inheritance hierarchy, `getName()` misses the managed instance. The merger then loads a second copy with `find()`, or does not remove the stale one from the identity map before `__load()`. `flattenIdentifier()` with the owner's metadata produces a wrong ID for targets with a foreign-key identifier. CoreShop's own merged entities use simple integer IDs and no inheritance, so this is latent.
+- **Fix:** use `$class->rootEntityName` / `$relatedEntityClass->rootEntityName`, and `flattenIdentifier($assocClass, …)`.
+
+### B-21 — Doctrine ORM 3 blockers in `EntityMerger` and `EntityRepository` — (dependent)
+- **Where:** `Doctrine/ORM/EntityMerger.php:300`, `:306` (`$assoc['isCascadeMerge']`), `:94-95` (`removeFromIdentityMap()`, `registerManaged()`, marked "INTERNAL" in `UnitOfWork.php:3585-3596`), `:27` (`IdentifierFlattener`, an ORM utility); `Doctrine/ORM/EntityRepository.php:29-30`, `:36-37` (`$this->_em`).
+- **Problem:**
+  - ORM 3 removed `merge()` and the `merge` cascade, so the `isCascadeMerge` mapping key no longer exists (`ClassMetadataInfo.php:1842` is the 2.x source). In ORM 3 association mappings are objects, and array access on them is deprecated.
+  - ORM 3 no longer exposes the protected `EntityRepository::$_em`. Use `getEntityManager()` (available since 2.x).
+  - `EntityMerger` is a re-implementation of the removed `EntityManager::merge()` on top of internal `UnitOfWork` APIs. Any ORM minor release can break it. Together with TODO-2 **B-01** (`EntityManager::create()`) this is the ORM 3 upgrade work for this bundle.
+- **Fix:** `$this->_em` → `$this->getEntityManager()` now (no behaviour change). For `EntityMerger`, see TODO-3 **I-25** (replace it with explicit "load managed entity + copy fields" logic in `StoreValues`).
+
+---
+
+## Event
+
+### B-22 — `ResourceControllerEvent::stop()` is ignored by the admin `ResourceController`: listeners cannot veto save, create or delete
+- **Where:** `Event/ResourceControllerEvent.php:44-52` (`stop()`), `:109-112` (`getResponse()`); `Controller/EventDispatcher.php` (all methods return `void`); `Controller/ResourceController.php:115`, `:151`, `:197`, `:216` (pre-events, no check afterwards). For comparison, `FrontendBundle/Controller/CheckoutController.php:83-86` does check `isStopped()` / `hasResponse()` on its own events.
+- **Problem:**
+  - The event offers a veto API (`stop($message, $type, $parameters, $errorCode)`, `setResponse()`), but the controller never checks it. A `pre_save` / `pre_delete` / `pre_create` listener that calls `$event->stop('…')` only stops other listeners. The entity is still persisted or removed, and the client gets `success: true`. No core listener uses `stop()` today (`NotificationRuleEventListener`, `PriceRuleUpdateEventListener`, `RecursiveVariantCacheInvalidationEventListener` only read the subject), so this mostly affects project listeners written against the documented API.
+  - `getResponse(): Response` returns the nullable `$response` → `TypeError` when called without a preceding `hasResponse()`.
+- **Fix:** let `EventDispatcherInterface::dispatchPreEvent()` return the event. In each action: `if ($event->isStopped()) { return $this->viewHandler->handle(['success' => false, 'message' => $translator->trans($event->getMessage(), $event->getMessageParameters())], status: $event->getErrorCode()); }`, and return `$event->getResponse()` when one is set. Make `getResponse(): ?Response`.
+
+---
+
+## DependencyInjection
+
+### B-23 — Repository-factory services get autowiring aliases for the **repository's** interfaces: 308 wrong aliases in the compiled container — (reproduced)
+- **Where:** `DependencyInjection/Driver/Doctrine/DoctrineORMDriver.php:78-109` (`foreach (class_implements($repositoryClass) …)`), `DependencyInjection/Driver/Pimcore/PimcoreDriver.php:179-212` (same loop).
+- **Problem:** `addRepositoryFactory()` registers `registerAliasForArgument(<repository.factory id>, <repository interface>, '<name> repository factory')`. The compiled container has 308 of these, for example `.CoreShop\Component\Resource\Repository\RepositoryInterface $rule condition repository factory` → `coreshop.repository.factory.rule_condition` (a `RepositoryFactory`). Autowiring `RepositoryInterface $ruleConditionRepositoryFactory` (or any `…RepositoryInterface $xRepositoryFactory`) injects a factory into a repository-typed argument → `TypeError` at container build/instantiation. `AbstractDriver::addFactory()` does this correctly with `class_implements($factoryClass)`.
+- **Fix:** iterate `class_implements($repositoryFactoryClass)` (for example `RepositoryFactoryInterface`) in both drivers.
+
+### B-24 — A Pimcore model without `classes.interface` (or without `classes`) breaks container compilation with a `TypeError` — (reproduced)
+- **Where:** `DependencyInjection/Compiler/StackClassesPass.php:52` (`@interface_exists($definition['classes']['interface'])`, then `:56`); `DependencyInjection/Configuration.php` `pimcore.*.classes` (not `isRequired()`) and `classes.interface` (`cannotBeEmpty()`, but neither required nor defaulted); `CoreShopResourceExtension.php:205` / `Extension/AbstractModelExtension.php:77` (`$…['classes']['type']`).
+- **Problem:** the file has `strict_types=1`, so `interface_exists(null)` throws `TypeError: interface_exists(): Argument #1 ($interface) must be of type string, null given` (reproduced). `@` only hides the "Undefined array key" warning, not the `TypeError`. A project that registers a model under `core_shop_resource.pimcore` without `interface` (allowed by the config tree) can therefore not compile the container at all. If `classes` is omitted entirely, `match (null)` falls to `default` and `str_replace(…, null)` throws.
+- **Fix:** `isRequired()` on `classes`, a default (`ResourceInterface::class`) or `isRequired()` for `interface`. In the pass, `$interface = $definition['classes']['interface'] ?? null; if (!is_string($interface) || !interface_exists($interface)) continue;`, and remove the `@`.
+
+### B-25 — `RegisterPimcoreRepositoriesPass` never runs, and it would crash if it did
+- **Where:** `DependencyInjection/Compiler/RegisterPimcoreRepositoriesPass.php:30-52`; target `Pimcore/ObjectManager.php:170` (`registerRepository(string $className, string $repository)`).
+- **Problem:**
+  - The pass returns at once unless a service `pimcore.dao.object_manager` exists. That id is not defined in six-it/pimcore-source, in CoreShop, or in the compiled container. Pimcore repositories are therefore never registered. `Pimcore/ObjectManager::$repositories` stays empty, and `ObjectManager::getRepository()` (`:141-148`) always throws `Repository for class … not found` for every Pimcore model manager (`coreshop.manager.order`, `coreshop.manager.product`, …). It also stores `string` values but declares a `PimcoreRepositoryInterface` return type, so even a successful registration would end in a `TypeError` there.
+  - If the service existed: the pass passes a `Reference` to `registerRepository(string, string)` → `TypeError`. It also calls `$container->get(RegistryInterface::class)` **during compilation**, which instantiates the registry and all metadata at compile time. The exception message says the tag needs "`type` and `priority`", but the code checks `alias`.
+- **Fix:** decide whether the registration is needed. If yes: target `CoreShop\Bundle\ResourceBundle\Pimcore\ObjectManager`, pass the repository **service id** or change `registerRepository()` to accept the repository object (or use a service locator), read the model class from the `coreshop.all.pimcore_classes` parameter instead of instantiating the registry, and fix the message. If no: delete the pass.
+
+### B-26 — `CoreShopResourceExtension::load()` resets `coreshop.resources`, so resources from bundles whose extension loaded earlier are lost — (plausible)
+- **Where:** `DependencyInjection/CoreShopResourceExtension.php:72` (`$container->setParameter('coreshop.resources', [])`); writers: `Extension/AbstractModelExtension.php:42-44`, `:54-56`. Readers: `RegisterResourcesPass`, `DoctrineTargetEntitiesResolverPass`, `CreateDatabaseTablesCommand`, `DropDatabaseTablesCommand`.
+- **Problem:** every extension's `load()` starts from the parameters merged so far and appends to `coreshop.resources`. This extension overwrites the accumulated list with `[]`. In the current setup the ResourceBundle extension loads first (CoreShopCoreBundle registers it as a dependency), and the compiled container has all 50 Doctrine resources in the parameter. A project that registers a resource bundle before `CoreShopResourceBundle` in `config/bundles.php` silently loses those resources from the registry, the target-entity resolution and the table commands, while their services still exist. `coreshop.all.pimcore_classes` / `coreshop.all.stack` are guarded with `hasParameter()` and are not affected.
+- **Fix:** `if (!$container->hasParameter('coreshop.resources')) { $container->setParameter('coreshop.resources', []); }`, like the other two parameters.

@@ -20,7 +20,6 @@ namespace CoreShop\Bundle\CoreBundle\Form\Type;
 
 use CoreShop\Bundle\AddressBundle\Form\Type\AddressType;
 use CoreShop\Bundle\AddressBundle\Form\Type\SalutationChoiceType;
-use CoreShop\Bundle\CoreBundle\Form\EventSubscriber\CustomerRegistrationFormSubscriber;
 use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
 use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Core\Model\UserInterface;
@@ -46,6 +45,10 @@ class CustomerRegistrationType extends AbstractResourceType
         array $validationGroups,
         private string $loginIdentifier,
         private DataMapperInterface $dataMapper,
+        /**
+         * Unused, kept for BC. Registering with a guest's e-mail creates a new customer: taking over
+         * the guest record (and its orders) would need a proof that the visitor owns that e-mail address.
+         */
         private CustomerRepositoryInterface $customerRepository,
     ) {
         parent::__construct($dataClass, $validationGroups);
@@ -53,8 +56,6 @@ class CustomerRegistrationType extends AbstractResourceType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder->addEventSubscriber(new CustomerRegistrationFormSubscriber($this->customerRepository));
-
         $builder->setDataMapper($this->dataMapper);
         $builder
             ->add('user', UserRegistrationType::class, [

@@ -28,7 +28,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Problem:** every attributed calculator gets priority 1000. The composites iterate in priority order, and `CompositeRetailPriceCalculator` / `CompositeDiscountPriceCalculator` let the last result win, so the order decides the price. With equal priorities the order is the reverse registration order (Registry TODO-2 **B-06**), which depends on file discovery order. There is no way to put a custom calculator before or after the CoreShop default with the attribute.
 - **Fix:** add `public int $priority = 1000` (or `?int`) to the calculator attributes and pass it through as the `priority` tag attribute. See TODO-3 **I-01**.
 
-### B-04 — `autoconfigure_with_attributes` is a `scalarNode`, but reaches a `bool` parameter under `strict_types`
+### B-04 — (reproduced) `autoconfigure_with_attributes` is a `scalarNode`, but reaches a `bool` parameter under `strict_types`
 - **Where:** `DependencyInjection/Configuration.php:75`; `DependencyInjection/CoreShopProductExtension.php:3` (`declare(strict_types=1)`), `:85-149`; `Component/Registry/Autoconfiguration.php:31` (`bool $autoconfigureWithAttributes`).
 - **Problem:** `autoconfigure_with_attributes: 1`, `"true"`, `'%env(…)%'` or any other non-bool scalar passes config validation and then throws `TypeError: Autoconfiguration::registerForAutoConfiguration(): Argument #5 … must be of type bool` during container build. Same issue as in the other bundles listed in Registry TODO-1 "Already tracked elsewhere".
 - **Fix:** `->booleanNode('autoconfigure_with_attributes')->defaultFalse()->end()`.
@@ -145,3 +145,56 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Where:** `CoreExtension/ProductSpecificPriceRules.php:373`, `:395`; `CoreExtension/ProductUnitDefinitions.php:369`, `:385`.
 - **Problem:** `flush()` without arguments writes **every** pending change in `doctrine.orm.entity_manager`, not only the rules or unit definitions. Code that has unrelated half-built entities in the EM when it saves a product (event listeners, imports, workers) gets them written in the middle of the Pimcore object save. When that flush fails (constraint violation in an unrelated entity), the product save fails with an unrelated error. When it succeeds, unrelated changes are committed inside Pimcore's object transaction.
 - **Fix:** collect the affected entities and flush them through a dedicated unit of work (for example via the temporary EM that already exists, or `UnitOfWork::commit()` scoped to them), or at least document the side effect. Long term, see TODO-3 **I-15**.
+
+---
+
+# Second scan: `DependencyInjection`, `Doctrine`, `EventListener`, `Pimcore`
+
+Scope and method: see the "Second scan" paragraph in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md). **B-04** above was reproduced in this scan: `CoreShopProductExtension::load()` with `autoconfigure_with_attributes: 'true'` throws the `TypeError` on Symfony 7.4.21 / PHP 8.4.27.
+
+## Configuration
+
+### B-22 — (reproduced) `pimcore_admin.permissions` is a `scalarNode` with an array default: it cannot be configured as a list, and a scalar value silently removes both admin permissions
+- **Where:** `DependencyInjection/Configuration.php:403-406`; consumer `ResourceBundle/DependencyInjection/Extension/AbstractModelExtension.php:154-190` (`foreach ($bundleResources['permissions'] as $permission)`).
+- **Problem (reproduced with `Processor` + `ContainerBuilder`):**
+  - `permissions: [product_price_rule, product_unit, x]` → `InvalidTypeException: Invalid type for path "core_shop_product.pimcore_admin.permissions". Expected "scalar", but got "array"`. The default can only be used, never extended.
+  - `permissions: x` passes validation. `load()` then emits `foreach() argument must be of type array|object, string given` and registers **no** permission: `coreshop.permissions` lacks `coreshop_permission_product_price_rule` and `coreshop_permission_product_unit`. Those permissions disappear from the Pimcore user editor, and `ResourceController::isGrantedOr403()` denies every non-admin user the price-rule and unit panels.
+  - `cannotBeOverwritten()` on a node that is not meant to be configured at all is misleading.
+- **Fix:** `->arrayNode('permissions')->scalarPrototype()->end()->defaultValue([...])->end()` (or remove the node from the user-facing tree and set the permissions in the extension). Same pattern as `ProductQuantityPriceRulesBundle` TODO-2 **B-03**.
+
+---
+
+## Event listeners
+
+### B-23 — `CategoryPersistEventListener` only listens to `preUpdate`: a category created with a single `save()` has no `parentCategory` and shows up as a first-level category
+- **Where:** `EventListener/CategoryPersistEventListener.php:27-44`; `Resources/config/services.yml:136-138` (only `pimcore.dataobject.preUpdate`); `vendor/six-it/pimcore-source/models/DataObject/AbstractObject.php:500-508` (a new object dispatches `PRE_ADD`, not `PRE_UPDATE`). Consumers: `Pimcore/Repository/CategoryRepository.php:27-33` (`parentCategory__id is null`), `CoreBundle/Pimcore/Repository/CategoryRepository.php:42`, `:52` (storefront navigation via `FrontendBundle/Controller/CategoryController.php:51-66`).
+- **Problem:** `parentCategory` is a non-editable field (`CoreShopCategory.json:136-147`, `noteditable: true`) that only this listener maintains. Imports, fixtures, the REST/DataHub API and any code that creates and publishes a category in one `save()` never trigger `preUpdate`. The new subcategory is returned by `findFirstLevel()` (root menu) and missing from `findChildCategories()` of its real parent, until someone saves it a second time.
+  - In the admin the gap is mostly hidden, because a new object is unpublished and the editor's first "Save & Publish" is an update.
+- **Fix:** also register the listener for `pimcore.dataobject.preAdd` (one method, two `#[AsEventListener]` attributes, see TODO-3 **I-22**). Add a one-off migration/command that recalculates `parentCategory` for existing categories.
+
+---
+
+## Repositories
+
+### B-24 — `findChildCategories()` ignores the configured sort order, and `findFirstLevel()` has no order at all
+- **Where:** `Pimcore/Repository/CategoryRepository.php:27-53`; the same code in `CoreBundle/Pimcore/Repository/CategoryRepository.php:139-147` (dependent).
+- **Problem:**
+  - Pimcore lets the editor choose "sort children by key/index" **and** "ascending/descending" (`getChildrenSortOrder()`). The repository always appends `ASC`, so a category tree sorted descending in the admin is shown ascending in the storefront.
+  - `method_exists($category, 'getChildrenSortBy')` is always true (`AbstractObject::getChildrenSortBy()`), so the `else` branch is dead.
+  - `findFirstLevel()` has no `ORDER BY`. The root categories come back in whatever order MySQL returns them, which can change between requests or after an index change.
+- **Fix:** use both values and whitelist them: `$by = $category->getChildrenSortBy() === AbstractObject::OBJECT_CHILDREN_SORT_BY_INDEX ? 'index' : 'key'; $dir = $category->getChildrenSortOrder() === 'DESC' ? 'DESC' : 'ASC'; $list->setOrderKey($by)->setOrder($dir);` (let Pimcore quote the column). Give `findFirstLevel()` a deterministic order (`index`, then `key`).
+
+### B-25 — The ORM repositories accept only `ProductInterface`, but the CoreExtension data types call them with any container: using the data types outside a product class is a `TypeError`
+- **Where:** `Doctrine/ORM/ProductUnitDefinitionsRepository.php:28` (`findOneForProduct(ProductInterface $product)`), `Doctrine/ORM/ProductSpecificPriceRuleRepository.php:26` (`findForProduct(ProductInterface $product)`); callers `CoreExtension/ProductUnitDefinitions.php:341-345` (`load(Concrete|…AbstractData|Localizedfield $object)` → `findOneForProduct($object)`), `:316-317` (`preGetData()` passes any `Concrete`), `CoreExtension/ProductSpecificPriceRules.php:377-381`.
+- **Problem:** `coreShopProductUnitDefinitions` on a class that does not implement `ProductInterface` makes every getter call throw `TypeError: …findOneForProduct(): Argument #1 ($product) must be of type ProductInterface, Pimcore\Model\DataObject\… given` (strict types). The specific-price-rules type hits the assert first (**B-12**). Static analysis does not see it because `load()` returns `mixed`.
+- **Fix:** guard in the data types (`if (!$object instanceof ProductInterface) return null;` in `load()`/`preGetData()`), together with **B-12**. Optionally widen the repository methods to `int $productId` (they only use the ID), which also allows calling them without loading the object (TODO-3 **I-20**).
+
+### B-26 — `PriceRuleRepository::findActive()` loads every active rule with lazy conditions and actions on each price calculation (N+1 queries)
+- **Where:** `Doctrine/ORM/PriceRuleRepository.php:26-34`; caller `Component/Product/Rule/Fetcher/ValidProductPriceRuleFetcher.php:36` (per product and context, cached only per request by `MemoryCachedValidRuleFetcher`). Mapping: `Resources/config/doctrine/model/ProductPriceRule.orm.xml` (`conditions`, `actions` and `translations` lazy).
+- **Problem:** every rule's `conditions` and `actions` collections are loaded on first access by the validation processor: 1 + 2 × N queries for N active rules, on every category page that calculates prices for many products (the identity map prevents repeats in the same request, not across requests or workers). With a few dozen rules this is a measurable part of a listing request.
+- **Fix:** fetch-join in `findActive()`: `->leftJoin('o.conditions', 'c')->addSelect('c')->leftJoin('o.actions', 'a')->addSelect('a')`. Optionally cache the result (rules change rarely) with a cache tag invalidated on rule save.
+
+### B-27 — (plausible) The `product_specific_price` availability assessor loads **all** active specific price rules of all products at once
+- **Where:** `Resources/config/services/rules.yml` (`coreshop.rule.availability_assessor.product_specific_price` → `@coreshop.repository.product_specific_price_rule`); `RuleBundle/Assessor/RuleAvailabilityAssessor.php:36` (`findActive()`), `RuleBundle/Processor/RuleAvailabilityProcessor.php:38-47` (one EM, one `flush()` at the end), `findActive()` inherited by `ProductSpecificPriceRuleRepository` from `PriceRuleRepository`.
+- **Problem:** the rule-availability check (`coreshop:rules:check-availability`, and the Pimcore maintenance job via `CoreBundle/Maintenance/RuleAvailabilityTask.php`) hydrates every active specific price rule of the catalog, with their conditions, into one entity manager. On catalogs with many product-specific rules this grows without bound and can exhaust the worker's memory. After it fails, expired rules stay active.
+- **Fix:** iterate in batches (`toIterable()` + `$em->clear()` every N), or let the assessor query only rules with a timespan condition (`findWithConditionOfType('timespan')`, which already exists in `RuleRepository`).

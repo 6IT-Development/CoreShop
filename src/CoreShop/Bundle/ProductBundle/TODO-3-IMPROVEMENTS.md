@@ -146,3 +146,74 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
   - Copying a product copies rules with their translations and unit definitions without a default (TODO-2 **B-13**, **B-15**).
   - Clearing the unit definitions deletes the stored row (TODO-2 **B-14**).
   - `expandDotNotationKeys()` with nested and conflicting keys.
+
+---
+
+# Second scan: `DependencyInjection`, `Doctrine`, `EventListener`, `Pimcore`
+
+Scope and method: see the "Second scan" paragraph in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+## DependencyInjection
+
+### I-19 — Compiler passes: clean constructors, constants for every tag, autoconfiguration for rule fetchers
+- **Where:** `DependencyInjection/Compiler/*.php`, `CoreShopProductBundle.php:46-60`, `Resources/config/services/rules.yml:5-15`
+- All nine passes have an empty constructor written as `public function __construct(\n        ) {` (left over from an automated refactor). Use a plain `public function __construct()` or drop the constructor and pass the values through `parent::__construct()` in a single place — or replace the nine subclasses with instances of the generic pass (`new class(...)`, or a small factory), see Registry TODO-3 **I-08**.
+- `ProductValidPriceRuleFetcherPass` is the only pass without a `…_TAG` constant. Its tag `coreshop.product.rules.fetcher` is also the id of a service alias (`rules.yml:12`) and almost the same as the parameter `coreshop.product.rules.fetchers`. Add `PRODUCT_RULES_FETCHER_TAG`, and consider renaming the tag to `coreshop.product.rules_fetcher` (keep the old tag for BC).
+- `ValidRulesFetcherInterface` is not autoconfigured, unlike the calculators and rule elements. A custom fetcher is silently ignored unless it is tagged by hand. Add it to the autoconfiguration table (I-02), with an `#[AsProductValidRulesFetcher]` attribute if the attribute mode is kept.
+- The fetcher registry is a plain `ServiceRegistry`, so the order of fetchers (price rules vs specific price rules) is the tag discovery order. Make it a `PrioritizedServiceRegistry` if the order matters for `CompositeValidRuleFetcher`.
+
+### I-20 — Extension and bundle: Symfony 7.4 idioms
+- **Where:** `DependencyInjection/CoreShopProductExtension.php`, `DependencyInjection/Configuration.php`, `CoreShopProductBundle.php`
+- `processConfiguration($this->getConfiguration([], $container), $configs)` → `processConfiguration(new Configuration(), $configs)`.
+- `$configs['…']` naming: after processing it is one array, so call it `$config`.
+- `->prototype('scalar')` → `->scalarPrototype()` (`Configuration.php:389`, `:393`, `:397`, `:401`).
+- `Configuration.php` (412 lines) repeats the same resource block (options / graphql / classes / translation) for every model. Extract `addResourceNode(string $name, array $classes, ?array $translation, ?string $permission)` helpers. This also makes the missing `permission` for `product_unit_definitions` (TODO-1 **C-01**) visible.
+- `manufacturer.classes.repository` is `cannotBeEmpty()` without a default, while `product` and `category` have a default repository. Give it a default (`PimcoreRepository::class`) or document why it has none.
+- The `stack` node accepts any string. Validate that each value is an existing interface (`->validate()->ifTrue(fn ($v) => !interface_exists($v))->thenInvalid(…)`), since `StackRepositoryPass` builds class lists from it.
+- Longer term (Symfony 7.x): convert to `AbstractBundle` with `configure()` / `loadExtension()` and drop the separate extension and configuration classes, if `AbstractResourceBundle` allows it (dependent: ResourceBundle).
+
+## Doctrine repositories
+
+### I-21 — Typed results, DQL portability, abstract base
+- **Where:** `Doctrine/ORM/*.php`
+- Add generics so callers get real types: `/** @return list<ProductSpecificPriceRuleInterface> */` on `findForProduct()`, `/** @extends EntityRepository<ProductUnit> */` etc. (PHPStan/Psalm).
+- `o.active = 1` (`PriceRuleRepository.php:29`, also `RuleRepository`) → `o.active = :active` with `true`, or `o.active = true`. The integer literal works on MySQL only by accident of the type mapping.
+- `PriceRuleRepository` is only a base class. Make it `abstract`. `ProductPriceRuleRepository` is empty; keep it only as an extension point and say so in a comment.
+- `ProductUnitDefinitionsRepository::findOneForProduct()` / `ProductSpecificPriceRuleRepository::findForProduct()` only use the ID. Offer `findOneForProductId(int $id)` / `findForProductId(int $id)` (TODO-2 **B-25**). For an unsaved product (`getId() === null`) return `null` / `[]` without a query.
+- `ProductUnitRepository::findByName()` relies on the unique index on `name` (`ProductUnit.orm.xml:12`). Say so, or use `findOneBy(['name' => $name])`. `createListQueryBuilder()` returns a bare builder; add the default order (`o.name ASC`) that the admin list expects.
+- The `findForProduct()` ordering (`priority ASC`) is the processing order of specific price rules. Document in the interface that lower priority means "applied first", so that it is not changed by accident.
+
+## Event listeners
+
+### I-22 — Register the listeners with attributes and the Pimcore event constants
+- **Where:** `EventListener/*.php`, `Resources/config/services.yml:136-145`
+- Use `#[AsEventListener(event: DataObjectEvents::PRE_UPDATE)]` (and `PRE_ADD`, TODO-2 **B-23**) on the methods instead of string event names in YAML. Type the argument as `DataObjectEvent` directly; the `instanceof DataObjectEvent` check and the extra nesting go away.
+- `CategoryPersistEventListener`: only call `setParentCategory()` when the value actually changes, so that an unchanged category is not marked dirty on every save (and its versions do not grow).
+
+### I-23 — `ProductDeleteListener` duplicates `ProductSpecificPriceRules::delete()` and flushes the whole EM once per deleted object
+- **Where:** `EventListener/ProductDeleteListener.php:35-52`; `CoreExtension/ProductSpecificPriceRules.php:386-397` (Pimcore already calls the data type's `delete()` from `Concrete\Dao::delete()`).
+- For a product class that has the field, the rules are already gone when `postDelete` runs; the listener queries again and calls `flush()` on the default EM, which writes any other pending changes (same issue as TODO-2 **B-21**). Deleting a product with many variants runs this once per variant.
+- It does not clean up `ProductUnitDefinitions`, so the cleanup is inconsistent between the two Doctrine-backed data types.
+- Decide on one mechanism: either keep the cleanup in the data types and drop the listener, or make the listener the single place for both entity types and use a bulk DQL `DELETE … WHERE o.product = :id` (no hydration, no global flush). Note that `postDelete` runs after Pimcore's transaction; a failure there leaves orphaned rows that no longer have a product.
+
+## Pimcore repositories
+
+### I-24 — `CategoryRepository`: no raw SQL fragments, shared with CoreBundle
+- **Where:** `Pimcore/Repository/CategoryRepository.php`; `CoreBundle/Pimcore/Repository/CategoryRepository.php` (dependent)
+- `sprintf('`%s` ASC', $category->getChildrenSortBy())` interpolates an object property into `ORDER BY`. The value is set from the admin and Pimcore does not validate it in `setChildrenSortBy()`. Whitelist it (TODO-2 **B-24**) instead of quoting by hand.
+- The CoreBundle subclass copies the sorting code and builds `stores LIKE "%,<id>,%"` by concatenation. Move the sort logic into a protected helper here (`applyChildrenOrder(Listing $list, CategoryInterface $category)`) and use it in both. The `stores` condition should use a bound parameter (`stores LIKE ?`, `['%,' . $id . ',%']`).
+- Add return types for the list results (`/** @return list<CategoryInterface> */`).
+- `ProductRepository` is empty; keep it as an extension point but say so in a comment.
+
+## Tests
+
+### I-25 — Tests for this scan
+- `Configuration`: `permissions` as a list and the boolean `autoconfigure_with_attributes` (TODO-2 **B-04**, **B-22**); `stack` validation (I-20).
+- `CategoryPersistEventListener`: a category created and published with one `save()` under a parent category has `parentCategory` set (TODO-2 **B-23**).
+- `CategoryRepository`: `findChildCategories()` respects `key`/`index` and `ASC`/`DESC`; `findFirstLevel()` is ordered (TODO-2 **B-24**).
+- `PriceRuleRepository::findActive()`: query count stays constant with N rules (TODO-2 **B-26**).
+- Deleting a product removes its specific price rules and unit definitions without flushing unrelated entities (I-23).
+
+### I-26 — `composer.json`: declare the dependencies used by this scan's code
+- **Where:** `composer.json`
+- `Doctrine/ORM/*` and `EventListener/ProductDeleteListener.php` use `doctrine/orm`; `PriceRuleRepository` extends `CoreShop\Bundle\RuleBundle\Doctrine\ORM\RuleRepository` (`coreshop/rule-bundle` is declared). `CategoryPersistEventListener` and `Pimcore/Repository/*` use Pimcore event and listing classes (`six-it/pimcore-source`, declared). Add `doctrine/orm` and `symfony/dependency-injection` / `symfony/config` together with **I-17**.

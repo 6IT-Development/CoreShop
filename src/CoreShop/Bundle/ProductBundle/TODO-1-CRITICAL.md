@@ -6,7 +6,9 @@ Paths are relative to the bundle root unless noted otherwise. Paths starting wit
 
 "Critical" here means: security hole, shop-wide breakage on a common path, data written wrongly on a common path, or a blocker for Symfony 7.4 / PHP 8.4.
 
-**No Symfony 7.4 / PHP 8.4 blocker was found.** All 15 PHP files in scope pass `php -l` on 8.4.27. All of them were loaded through the vendored autoloader with `E_ALL` and an error handler in place: no fatal error, no signature mismatch with the Pimcore `Data` interfaces, no deprecation. Forward-compatibility issues (PHP 8.5, Doctrine ORM 3, Symfony 8) are tracked in TODO-3.
+**Second scan (same date):** `DependencyInjection/*` (incl. `Compiler/*`, 12 files), `Doctrine/ORM/*` (5 files), `EventListener/*` (2 files), `Pimcore/Repository/*` (2 files), with `Resources/config/{services.yml,services/rules.yml,doctrine/model/*.orm.xml,install/pimcore/classes/CoreShopCategory.json}`. Call paths were followed into `ResourceBundle/DependencyInjection/{Extension/AbstractModelExtension,Driver/Doctrine/DoctrineORMDriver,Compiler/StackRepositoryPass}.php`, `RuleBundle/{Doctrine/ORM/RuleRepository,Assessor/RuleAvailabilityAssessor}.php`, `CoreBundle/Pimcore/Repository/CategoryRepository.php`, `Component/Product/Rule/Fetcher/*` and Pimcore's `AbstractObject::save()` / `getChildrenSortBy()`. The `Configuration` tree and the extension were run with `Processor` / `ContainerBuilder` on Symfony 7.4.21. Items from this scan are C-04+, B-22+ and I-19+. **This scan found no new critical item**; its findings are in TODO-2 (**B-22**–**B-27**) and TODO-3 (**I-19**–**I-26**).
+
+**No Symfony 7.4 / PHP 8.4 blocker was found.** All 15 PHP files of the first scan and all 21 of the second pass `php -l` on 8.4.27. The first-scan files were loaded through the vendored autoloader with `E_ALL` and an error handler in place: no fatal error, no signature mismatch with the Pimcore `Data` interfaces, no deprecation. Forward-compatibility issues (PHP 8.5, Doctrine ORM 3, Symfony 8) are tracked in TODO-3.
 
 Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3-IMPROVEMENTS.md)
 

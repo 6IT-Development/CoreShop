@@ -33,6 +33,8 @@ class PortletsController extends AdminController
 {
     public function getPortletDataAction(Request $request): Response
     {
+        $this->checkPermission('reports');
+
         $portletName = $this->getParameterFromRequest($request, 'portlet');
         $portletRegistry = $this->container->get('coreshop.registry.portlets');
 
@@ -53,6 +55,8 @@ class PortletsController extends AdminController
         Request $request,
         SerializerInterface $serializer,
     ): Response {
+        $this->checkPermission('reports');
+
         $portletName = $this->getParameterFromRequest($request, 'portlet');
         $portletRegistry = $this->container->get('coreshop.registry.portlets');
 

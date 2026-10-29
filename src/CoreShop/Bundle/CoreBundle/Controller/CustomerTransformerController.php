@@ -33,6 +33,11 @@ class CustomerTransformerController extends AdminController
 {
     public function checkForNameDuplicatesAction(Request $request): JsonResponse
     {
+        $this->checkPermissionsHasOneOf([
+            'coreshop_permission_ctc_assign_to_new',
+            'coreshop_permission_ctc_assign_to_existing',
+        ]);
+
         $error = false;
         $message = null;
         $objects = [];
@@ -63,6 +68,11 @@ class CustomerTransformerController extends AdminController
 
     public function getEntityDetailsAction(string $type, int $objectId): JsonResponse
     {
+        $this->checkPermissionsHasOneOf([
+            'coreshop_permission_ctc_assign_to_new',
+            'coreshop_permission_ctc_assign_to_existing',
+        ]);
+
         $error = false;
         $message = null;
         $data = null;
@@ -102,6 +112,11 @@ class CustomerTransformerController extends AdminController
 
     public function validateAssignmentAction(int $customerId, ?int $companyId = null): JsonResponse
     {
+        $this->checkPermissionsHasOneOf([
+            'coreshop_permission_ctc_assign_to_new',
+            'coreshop_permission_ctc_assign_to_existing',
+        ]);
+
         $error = false;
         $message = null;
         $data = null;
@@ -160,6 +175,8 @@ class CustomerTransformerController extends AdminController
 
     public function dispatchExistingAssignmentAction(Request $request, int $customerId, int $companyId): JsonResponse
     {
+        $this->checkPermission('coreshop_permission_ctc_assign_to_existing');
+
         $error = false;
         $formError = false;
         $message = null;
@@ -200,6 +217,8 @@ class CustomerTransformerController extends AdminController
 
     public function dispatchNewAssignmentAction(Request $request, int $customerId): JsonResponse
     {
+        $this->checkPermission('coreshop_permission_ctc_assign_to_new');
+
         $error = false;
         $formError = false;
         $message = null;

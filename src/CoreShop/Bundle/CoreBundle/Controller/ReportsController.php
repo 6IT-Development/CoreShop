@@ -33,6 +33,8 @@ class ReportsController extends AdminController
 {
     public function getReportDataAction(Request $request): Response
     {
+        $this->checkPermission('reports');
+
         $reportId = $this->getParameterFromRequest($request, 'report');
         $reportRegistry = $this->container->get('coreshop.registry.reports');
 
@@ -54,6 +56,8 @@ class ReportsController extends AdminController
         Request $request,
         SerializerInterface $serializer,
     ): Response {
+        $this->checkPermission('reports');
+
         $reportType = $this->getParameterFromRequest($request, 'report');
         $reportRegistry = $this->container->get('coreshop.registry.reports');
 

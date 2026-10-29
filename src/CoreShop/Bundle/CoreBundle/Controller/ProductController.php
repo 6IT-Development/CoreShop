@@ -22,6 +22,7 @@ use CoreShop\Bundle\ResourceBundle\Controller\ResourceController;
 use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Pimcore\Model\Element\ElementInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -30,7 +31,13 @@ class ProductController extends ResourceController
 {
     public function removeStoreValuesAction(Request $request, RepositoryInterface $productStoreValuesRepository, EntityManagerInterface $entityManager): Response
     {
+        $this->checkPermission('objects');
+
         $product = $this->findOr404($this->getParameterFromRequest($request, 'id'));
+
+        if (!$product instanceof ElementInterface || !$product->isAllowed('save', $this->getPimcoreUser())) {
+            throw $this->createAccessDeniedHttpException();
+        }
         $storeValue = $productStoreValuesRepository->find($this->getParameterFromRequest($request, 'storeValuesId'));
 
         if (!$storeValue instanceof ProductStoreValuesInterface) {

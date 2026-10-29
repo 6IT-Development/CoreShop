@@ -43,6 +43,8 @@ class ProductVariantUnitSolidifierController extends AdminController
 
     public function checkStatusAction(Request $request, int $objectId): Response
     {
+        $this->checkPermission('objects');
+
         /** @var DataObject\Concrete $object */
         $object = $this->getProductRepository()->find($objectId);
 
@@ -80,6 +82,8 @@ class ProductVariantUnitSolidifierController extends AdminController
 
     public function applyAction(Request $request, int $objectId): Response
     {
+        $this->checkPermission('objects');
+
         $success = true;
         $message = null;
 
@@ -93,13 +97,25 @@ class ProductVariantUnitSolidifierController extends AdminController
             ]);
         }
 
+        $user = $this->getPimcoreUser();
+        $variants = array_filter(
+            $object->getChildren([AbstractObject::OBJECT_TYPE_VARIANT], true)->getData() ?? [],
+            static fn ($variant) => $variant instanceof ProductInterface,
+        );
+
+        if (!$object->isAllowed('save', $user)) {
+            throw $this->createAccessDeniedHttpException();
+        }
+
+        foreach ($variants as $variant) {
+            if (!$variant->isAllowed('save', $user)) {
+                throw $this->createAccessDeniedHttpException();
+            }
+        }
+
         $dispatchedVariants = [];
 
-        foreach ($object->getChildren([AbstractObject::OBJECT_TYPE_VARIANT], true) as $variant) {
-            if (!$variant instanceof ProductInterface) {
-                continue;
-            }
-
+        foreach ($variants as $variant) {
             try {
                 $this->getUnitDefinitionsCloner()->clone($variant, $object, false);
             } catch (\Throwable $e) {

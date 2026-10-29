@@ -217,3 +217,56 @@ Scope and method: see the "Second scan" paragraph in [TODO-1-CRITICAL.md](TODO-1
 ### I-26 — `composer.json`: declare the dependencies used by this scan's code
 - **Where:** `composer.json`
 - `Doctrine/ORM/*` and `EventListener/ProductDeleteListener.php` use `doctrine/orm`; `PriceRuleRepository` extends `CoreShop\Bundle\RuleBundle\Doctrine\ORM\RuleRepository` (`coreshop/rule-bundle` is declared). `CategoryPersistEventListener` and `Pimcore/Repository/*` use Pimcore event and listing classes (`six-it/pimcore-source`, declared). Add `doctrine/orm` and `symfony/dependency-injection` / `symfony/config` together with **I-17**.
+
+---
+
+# Third scan: `Form`
+
+Scope and method: see the "Third scan" paragraph in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+### I-27 — Collapse the sixteen near-identical rule form types
+- **Where:** `Form/Type/Product{,Specific}PriceRule{Action,Condition}{Type,CollectionType,ChoiceType}.php` (12 files), `Form/Type/Product{,Specific}PriceRuleTranslationType.php`, `Form/Type/Rule/Condition/Product{,Specific}PriceNestedConfigurationType.php`; `Resources/config/services/{price-rules,specific-price-rules}.yml`
+- Each "specific" class is the "price rule" class with another child type and block prefix (spot-checked with `diff` for the action types and the condition collection types). Keep one parameterised type per role and configure the variants as services (registry, form registry, entry type and block prefix as options or constructor arguments). This halves the code and keeps the two rule kinds from drifting apart.
+- Make all of them `final` or none: today the four `*ChoiceType`, the two `*ConditionCollectionType` and the two unit collection types are not final while their siblings are.
+- Block prefixes must be unique: both nested types return `coreshop_rule_condition_nested`, which is also RuleBundle's prefix, so a form theme for one changes all three. Use `coreshop_product_price_rule_condition_nested` / `coreshop_product_specific_price_rule_condition_nested`.
+- `ProductPriceNestedConfigurationType.php:44` passes `'constraints' => new Valid(…)`, the specific variant `[new Valid(…)]`. Use the array form in both.
+
+### I-28 — Translation types extend `RuleType`
+- **Where:** `Form/Type/ProductPriceRuleTranslationType.php`, `Form/Type/ProductSpecificPriceRuleTranslationType.php`
+- They inherit from `RuleBundle`'s `RuleType` but override everything; a translation is not a rule. Extend `AbstractResourceType` (as `Unit/ProductUnitTranslationType.php` does). Add `Length(max: 255)` on `label` if the column is a default string.
+
+### I-29 — Configuration types: PHP 8.4 style and shared transformers
+- **Where:** `Form/Type/Rule/Action/*.php`, `Form/Type/Rule/Condition/*.php`
+- `protected array $validationGroups` in `final` classes → `private readonly array $validationGroups` (promoted). Same for `protected` constructor properties in `Unit/ProductUnitChoiceType.php`, `Unit/ProductUnitDefinitionSelectionType.php`, `Unit/ProductUnitDefinitionPriceType.php`.
+- The currency `CallbackTransformer` is copy-pasted in two types (and wrong in one direction, TODO-2 **B-34**). Move it to one reusable transformer class (ID ↔ resource), or let `CurrencyChoiceType` take an `as_id` option.
+- `TimespanConfigurationType.php:38-39`: remove the `//TODO: Mabye DateType?` comments (typo) and decide: the stored value is a millisecond timestamp used by the JS date picker and the checkers, so `IntegerType` (or `NumberType` with `scale: 0`) states that better than a plain `NumberType`. Document the unit (ms) in a docblock.
+- `DiscountPercentConfigurationType`: `Range(min: 0, max: 100)` makes `Type(numeric)` redundant after `NumberType` transformation; `Type` only adds a second error for the same input.
+
+### I-30 — Unit form types: clean options and types
+- **Where:** `Form/Type/Unit/*.php`
+- `ProductUnitDefinitionsChoiceType`: drop the `entry_type` option (not a `ChoiceType` option; it only exists because it is set as a default), declare `product` as required and typed (TODO-2 **B-31**), and use `static fn` closures.
+- `ProductUnitDefinitionCollectionType` / `ProductUnitDefinitionPriceCollectionType` call `parent::configureOptions()` on `AbstractType` (no-op). Remove the call, make the classes `final`.
+- `ProductUnitDefinitionPriceType`: the constructor takes `$decimalFactor` and `$decimalPrecision` (wired in `units.yml` from `%coreshop.currency.decimal_*%`) but never uses them. Remove both from the class and the service definition, or pass them to `MoneyType` if that was the intention.
+- `ProductUnitChoiceType` loads all units with `findAll()` in each form build. Pass `choice_loader` (`ChoiceList::lazy()`), so the query only runs when the choices are needed, and sort by name.
+
+### I-31 — `ProductUnitDefinitionsType`: replace the `SUBMIT` listener with a data mapper
+- **Where:** `Form/Type/Unit/ProductUnitDefinitionsType.php:47-70`
+- The listener mixes three things: default-unit replacement, merging submitted additional definitions into existing ones by unit name, and forcing the collection through `PropertyAccess::createPropertyAccessor()` (created on every submit). A `DataMapperInterface` implementation (`mapFormsToData()`) expresses this directly, runs only on transformed data (fixes TODO-2 **B-28** structurally) and can be unit-tested.
+- Inject a `PropertyAccessorInterface` (or call `addAdditionalUnitDefinition()` / `removeAdditionalUnitDefinition()` directly) instead of creating one.
+- The `/** @var */` docblocks hide that `$additionalUnitDefinitions` can be `null`; type-check instead.
+- **(dependent)** `Component/Product/Model/ProductUnitDefinitions.php` `addAdditionalUnitDefinition()` / `removeAdditionalUnitDefinition()` compare a `ProductUnitInterface` with a `ProductUnitDefinitionInterface` (`$productUnit === $defaultDefinitionUnit`, where `$defaultDefinitionUnit = $defaultDefinition`), so the "skip the default unit" guard never triggers. The form relies on that behaviour by accident; fix both together.
+
+### I-32 — Service configuration for the forms
+- **Where:** `Resources/config/services/{form,price-rules,specific-price-rules,units}.yml`
+- Unused parameters: `coreshop.form.type.product_price_rule.rule.validation_groups`, `…product_price_rule.promotion_coupon.validation_groups` and the two `product_specific_price_rule` counterparts (one occurrence each = only the definition). Remove them.
+- `coreshop.form.type.product_price_rule.condition.timespan.validation_groups` is also used for specific price rules; name it neutrally (`…rule.condition.timespan…`).
+- Form types do not need to be public (`_defaults: public: true`). With `autowire`/`autoconfigure` (or `_instanceof: Symfony\Component\Form\FormTypeInterface: tags: [form.type]`) most of the ~30 explicit definitions reduce to argument bindings.
+
+### I-33 — Naming and field types in the rule forms
+- **Where:** `Form/Type/ProductPriceRuleType.php:36`, `Form/Type/ProductSpecificPriceRuleType.php:36`, `Form/Type/ProductSelectionType.php`
+- `name` is a `TextareaType` while the base `RuleType` uses `TextType`; the admin JS sends a single line. Use `TextType` (together with TODO-2 **B-35**).
+- The field order differs between the two rule types (`priority` before/after the flags). Align it, so the generic type from I-27 can build both.
+- `ProductSelectionType` uses the block prefix `coreshop_product`, which reads like the product form itself. Use `coreshop_product_selection`.
+
+### I-34 — Form tests
+- `TypeTestCase` tests for every configuration type (valid/invalid input, including TODO-2 **B-32**, **B-33**), the currency transformer round trip (**B-34**), `ProductUnitDefinitionSelectionType` with unknown and foreign IDs (**B-30**), `ProductUnitDefinitionsType` with: new additional unit, changed default unit, removed unit, unit missing (**B-28**), and the nested types with a partial submit (**B-36**).

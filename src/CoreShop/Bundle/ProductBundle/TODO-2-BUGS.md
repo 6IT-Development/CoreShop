@@ -198,3 +198,74 @@ Scope and method: see the "Second scan" paragraph in [TODO-1-CRITICAL.md](TODO-1
 - **Where:** `Resources/config/services/rules.yml` (`coreshop.rule.availability_assessor.product_specific_price` → `@coreshop.repository.product_specific_price_rule`); `RuleBundle/Assessor/RuleAvailabilityAssessor.php:36` (`findActive()`), `RuleBundle/Processor/RuleAvailabilityProcessor.php:38-47` (one EM, one `flush()` at the end), `findActive()` inherited by `ProductSpecificPriceRuleRepository` from `PriceRuleRepository`.
 - **Problem:** the rule-availability check (`coreshop:rules:check-availability`, and the Pimcore maintenance job via `CoreBundle/Maintenance/RuleAvailabilityTask.php`) hydrates every active specific price rule of the catalog, with their conditions, into one entity manager. On catalogs with many product-specific rules this grows without bound and can exhaust the worker's memory. After it fails, expired rules stay active.
 - **Fix:** iterate in batches (`toIterable()` + `$em->clear()` every N), or let the assessor query only rules with a timespan condition (`findWithConditionOfType('timespan')`, which already exists in `RuleRepository`).
+
+---
+
+# Third scan: `Form`
+
+Scope and method: see the "Third scan" paragraph in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+## Unit definitions
+
+### B-28 — (reproduced at model level) `ProductUnitDefinitionsType::onSubmit()` runs on unvalidated data: a default unit definition without a unit ends in a `TypeError` (HTTP 500) instead of a validation error
+- **Where:** `Form/Type/Unit/ProductUnitDefinitionsType.php:34`, `:47-70` (`FormEvents::SUBMIT` listener); `Component/Product/Model/ProductUnitDefinitions.php:80-85` (`setDefaultUnitDefinition()` → `getUnitDefinition($definition->getUnitName())`, `string $identifier`, `strict_types`).
+- **Problem:**
+  - `SUBMIT` listeners run before validation and also when child forms failed to transform. When `defaultUnitDefinition` is posted with an empty or unknown `unit`, `ProductUnitChoiceType` leaves `unit` as `null`, but the child form still produces a `ProductUnitDefinition` object (`data_class` + `required` → `empty_data` creates an instance), so `if ($defaultDefinition)` is true.
+  - `setDefaultUnitDefinition()` then calls `getUnitDefinition(null)`: `TypeError: ProductUnitDefinitions::getUnitDefinition(): Argument #1 ($identifier) must be of type string, null given` (reproduced on PHP 8.4.27 by calling the model with a definition without a unit). The product save fails with a generic error instead of "please select a unit".
+  - The same path is taken for every additional definition: `getUnitDefinition($unitDefinition->getUnitName())` with `null`.
+- **Fix:** validation runs after `SUBMIT`, so `isValid()` cannot be used in the listener. Skip definitions whose `getUnit()` is `null` in `onSubmit()`, and add a `NotNull` constraint on `unit` (see **B-29**), so the form reports the error. Alternatively move the logic into a `DataMapper` that only runs on transformed data (TODO-3 **I-31**).
+
+### B-29 — Unit, unit-definition and unit-price forms have no validation at all: zero or negative conversion rates, negative precision and duplicate unit names reach the database
+- **Where:** `Form/Type/Unit/ProductUnitDefinitionType.php:28-35` (`unit`, `conversionRate`, `precision` without constraints), `Form/Type/Unit/ProductUnitType.php:28-36` (`name`), `Form/Type/Unit/ProductUnitDefinitionPriceType.php:36-42`; `Resources/config/validation/` (only `ProductPriceRule.yml` and `ProductSpecificPriceRule.yml` exist); `Resources/config/doctrine/model/ProductUnit.orm.xml:12` (`name` `unique="true"`). Consumer of the rate: `Component/Core/Order/Modifier/CartItemQuantityModifier.php:61` (`defaultUnitQuantity = conversionRate × quantity`).
+- **Problem:**
+  - A conversion rate of `0` makes every cart item in that unit count as 0 default units (inventory, shipping weight and quantity price ranges use the default-unit quantity); a negative rate gives negative stock movements. A negative `precision` is accepted and used for rounding quantities.
+  - A unit definition without a unit is persisted (the join column is nullable), and crashes later (**B-18**, **B-28**).
+  - Saving a product unit with an existing `name` passes the form and fails on the unique index: `UniqueConstraintViolationException` → HTTP 500 from `ResourceController::saveAction()` instead of a form error. An empty `name` is accepted too.
+  - The `validation_groups` parameters in `units.yml` (`coreshop.form.type.product_unit*.validation_groups`) are passed to the types but no constraint uses them.
+- **Fix:** add `Resources/config/validation/{ProductUnit,ProductUnitDefinition,ProductUnitDefinitionPrice}.yml` (group `coreshop`): `ProductUnit.name` → `NotBlank`, `Length(max: 190)`, class-level `UniqueEntity(fields: name)`; `ProductUnitDefinition.unit` → `NotNull`; `conversionRate` → `NotBlank`, `Positive`; `precision` → `NotNull`, `PositiveOrZero`; `ProductUnitDefinitionPrice.price` → `PositiveOrZero`, `unitDefinition` → `NotNull`. Add `Valid` on the collections in `ProductUnitDefinitionsType`.
+
+### B-30 — `ProductUnitDefinitionSelectionType` turns unknown, fractional or foreign IDs into `null` silently; it also breaks without the CSRF extension
+- **Where:** `Form/Type/Unit/ProductUnitDefinitionSelectionType.php:36-73` (parent `NumberType`, reverse transformer `find($value)`, `csrf_protection` default). Users: `CoreBundle/Form/Extension/ProductQuantityRangeTypeExtension.php:42` (quantity price rule ranges), `Form/Type/Unit/ProductUnitDefinitionPriceType.php:40` (store unit prices, `CoreBundle/Form/Type/Product/ProductStoreValuesType.php:42`).
+- **Problem:**
+  - The reverse transformer returns `find($value)`, i.e. `null` for an ID that does not exist (deleted definition, stale editor), and the field is valid. The range or unit price is saved **without** its unit definition; in the storefront it then applies to the default unit instead of the intended one. No error is shown.
+  - The parent is `NumberType`, so `12.7` is accepted for an ID.
+  - Any unit-definition ID is accepted, also one that belongs to a different product (same class of problem as **B-20**): a quantity range of product A can point to a unit of product B.
+  - `configureOptions()` sets `csrf_protection`, an option that only exists when the CSRF form extension is registered. In an application with `framework.csrf_protection: false` every form that uses this type throws `UndefinedOptionsException: The option "csrf_protection" does not exist` (the same exception was observed on Symfony 7.4.21 when building forms without the extension).
+- **Fix:** parent `IntegerType` (or `HiddenType`); throw `TransformationFailedException` with an `invalid_message` when `find()` returns `null`; check the owning product (pass it as an option from the store-values / quantity-range forms); drop the `csrf_protection` default (child types do not need it).
+
+### B-31 — (plausible) `ProductUnitDefinitionsChoiceType` crashes when the `product` option is missing or a definition has no unit
+- **Where:** `Form/Type/Unit/ProductUnitDefinitionsChoiceType.php:30-56`.
+- **Problem:** `product` defaults to `null` and is neither required nor typed, so `$product->hasUnitDefinitions()` is `Error: Call to a member function hasUnitDefinitions() on null` for any caller that forgets it. `choice_label` calls `$definition->getUnit()->getFullLabel()` without a null check (**B-18** in the storefront cart). The CoreBundle callers (`CartItemTypeExtension.php:68`, `CartCreationCartItemTypeExtension.php:57`) pass a product today, so this is a trap for project code.
+- **Fix:** `$resolver->setRequired('product')->setAllowedTypes('product', ProductInterface::class)`; `getUnit()?->getFullLabel() ?? (string) $definition->getId()`. Remove the meaningless `entry_type` default (TODO-3 **I-30**).
+
+---
+
+## Price rule forms
+
+### B-32 — `PriceConfigurationType` accepts negative prices
+- **Where:** `Form/Type/Rule/Action/PriceConfigurationType.php:43-48` (`NotBlank` + `Type(numeric)` only). Compare `DiscountAmountConfigurationType.php:48` (`GreaterThan(0)`). Used for the `price` and `discountPrice` actions of both product price rules and specific price rules (`Resources/config/services.yml:85-99`).
+- **Problem:** a typo (`-10` instead of `10`) in a price or discount-price action is saved, and the product is offered at a negative price in the storefront and cart. Nothing downstream clamps it.
+- **Fix:** add `new GreaterThanOrEqual(value: 0, groups: $this->validationGroups)` (zero stays possible for free items).
+
+### B-33 — (reproduced) `TimespanConfigurationType` has no constraints: an empty or reversed time span is saved, and such a rule silently never (or always) applies
+- **Where:** `Form/Type/Rule/Condition/TimespanConfigurationType.php:35-41` (`$validationGroups` is injected but unused); consumers `Component/Product/Rule/Condition/TimeSpanConditionChecker.php:27-45`, `RuleBundle/Assessor/RuleAvailabilityAssessor.php` (`isValid()`).
+- **Problem (reproduced with Symfony 7.4.21 form factory + validator):**
+  - `dateFrom = 1800000000000`, `dateTo = 1700000000000` → `isValid() === true`. The checker then never matches (now cannot be after `dateFrom` and before `dateTo`), and the availability check deactivates the rule once `dateFrom` has passed. The editor gets no hint.
+  - `{}` (both missing) → valid, `null` values stored. The checker treats them as "no limit", so a time-span condition without dates makes the rule apply always.
+  - The same form type is used for specific price rules (`services.yml:79-82`).
+- **Fix:** at least one of both dates `NotBlank`; `PositiveOrZero` on each; a form-level `Callback` constraint (or `Expression`) `dateTo === null || dateFrom === null || dateFrom <= dateTo`. Use the injected `$validationGroups`.
+
+### B-34 — (plausible) The currency model transformer of `PriceConfigurationType` / `DiscountAmountConfigurationType` maps stored currency IDs to `null`
+- **Where:** `Form/Type/Rule/Action/DiscountAmountConfigurationType.php:58-73`, `Form/Type/Rule/Action/PriceConfigurationType.php:56-71` (both closures of the `CallbackTransformer` are identical); `CurrencyBundle/Form/Type/CurrencyChoiceType.php` (choices are currency entities).
+- **Problem:** the stored configuration holds the currency **ID** (that is what `reverseTransform` returns). `transform()` only handles `CurrencyInterface` and returns `null` for an `int`, so a form initialised from a stored rule shows no currency. The admin posts the full configuration on every save, so it works there, but any consumer that renders the form from stored data (Twig, API with `submit($data, false)`) loses the currency, and a partial submit then fails `NotBlank`.
+- **Fix:** `transform: fn ($c) => $c instanceof CurrencyInterface ? $c : ($c ? $this->currencyRepository->find($c) : null)` (inject the repository), or use one shared `ResourceToIdentifierTransformer` (TODO-3 **I-29**).
+
+### B-35 — Rule names longer than 255 characters fail in the database instead of the form
+- **Where:** `Form/Type/ProductPriceRuleType.php:36`, `Form/Type/ProductSpecificPriceRuleType.php:36` (`TextareaType`, no `Length`); `Resources/config/doctrine/model/Product{,Specific}PriceRule.orm.xml:12` (`string`, default length 255); `Resources/config/validation/Product{,Specific}PriceRule.yml` (`NotBlank` only).
+- **Problem:** the field is a textarea, so long names are easy to enter. On MySQL in strict mode the save fails with `Data too long for column 'name'` (HTTP 500 for price rules via `ResourceController`, a generic product-save error for specific price rules).
+- **Fix:** `Length(max: 255)` in both validation files, and `TextType` (TODO-3 **I-34**). For specific price rules this message goes through the error flattening that **B-11** breaks for integer parameters (`{{ limit }}`): fix **B-11** first, or the new constraint turns the 500 into a different 500.
+
+### B-36 — The nested-condition types wipe the stored nested conditions whenever the form is initialised with data
+- **Where:** `Form/Type/Rule/Condition/ProductPriceNestedConfigurationType.php:49-57`, `Form/Type/Rule/Condition/ProductSpecificPriceNestedConfigurationType.php:49-57` (`PRE_SET_DATA` → `$data['conditions'] = []`).
+- **Problem:** the listener replaces the stored nested conditions with an empty list on every `setData()`. The admin always re-posts the whole tree, so a full submit restores them. A partial submit (`submit($data, false)`), a form rendered from stored data, or a client that omits `conditions` (to change only the operator) silently deletes all nested conditions of that group; the rule then matches more products than intended.
+- **Fix:** document why the reset is needed (the stored conditions are not shaped for the collection's data mapper), and convert them instead of discarding them (map the stored arrays/entities to the collection's entry data in `PRE_SET_DATA`). Add a test with a partial submit.

@@ -56,15 +56,22 @@ class ObjectUserProvider implements UserProviderInterface
 
         $refreshedUser = $this->userRepository->find($user->getId());
 
-        if (!$refreshedUser instanceof UserInterface) {
+        /**
+         * find() also returns unpublished objects, while the login lookup does not:
+         * end the session of a user that was unpublished in the meantime.
+         */
+        if (!$refreshedUser instanceof UserInterface ||
+            ($refreshedUser instanceof \CoreShop\Component\User\Model\UserInterface && !$refreshedUser->isPublished())
+        ) {
             throw new UserNotFoundException(sprintf('User with id "%s" was not found', $user->getId()));
         }
 
         return $refreshedUser;
     }
 
-    public function supportsClass($class): bool
+    public function supportsClass(string $class): bool
     {
-        return $class === $this->className;
+        // also support subclasses, e.g. Pimcore class overrides
+        return is_a($class, $this->className, true);
     }
 }

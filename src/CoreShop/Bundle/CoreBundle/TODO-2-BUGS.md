@@ -29,6 +29,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** document this and make the voter replaceable (config flag), or have it abstain unless no other voter supports the attribute. Alternatively use `strategy: priority` and give this voter the lowest priority. Implement `CacheableVoterInterface::supportsAttribute()` so the voter is skipped for other attributes (TODO-3 **I-21**).
 
 ### B-04 — `ObjectUserProvider::supportsClass()` compares class names strictly, and `refreshUser()` keeps unpublished users logged in
+- **Status:** fixed — `supportsClass(string $class)` uses `is_a(..., true)`. `refreshUser()` throws `UserNotFoundException` for an unpublished user, which ends the session. An unpublished *customer* is not checked, because the login lookup does not check it either; that would log the user in and out again on the next request.
 - **Where:** `Security/ObjectUserProvider.php:51-69`.
 - **Problem:**
   - `$class === $this->className` fails for subclasses: Pimcore class overrides (`pimcore.models.class_overrides`) or a project `User` that extends the generated class. Symfony then finds no provider for the user in the session, and the user is logged out on every request.

@@ -26,6 +26,7 @@ use CoreShop\Component\Locale\Context\LocaleContextInterface;
 use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Pimcore\Model\DataObject\ClassDefinition;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -60,14 +61,7 @@ class ManufacturerReport implements ReportInterface
         $orderClassId = $this->orderRepository->getClassId();
         $manufacturerClassId = $this->manufacturerRepository->getClassId();
         $orderItemClassId = $this->orderItemRepository->getClassId();
-        $orderStateFilter = $parameterBag->get('orderState');
-        if ($orderStateFilter) {
-            $orderStateFilter = \json_decode($orderStateFilter, true);
-        }
-
-        if (!is_array($orderStateFilter) || !$orderStateFilter) {
-            $orderStateFilter = null;
-        }
+        $orderStateFilter = OrderStateFilter::fromParameterBag($parameterBag);
 
         if (null === $storeId) {
             return [];
@@ -89,13 +83,11 @@ class ManufacturerReport implements ReportInterface
 
         $orderStateInClause = '';
         $orderStateParams = [];
+        $orderStateTypes = [];
         if ($orderStateFilter !== null) {
-            $orderStatePlaceholders = [];
-            foreach ($orderStateFilter as $i => $state) {
-                $orderStatePlaceholders[] = ':orderState' . $i;
-                $orderStateParams['orderState' . $i] = $state;
-            }
-            $orderStateInClause = ' AND `orders`.orderState IN (' . implode(', ', $orderStatePlaceholders) . ')';
+            $orderStateParams['orderStates'] = $orderStateFilter;
+            $orderStateTypes['orderStates'] = ArrayParameterType::STRING;
+            $orderStateInClause = ' AND `orders`.orderState IN (:orderStates)';
         }
 
         $query = '
@@ -124,7 +116,7 @@ class ManufacturerReport implements ReportInterface
             'toTimestamp' => $to->getTimestamp(),
         ], $orderStateParams);
 
-        $results = $this->db->fetchAllAssociative($query, $queryParameters);
+        $results = $this->db->fetchAllAssociative($query, $queryParameters, $orderStateTypes);
 
         $this->totalRecords = (int) $this->db->fetchOne('SELECT FOUND_ROWS()');
 

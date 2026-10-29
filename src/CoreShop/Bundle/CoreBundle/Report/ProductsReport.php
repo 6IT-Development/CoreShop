@@ -28,6 +28,7 @@ use CoreShop\Component\Locale\Context\LocaleContextInterface;
 use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
@@ -51,19 +52,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
         $fromFilter = $parameterBag->get('from', strtotime(date('01-m-Y')));
         $toFilter = $parameterBag->get('to', strtotime(date('t-m-Y')));
         $objectTypeFilter = $parameterBag->get('objectType', 'all');
-        $orderStateFilter = $parameterBag->get('orderState');
-
-        if ($orderStateFilter) {
-            $orderStateFilter = \json_decode($orderStateFilter, true);
-        }
-
-        if (!is_array($orderStateFilter) || !$orderStateFilter) {
-            $orderStateFilter = null;
-        }
-
-        if (is_array($orderStateFilter) && count($orderStateFilter) === 1 && $orderStateFilter[0] === 'all') {
-            $orderStateFilter = null;
-        }
+        $orderStateFilter = OrderStateFilter::fromParameterBag($parameterBag);
 
         $storeId = $parameterBag->get('store');
 
@@ -90,13 +79,11 @@ class ProductsReport implements ReportInterface, ExportReportInterface
 
         $orderStateInClause = '';
         $orderStateParams = [];
-        $orderStatePlaceholders = [];
+        $orderStateTypes = [];
         if ($orderStateFilter !== null) {
-            foreach ($orderStateFilter as $i => $state) {
-                $orderStatePlaceholders[] = ':orderState' . $i;
-                $orderStateParams['orderState' . $i] = $state;
-            }
-            $orderStateInClause = ' AND `order`.orderState IN (' . implode(', ', $orderStatePlaceholders) . ')';
+            $orderStateParams['orderStates'] = $orderStateFilter;
+            $orderStateTypes['orderStates'] = ArrayParameterType::STRING;
+            $orderStateInClause = ' AND `order`.orderState IN (:orderStates)';
         }
 
         if ($objectTypeFilter === 'container') {
@@ -134,7 +121,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
 
             $orderStateInClauseOrders = '';
             if ($orderStateFilter !== null) {
-                $orderStateInClauseOrders = ' AND `orders`.orderState IN (' . implode(', ', $orderStatePlaceholders) . ')';
+                $orderStateInClauseOrders = ' AND `orders`.orderState IN (:orderStates)';
             }
 
             $query = "
@@ -164,7 +151,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
             'toTimestamp' => $to->getTimestamp(),
         ], $orderStateParams);
 
-        $productSales = $this->db->fetchAllAssociative($query, $queryParameters);
+        $productSales = $this->db->fetchAllAssociative($query, $queryParameters, $orderStateTypes);
 
         $this->totalRecords = (int) $this->db->fetchOne('SELECT FOUND_ROWS()');
 

@@ -26,6 +26,7 @@ use CoreShop\Component\Locale\Context\LocaleContextInterface;
 use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
@@ -49,14 +50,7 @@ class CategoriesReport implements ReportInterface
         $fromFilter = $parameterBag->get('from', strtotime(date('01-m-Y')));
         $toFilter = $parameterBag->get('to', strtotime(date('t-m-Y')));
         $storeId = $parameterBag->get('store', null);
-        $orderStateFilter = $parameterBag->get('orderState');
-        if ($orderStateFilter) {
-            $orderStateFilter = \json_decode($orderStateFilter, true);
-        }
-
-        if (!is_array($orderStateFilter) || !$orderStateFilter) {
-            $orderStateFilter = null;
-        }
+        $orderStateFilter = OrderStateFilter::fromParameterBag($parameterBag);
 
         $from = Carbon::createFromTimestamp($fromFilter);
         $to = Carbon::createFromTimestamp($toFilter);
@@ -81,13 +75,11 @@ class CategoriesReport implements ReportInterface
 
         $orderStateInClause = '';
         $orderStateParams = [];
+        $orderStateTypes = [];
         if ($orderStateFilter !== null) {
-            $orderStatePlaceholders = [];
-            foreach ($orderStateFilter as $i => $state) {
-                $orderStatePlaceholders[] = ':orderState' . $i;
-                $orderStateParams['orderState' . $i] = $state;
-            }
-            $orderStateInClause = ' AND `orders`.orderState IN (' . implode(', ', $orderStatePlaceholders) . ')';
+            $orderStateParams['orderStates'] = $orderStateFilter;
+            $orderStateTypes['orderStates'] = ArrayParameterType::STRING;
+            $orderStateInClause = ' AND `orders`.orderState IN (:orderStates)';
         }
 
         $query = "
@@ -117,7 +109,7 @@ class CategoriesReport implements ReportInterface
             'toTimestamp' => $to->getTimestamp(),
         ], $orderStateParams);
 
-        $results = $this->db->fetchAllAssociative($query, $queryParameters);
+        $results = $this->db->fetchAllAssociative($query, $queryParameters, $orderStateTypes);
 
         if (count($results) === 0) {
             // when products get assigned to category
@@ -141,7 +133,7 @@ class CategoriesReport implements ReportInterface
             GROUP BY categories.oo_id
             ORDER BY quantityCount DESC
             LIMIT " . (int) $offset . ', ' . (int) $limit;
-            $results = $this->db->fetchAllAssociative($query, $queryParameters);
+            $results = $this->db->fetchAllAssociative($query, $queryParameters, $orderStateTypes);
         }
 
         $this->totalRecords = (int) $this->db->fetchOne('SELECT FOUND_ROWS()');

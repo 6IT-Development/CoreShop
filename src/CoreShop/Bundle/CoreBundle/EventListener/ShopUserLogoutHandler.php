@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
-use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Store\Context\StoreContextInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,10 +42,16 @@ final class ShopUserLogoutHandler /*implements LogoutSuccessHandlerInterface*/
     public function onLogoutSuccess(LogoutEvent $event): Response
     {
         $request = $event->getRequest();
-        $store = $this->storeContext->getStore();
 
-        if ($store instanceof StoreInterface) {
-            $request->getSession()->remove('coreshop.cart.' . $store->getId());
+        if ($request->hasSession()) {
+            $session = $request->getSession();
+
+            // remove the carts of all stores, not only the current one, as stores can share the session
+            foreach (array_keys($session->all()) as $key) {
+                if (str_starts_with((string) $key, 'coreshop.cart.')) {
+                    $session->remove($key);
+                }
+            }
         }
 
         return new RedirectResponse($this->router->generate($this->routeName, ['_locale' => $request->getLocale()]));

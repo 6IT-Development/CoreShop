@@ -68,6 +68,16 @@ final class CartBlamerListener
             return;
         }
 
+        $previousCustomer = $cart->getCustomer();
+
+        // never take over a cart that belongs to another registered customer
+        if ($previousCustomer instanceof CustomerInterface &&
+            null !== $previousCustomer->getUser() &&
+            $previousCustomer->getId() !== $user->getId()
+        ) {
+            return;
+        }
+
         $cart->setCustomer($user);
 
         if (null === $cart->getShippingAddress()) {

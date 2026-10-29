@@ -19,8 +19,6 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\StorageListBundle\Core\EventListener;
 
 use CoreShop\Component\StorageList\Context\StorageListContextInterface;
-use CoreShop\Component\StorageList\Context\StorageListNotFoundException;
-use CoreShop\Component\Store\Model\StoreAwareInterface;
 use Symfony\Component\Security\Http\Event\LogoutEvent;
 
 final class SessionStoreStorageListLogoutSubscriber
@@ -43,22 +41,14 @@ final class SessionStoreStorageListLogoutSubscriber
             return;
         }
 
-        $request = $event->getRequest();
+        $session = $request->getSession();
+        $prefix = $this->sessionKeyName . '.';
 
-        try {
-            $storageList = $this->context->getStorageList();
-        } catch (StorageListNotFoundException) {
-            return;
-        }
-
-        if (!$storageList instanceof StoreAwareInterface) {
-            return;
-        }
-
-        if (null !== $storageList->getStore()) {
-            $session = $request->getSession();
-
-            $session->remove(sprintf('%s.%s', $this->sessionKeyName, $storageList->getStore()->getId()));
+        // remove the lists of all stores, not only the current one, as stores can share the session
+        foreach (array_keys($session->all()) as $key) {
+            if (str_starts_with((string) $key, $prefix)) {
+                $session->remove($key);
+            }
         }
     }
 }

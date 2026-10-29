@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\StorageList\Core\Context;
 
+use CoreShop\Component\Customer\Context\CustomerContextInterface;
+use CoreShop\Component\Customer\Context\CustomerNotFoundException;
+use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\StorageList\Context\StorageListContextInterface;
 use CoreShop\Component\StorageList\Context\StorageListNotFoundException;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
@@ -25,12 +28,14 @@ use CoreShop\Component\StorageList\Storage\StorageListStorageInterface;
 use CoreShop\Component\Store\Context\StoreContextInterface;
 use CoreShop\Component\Store\Context\StoreNotFoundException;
 use CoreShop\Component\Store\Model\StoreAwareInterface;
+use CoreShop\Component\User\Model\UserAwareInterface;
 
 final class SessionAndStoreBasedStorageListContext implements StorageListContextInterface
 {
     public function __construct(
         private StorageListStorageInterface $storageListStorage,
         private StoreContextInterface $storeContext,
+        private ?CustomerContextInterface $customerContext = null,
     ) {
     }
 
@@ -63,6 +68,10 @@ final class SessionAndStoreBasedStorageListContext implements StorageListContext
             $storageList = null;
         }
 
+        if (null !== $storageList && !$this->belongsToCurrentCustomer($storageList)) {
+            $storageList = null;
+        }
+
         if (null === $storageList) {
             $this->storageListStorage->removeForContext($context);
 
@@ -70,5 +79,35 @@ final class SessionAndStoreBasedStorageListContext implements StorageListContext
         }
 
         return $storageList;
+    }
+
+    /**
+     * A list owned by a registered customer must never be served to anybody else
+     * (e.g. the next visitor of a shared browser after a logout).
+     */
+    private function belongsToCurrentCustomer(StorageListInterface $storageList): bool
+    {
+        if (null === $this->customerContext || !$storageList instanceof CustomerAwareInterface) {
+            return true;
+        }
+
+        $owner = $storageList->getCustomer();
+
+        if (null === $owner) {
+            return true;
+        }
+
+        // guest customers have no user, their lists are bound to the session only
+        if ($owner instanceof UserAwareInterface && null === $owner->getUser()) {
+            return true;
+        }
+
+        try {
+            $customer = $this->customerContext->getCustomer();
+        } catch (CustomerNotFoundException) {
+            return false;
+        }
+
+        return $customer->getId() === $owner->getId();
     }
 }

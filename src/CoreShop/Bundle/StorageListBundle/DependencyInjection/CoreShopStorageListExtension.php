@@ -274,6 +274,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                         );
                         $sessionAndStoreBasedContextDefinition->setArgument('$storageListStorage', new Reference('coreshop.storage_list.storage.' . $name));
                         $sessionAndStoreBasedContextDefinition->setArgument('$storeContext', new Reference(StoreContextInterface::class));
+                        $sessionAndStoreBasedContextDefinition->setArgument('$customerContext', new Reference(CustomerContextInterface::class));
                         $sessionAndStoreBasedContextDefinition->addTag($list['context']['tag'], ['priority' => -555]);
 
                         $container->setDefinition('coreshop.storage_list.context.session_and_store_based.' . $name, $sessionAndStoreBasedContextDefinition);

@@ -64,6 +64,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - Fixing C-04 alone is not enough.
 
 ### C-06 — (dependent, plausible) A customer's cart and address book stay reachable in the browser session after logout (multi-store), and the next person to log in takes over that cart with the previous customer's addresses
+- **Status:** fixed — both logout listeners now remove the session lists of **all** stores. `SessionAndStoreBasedStorageListContext` (with the new optional `$customerContext`) drops a session list owned by a registered customer other than the current one; guest-owned lists are unaffected. `CartBlamerListener` no longer takes over another registered customer's cart.
 - **Where:** `EventListener/ShopUserLogoutHandler.php:45-50`; `StorageListBundle/Core/EventListener/SessionStoreStorageListLogoutSubscriber.php:34-58`; `Component/StorageList/Core/Context/SessionAndStoreBasedStorageListContext.php:31-68`; `EventListener/CartBlamerListener.php:63-90`; `Checkout/Step/AddressCheckoutStep.php:57-71`; docs/config `invalidate_session: false` (`Resources/config/pimcore/security.yml:36`, `docs/01_Getting_Started/00_Installation.md`).
 - **Problem:**
   - Logout keeps the session (`invalidate_session: false`). Both logout listeners remove only the cart key of the **current** store (`coreshop.cart.<storeId>`). Carts of other stores that share the session (same host, store selected by path/locale/domain alias) stay in the session.

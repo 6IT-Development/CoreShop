@@ -26,94 +26,31 @@ final class Version20241018060845 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Enable the CoreShop FrontendBundle in bundles.php';
+        return 'Check that the CoreShop FrontendBundle is enabled in bundles.php';
     }
 
     public function up(Schema $schema): void
     {
-        $this->enableFrontendBundle();
+        /**
+         * Project configuration is not edited from a migration: rewriting config/bundles.php could leave the
+         * application unbootable, dropped comments and expressions, and failed on read-only deployments.
+         */
+        $this->warnIf(
+            !$this->isFrontendBundleRegistered(),
+            sprintf('CoreShop FrontendBundle is not enabled, add it to config/bundles.php: \\%s::class => [\'all\' => true]', CoreShopFrontendBundle::class),
+        );
     }
 
     public function down(Schema $schema): void
     {
-        $this->disableFrontendBundle();
+        // up() does not change the project configuration, so there is nothing to revert
     }
 
-    private function enableFrontendBundle(): void
+    private function isFrontendBundleRegistered(): bool
     {
-        $file = $this->getConfigFile();
-        $registered = $this->load($file);
+        /** @var array<string, class-string> $bundles */
+        $bundles = \Pimcore::getContainer()->getParameter('kernel.bundles');
 
-        $class = CoreShopFrontendBundle::class;
-        $bundle = ltrim($class, '\\');
-
-        if (!isset($registered[$bundle])) {
-            $registered[$bundle] = ['all' => true];
-        }
-
-        $this->dump($file, $registered);
-    }
-
-    private function disableFrontendBundle(): void
-    {
-        $file = $this->getConfigFile();
-        $registered = $this->load($file);
-
-        $class = CoreShopFrontendBundle::class;
-        $bundle = ltrim($class, '\\');
-
-        if (isset($registered[$bundle])) {
-            unset($registered[$bundle]);
-        }
-
-        $this->dump($file, $registered);
-    }
-
-    private function dump(string $file, array $bundles)
-    {
-        $contents = $this->buildContents($bundles);
-
-        if (!is_dir(\dirname($file))) {
-            if (!mkdir($concurrentDirectory = \dirname($file), 0777, true) && !is_dir($concurrentDirectory)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
-            }
-        }
-
-        file_put_contents($file, $contents);
-
-        if (\function_exists('opcache_invalidate')) {
-            opcache_invalidate($file);
-        }
-    }
-
-    private function buildContents(array $bundles): string
-    {
-        $contents = "<?php\n\nreturn [\n";
-        foreach ($bundles as $class => $envs) {
-            $contents .= "    $class::class => [";
-            foreach ($envs as $env => $value) {
-                $booleanValue = var_export($value, true);
-                $contents .= "'$env' => $booleanValue, ";
-            }
-            $contents = substr($contents, 0, -2) . "],\n";
-        }
-        $contents .= "];\n";
-
-        return $contents;
-    }
-
-    private function load(string $file): array
-    {
-        $bundles = file_exists($file) ? (require $file) : [];
-        if (!\is_array($bundles)) {
-            $bundles = [];
-        }
-
-        return $bundles;
-    }
-
-    private function getConfigFile(): string
-    {
-        return \Pimcore::getContainer()->getParameter('kernel.project_dir') . '/config/bundles.php';
+        return in_array(CoreShopFrontendBundle::class, $bundles, true);
     }
 }

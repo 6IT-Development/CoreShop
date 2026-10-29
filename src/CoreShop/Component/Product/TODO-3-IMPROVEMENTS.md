@@ -1,7 +1,7 @@
 # Product Component – TODO 3: Improvements
 
 Target: **Symfony 7.4**, **PHP 8.4**. Scan date: 2026-10-29 (branch `s74-p84`).
-Scope, path conventions and markers: see [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md) (`Calculator/`, `Exception/`, `Repository/`, `Rule/` and dependent config; `Model/` not scanned yet). Component items use `CI-` numbers. **(BC)** = changes a public signature or behaviour; needs an upgrade note.
+Scope, path conventions and markers: see [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md) (first scan: `Calculator/`, `Exception/`, `Repository/`, `Rule/` and dependent config, **CI-01**–**CI-13**; second scan: `Model/`, **CI-14**+). Component items use `CI-` numbers. **(BC)** = changes a public signature or behaviour; needs an upgrade note.
 
 Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2-BUGS.md)
 
@@ -101,3 +101,51 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
 - `Rule/Condition/TimeSpanConditionChecker.php:35-45`: nested `if`s → two early returns (or the shared helper from **CI-08**).
 - Name the parameter of `CompositeDiscountCalculator::__construct()` `$discountCalculators` (plural), likewise in the other composites — they hold registries, not a single calculator.
 - `Rule/Action/NotDiscountableCustomAttributeActionProcessor.php`: move `'not_discountable'` to a public constant (`ProductAttribute::NOT_DISCOUNTABLE`) and use it in `Component/Core/Cart/Rule/Applier/CartRuleApplier.php:249` **(dependent)** — a typo on either side silently disables the feature today.
+
+---
+
+## Models (second scan)
+
+### CI-14 — Native types on the Doctrine models and their interfaces, PHP 8.4 asymmetric visibility for ids **(BC)**
+- **Where:** `Model/AbstractPriceRule.php`, `ProductSpecificPriceRule.php`, `PriceRuleTranslation.php`, `ProductUnit.php`, `ProductUnitTranslation.php`, `ProductUnitDefinition.php`, `ProductUnitDefinitions.php`, `ProductUnitDefinitionPrice.php` and all their interfaces: untyped `protected $id/$priority/$stopPropagation/$product/$inherit/$unit/$conversionRate/$precision/$price/$label/...`, setters without parameter or return types, `@return` docblocks instead of return types (`getPriority()`, `getStopPropagation()`, `getUnit()`, `getConversionRate()`, `getPrice()`, `getLabel()` …).
+- **Improve:**
+  - Typed properties matching the ORM mapping (`?int $id = null`, `int $priority = 0`, `bool $stopPropagation = false`, `?float $conversionRate = null`, `int $precision = 0`, `int $price = 0`, `?ProductUnitInterface $unit = null`, `?string $label = null` …) and the same types on the interface methods. Doctrine proxies and JMS accept typed properties; typed `?ProductUnitInterface $unit` also documents ProductBundle TODO-2 **B-18**.
+  - Ids: `public private(set) ?int $id = null;` (PHP 8.4 asymmetric visibility) instead of `getId()` plus the public `setId(int $id)` that `ProductUnit`, `ProductUnitDefinition`, `ProductUnitDefinitions` and `ProductUnitDefinitionPrice` expose today — anyone can change the identity of a managed entity. If tests or fixtures need it, keep it `@internal`.
+  - `ProductSpecificPriceRule` re-declares `protected $id` (`:29`) — remove; `$product` is a product **id** (`int`, ORM `type="integer"`) although `setProduct($product)` accepts anything (reproduced: `setProduct('abc')` is stored). Rename to `productId` or type it `int`, and name the methods accordingly.
+  - Setters: return `static` consistently. Today `setDescription()` / `setPriority()` / `setInherit()` / `setProduct()` return `$this`, `setLabel()` / `setStopPropagation()` / all unit setters return nothing.
+  - `PriceRuleTranslation::$id` / `ProductUnitTranslation::$id` are documented `mixed` but returned as `?int`.
+
+### CI-15 — Constructors, traits and `__clone()`
+- **Where:** `Model/AbstractPriceRule.php:26-59`, `ProductUnit.php:31-47`, `ProductUnitDefinitions.php:50-53`.
+- **Improve:**
+  - The odd empty-parameter constructors `public function __construct(\n        ) {` (three classes) → normal formatting.
+  - `AbstractPriceRule` aliases `TranslatableTrait::initializeTranslationCollection` as `initializeTranslationsCollection`, `ProductUnit` aliases `TranslatableTrait::__construct` under the same name; use one way (call `initializeTranslationCollection()`), and drop the `@psalm-suppress MissingConstructor` on classes that do have a constructor.
+  - Add `__clone()` to `ProductSpecificPriceRule`, `ProductUnitDefinitions` and `ProductUnitDefinition` that resets `id`, deep-clones the owned collections and fixes back-references. This replaces the reflection-based copying in `Bundle/ProductBundle/CoreExtension/{ProductSpecificPriceRules,ProductUnitDefinitions,ProductUnitDefinition}.php` (ProductBundle TODO-3 **I-05**) **(dependent)**.
+  - `getTranslation()` overrides only narrow the return type through an inline `@var` (`AbstractPriceRule.php:110-116` even casts to `ProductPriceRuleTranslationInterface` while declaring `PriceRuleTranslationInterface`). Use generics on the trait (`@template T of TranslationInterface`, `@use TranslatableTrait<ProductUnitTranslationInterface>`) and drop the overrides.
+
+### CI-16 — `ProductUnitDefinitions`: a small, explicit aggregate API
+- **Where:** `Model/ProductUnitDefinitions.php` (see TODO-2 **CB-13**, **CB-14**).
+- **Improve:**
+  - One private `findByUnit(ProductUnitInterface $unit): ?ProductUnitDefinitionInterface` (id, then identity for unsaved units) used by every method; `getUnitDefinition(string $name)` stays as a thin public lookup.
+  - `getAdditionalUnitDefinitions()`: `$this->unitDefinitions->filter(fn ($d) => $d !== $this->defaultUnitDefinition)` — identity, no id comparison, no re-wrapping (`new ArrayCollection(array_values(...))`), return `Collection<int, ProductUnitDefinitionInterface>` (or `list<…>`).
+  - Collections typed `Collection<int, ProductUnitDefinitionInterface>`; the interface docblocks still say `Collection|ProductUnitDefinitionInterface[]`.
+  - Conversion rates as `float` are inexact for "1/3 box" style units and are multiplied into `defaultUnitQuantity`. Consider a `decimal` column / string or a rational (numerator / denominator) representation **(BC, dependent: Core cart and inventory)**.
+  - `Product::hasUnitDefinitions()` / `hasDefaultUnitDefinition()` / `hasAdditionalUnitDefinitions()` (`Model/Product.php:38-51`) call `getUnitDefinitions()` up to three times (a Pimcore getter with lazy loading): read it once into a local variable, use `?->`.
+
+### CI-17 — `Product` / `Category` / `Manufacturer` interfaces: consistent nullability and element types
+- **Where:** `Model/ProductInterface.php`, `CategoryInterface.php`, `ManufacturerInterface.php`.
+- **Improve:**
+  - `getCategories(): ?array` vs. `setCategories(array)`; `setUnitDefinitions(ProductUnitDefinitionsInterface)` cannot clear the field (related to ProductBundle TODO-2 **B-14**) → `?ProductUnitDefinitionsInterface`.
+  - `getSpecificPriceRules()` is documented as `PriceRuleInterface[]`; it returns `ProductSpecificPriceRuleInterface` instances → `@return list<ProductSpecificPriceRuleInterface>`; `getImages()` → `@return list<Image>`; `getCategories()` → `list<CategoryInterface>|null`.
+  - Setters have no return type although the generated Pimcore classes return `static`; declare `: static` so the contract matches the generated code.
+  - `Product::getImage()` (`:29-36`): `return $this->getImages()[0] ?? null;` — one getter call instead of two, no reliance on the array being a list.
+  - Empty `abstract class Manufacturer` and the `Category` / `Product` base classes could carry `#[\Override]` on `getNameForSlug()` and the helper methods.
+
+### CI-18 — Value objects: `ProductAttribute` and `__toString()`
+- **Where:** `Model/ProductAttribute.php`, `ProductUnit.php:117-120`, `ProductUnitDefinition.php:112-115`, `ProductUnitDefinitionPrice.php:73-78`.
+- **Improve:**
+  - `ProductAttribute` → `final readonly class ProductAttribute { public function __construct(public string $key, public mixed $value) {} }` (keep the getters as BC shims) and add a constant for `not_discountable` (see **CI-13**).
+  - `__toString()` output for new objects is `" (0)"`, `", (Conversion Rate: )"`, `"Price for --: 0"` (reproduced): show `new` for a missing id, `—` for a missing unit, and the price as a decimal with currency once the store values give it a currency. These strings appear in admin grids and logs.
+
+### CI-19 — Tests for the models
+- Unit tests for `ProductUnitDefinitions` (default change, additional add / remove / duplicate, unsaved units — TODO-2 **CB-13**, **CB-14**), `AbstractPriceRule` label handling with a fallback locale (**CB-15**), `Category::getHierarchy()` / `getChildCategories()` with folders in between (**CB-18**, **CB-19**), and the specific-rule `inherit` behaviour once decided (**CB-17**). Extends **CI-12**.

@@ -45,7 +45,7 @@ final class UniqueCustomerValidator extends ConstraintValidator
          */
         Assert::isInstanceOf($constraint, UniqueCustomer::class);
 
-        $user = $value->getObjectVar('user');
+        $user = $value->getUser();
 
         if ($user instanceof UserInterface) {
             if (!$user->getLoginIdentifier()) {
@@ -54,7 +54,8 @@ final class UniqueCustomerValidator extends ConstraintValidator
 
             $otherUser = $this->userRepository->findByLoginIdentifier($user->getLoginIdentifier());
 
-            if ($otherUser) {
+            // an existing customer's own user is not a duplicate
+            if ($otherUser && (null === $user->getId() || $otherUser->getId() !== $user->getId())) {
                 $path = 'email';
                 $message = $constraint->messageEmail;
 

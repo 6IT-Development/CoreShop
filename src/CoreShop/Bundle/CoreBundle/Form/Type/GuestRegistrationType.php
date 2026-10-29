@@ -34,6 +34,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\IsTrue;
 use Symfony\Component\Validator\Constraints\Valid;
 
 class GuestRegistrationType extends AbstractResourceType
@@ -84,7 +85,8 @@ class GuestRegistrationType extends AbstractResourceType
             ->add('termsAccepted', CheckboxType::class, [
                 'label' => 'coreshop.form.customer.terms',
                 'mapped' => false,
-                'validation_groups' => ['coreshop'],
+                'validation_groups' => $this->validationGroups,
+                'constraints' => new IsTrue(groups: $this->validationGroups),
             ])
             ->add('submit', SubmitType::class)
             ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event): void {

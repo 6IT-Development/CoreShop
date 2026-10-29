@@ -52,6 +52,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** delete the subscriber. Merging guest history needs e-mail ownership proof (a signed link), as CustomerBundle C-01 describes. Until then, either report "an order history exists for this address, verify to link it" or simply create the new customer. Do not unlock the data.
 
 ### B-07 — Guest checkout does not enforce "terms accepted" on the server
+- **Status:** fixed — `termsAccepted` in `GuestRegistrationType` now has `new IsTrue(groups: $this->validationGroups)` and uses the form's validation groups instead of the hard-coded `['coreshop']`, as `CustomerRegistrationType` does.
 - **Where:** `Form/Type/GuestRegistrationType.php:84-88`. `termsAccepted` has `mapped => false` and `validation_groups => ['coreshop']`, but no constraint. Compare `Form/Type/CustomerRegistrationType.php:101-106` (`new IsTrue(...)`).
 - **Problem:** only the browser's HTML `required` attribute protects it. Any client that drops the checkbox (curl, a disabled-JS theme, a custom template) checks out without accepting the terms. That is a legal-compliance gap.
 - **Fix:** add `'constraints' => [new IsTrue(groups: $this->validationGroups)]` and use `$this->validationGroups` instead of the hard-coded `['coreshop']`.

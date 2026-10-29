@@ -145,3 +145,120 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Where:** `Slug/SluggableSlugger.php:33-43`. For a new object `getId()` is `null` → fallback `''`; the key is used only for `KeyableSluggableInterface`. **(dependent)** `PimcoreBundle/EventListener/SluggableListener.php:44-51` does not catch `SlugNotPossibleException`.
 - **Latent:** CoreShop's product and category implement `KeyableSluggableInterface`, so the key always saves them; a project class that implements only `SluggableInterface` cannot be created in the admin until a name is entered for **every** valid language (the exception comes from the first language without a name).
 - **Fix:** always fall back to `getKey()` (it is part of `SluggableInterface` anyway, TODO-3 **PI-05**), then id; in the listener / generator skip the language (log at debug level) instead of aborting the save. Put object id, class and locale into the exception message.
+
+---
+
+# `DataObject/` scan (added 2026-10-29)
+
+Scope and markers: see the `DataObject/` section of [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md). "(reproduced)" items below were run against `AbstractDefinitionUpdate` with a minimal subclass that sets `jsonDefinition` directly (PHP 8.4.27).
+
+## Scoped-state helpers
+
+### PB-15 — All five `use*()` helpers leave Pimcore's global switches changed when the closure throws — (verified by reading) (dependent: callers)
+- **Where:** `DataObject/InheritanceHelper.php:29-39`, `LocaleFallbackHelper.php:29-39`, `LocalizedFallbackHelper.php:25-36`, `UnpublishedHelper.php:32-43`, `VersionHelper.php:33-52`: backup → set → `$function()` → restore, without `try/finally`.
+- **Impact:** an exception that is caught further up (mail failure in a notification rule, a failing save in `CartManager`, an index getter error) leaves inheritance / locale fallback / hide-unpublished / versioning in the wrong state for the rest of the request — and for the whole lifetime of a messenger worker or FrankenPHP/RoadRunner worker. Example: `VersionHelper::useVersioning(…, false)` throws → every later save in that worker creates no version (no audit trail, no "restore version"). Already reported from the callers' side: Notification TODO-2 **B-01**, StorageList TODO-2 **CB-04**, Index TODO-2 **B-11**, VariantBundle TODO-3 **I-18**.
+- **Fix:** `try { return $function(); } finally { …restore… }` in all five; for `VersionHelper` restore with `$backup ? Version::disable() : Version::enable()` inside `finally`. One shared implementation, see TODO-3 **PI-15**. Add a test that throws inside the closure.
+
+## Class / brick / field-collection definition updates
+
+### PB-16 — `findField()` keeps searching after the first match: the callback runs once per element with the same name — (reproduced) (new)
+- **Where:** `DataObject/AbstractDefinitionUpdate.php:217-253`. The `break` at `:237` only leaves the current level; after a match inside a nested container (`:240-242`) the outer loop continues and can match again.
+- **Reproduced:** two panels named `General` (one inside a `Tabs` panel, one top-level) → `insertLayoutAfter('General', P)` → `Tabs[General, P] General P` (inserted twice). Layout names are not unique in Pimcore (default panel name `Layout`, copied panels), so `insertLayout*`, `replaceLayout*`, `removeLayout` hit every panel with that name; inserting a panel that contains data fields twice produces duplicate field names, which breaks the class save.
+- **Fix:** stop the whole traversal after the first match (return a flag from the recursive function and check it after the recursive call), or collect all matches and throw if there is more than one ("ambiguous layout name, use a path").
+
+### PB-17 — `removeField()` / `removeLayout()` leave gaps in `children`; a later `insertFieldBefore/After` on the same instance inserts at the wrong position, and the saved JSON contains an object instead of a list — (reproduced) (new)
+- **Where:** `DataObject/AbstractDefinitionUpdate.php:74-83`, `:206-215` (`unset($parent['children'][$index])`); position logic `:96-104`, `:115-119` uses the foreach **key** as `array_splice()` **offset**.
+- **Reproduced:** children `[a, b, c]` → `removeField('b')` → `insertFieldBefore('c', NEW)` → `[a, c, NEW]` (expected `[a, NEW, c]`). After `removeField('b')` alone, `json_encode()` of the children gives `{"0":{…a},"2":{…c}}`.
+- **Impact:** migrations that remove and add fields in one `ClassUpdate` (e.g. `CoreBundle/Migrations/Version20260616120000.php` adds after `orderDate` and removes `lastActivatedAt`) can place fields in the wrong panel position; `getJsonDefinition()` consumers (ClassDefinitionPatchBundle `--dump`) show object-shaped JSON.
+- **Fix:** `$parent['children'] = array_values(…)` after every `unset`, or use `array_splice($parent['children'], $index, 1)`.
+
+### PB-18 — `insertFieldBefore()` / `insertLayoutBefore()` on the first child insert **after** it — (reproduced) (ClassDefinitionPatchBundle TODO-2 **B-03**)
+- **Where:** `DataObject/AbstractDefinitionUpdate.php:96-98`, `:154-156` (`if ($index === 0) { $index = 1; }`).
+- **Reproduced:** `[a, b, c]` → `insertFieldBefore('a', NEW)` → `[a, NEW, b, c]`.
+- **Fix:** remove the special case (`array_splice($childs, 0, 0, …)` is valid). Check existing migrations that used `insertFieldBefore()` on a first child (`CoreBundle/Migrations/Version20240920110320.php:68`, `Version20240920110705.php:68`): their result on existing installs is "after"; a later fix must not reorder already-migrated classes.
+
+### PB-19 — `hasField()` / `getFieldDefinition()` see only top-level fields and are never refreshed; `getFieldDefinition()` is declared `?Data` but throws; elements without `name` and unknown properties emit warnings — (reproduced) (ClassDefinitionPatchBundle TODO-1 **C-03**)
+- **Where:** `DataObject/AbstractDefinitionUpdate.php:50-72`, `:233`; `ClassUpdate.php:40`, `BrickDefinitionUpdate.php:40`, `FieldCollectionDefinitionUpdate.php:40` (`getFieldDefinitions()` once in the constructor).
+- **Problem:**
+  - Fields inside `localizedfields` (and blocks) are invisible to `hasField()` while `findField()` finds them → callers insert duplicates (ClassDefinitionPatchBundle C-03).
+  - After `insertField()` / `removeField()` `hasField()` still answers for the original definition.
+  - `getFieldDefinition()` promises `?Data` but throws `\InvalidArgumentException`; callers that check for `null` never see it.
+  - **Reproduced:** a layout child without `name` (Pimcore `text` layout elements may have none) → `Warning: Undefined array key "name"` at `:233`; `getProperty('nope')` → `Warning: Undefined array key "nope"` at `:52`. In `kernel.debug` both become exceptions.
+- **Fix:** implement `hasField()` by walking the JSON tree (`findField` without callback); return `null` from `getFieldDefinition()` (or change the type to `Data` and document the exception); `($child['name'] ?? null) === $fieldName`; `getProperty()` → `$this->jsonDefinition[$property] ?? null` or throw a typed exception.
+
+### PB-20 — Brick and field-collection updates decode / encode JSON without error handling — (verified by reading) (new)
+- **Where:** `DataObject/BrickDefinitionUpdate.php:42,48`, `FieldCollectionDefinitionUpdate.php:42,48` (`json_decode(…, true)` / `json_encode(…)` without `JSON_THROW_ON_ERROR`; `ClassUpdate.php:41-55` uses it).
+- **Problem:** invalid UTF-8 in a title/tooltip (copied from Word, legacy latin1 data) → `json_encode()` returns `false` → `importObjectBrickFromJson(…, false, …)` → `TypeError` under `strict_types` (the parameter is `string`); a `null` decode result → `TypeError` on the typed `array $jsonDefinition` property, both with misleading messages. The `@psalm-suppress InvalidArgument` (`:41`) hides exactly this.
+- **Fix:** `JSON_THROW_ON_ERROR` in both directions (like `ClassUpdate`), plus `JSON_INVALID_UTF8_SUBSTITUTE` on encode if broken legacy text should not block migrations.
+
+## Installers
+
+### PB-21 — `ClassInstaller::createClass()` imports the `id` from the JSON file over an existing class and reports a missing file as `TypeError` — (verified by reading) (plausible: data) (new)
+- **Where:** `DataObject/ClassInstaller.php:46-95`. **(verified)** `vendor/six-it/pimcore-source/models/DataObject/ClassDefinition/Service.php:98-120`: `importClassDefinitionFromJson(…, bool $ignoreId = false)` calls `$class->setId($importData['id'])` unless `$ignoreId` is `true`. CoreShop's install files carry ids like `"cs_product"` (`CoreShopProduct.json:2`).
+- **Problem:**
+  - Updating an existing class (`$updateClass = true`, `coreshop:resources:install --update-classes`) whose id differs from the file (shops created with CoreShop 2/3 have numeric class ids, or projects that re-created a class) changes the id of the loaded definition; the save then writes a second definition / new tables instead of updating the existing class (objects stay on the old id).
+  - Creating a class whose file id is already used by another class (renamed class) overwrites that class.
+  - `file_get_contents()` returns `false` for a missing / unreadable file → `TypeError` in `import*FromJson(string $json)` (same at `:39`, `:110`).
+  - `$tempClass->getDao()->getIdByName()` (`:52-53`) is an `@internal` API; `ClassDefinition::getByName()` does the same.
+- **Fix:** pass `ignoreId: true` when `$class` already exists; when creating, check that the id from the file is free (`ClassDefinition::getById()`) and fail clearly otherwise; read files with a helper that throws `\RuntimeException("Install file %s not readable")`.
+
+### PB-22 — `GridConfigInstaller` matches existing grid configs by name only — (verified by reading) (new) (dependent)
+- **Where:** `DataObject/GridConfigInstaller.php:25-58` (`addConditionParam('name = ?', $name)`, then `$elements[0]`).
+- **Problem:** grid config names are free text and not unique per class or owner. With `$overwrite = true` the first config with that name — possibly a user's private config for another class — is overwritten with CoreShop's config, owner `0`, shared globally. With `$overwrite = false` CoreShop's config is silently not installed if any user created a config with the same name. Related: ResourceBundle TODO-2 **B-44** (class id resolution).
+- **Fix:** match on `name`, `classId`, `ownerId = 0` and `searchType`; `json_encode(…, JSON_THROW_ON_ERROR)`.
+
+## Notes
+
+### PB-23 — `storeNoteForEmail()` links the newest e-mail log of the **document**, which can belong to a different recipient — (verified by reading) (plausible: concurrency) (new) (dependent)
+- **Where:** `DataObject/NoteService.php:73-90` (`documentId = ?`, `ORDER BY sentDate DESC LIMIT 1`). **(dependent)** `CoreBundle/EventListener/Order/OrderMailNoteEventListener.php:89`.
+- **Problem:** all order confirmations use the same e-mail document. Two orders finishing in the same second (or a worker sending queued mails in a batch) → the note of order A links the mail log of order B; when e-mail logging is disabled for the document, the note links an old, unrelated log. In the admin, "show e-mail" on order A then shows another customer's e-mail (name, address, items).
+- **Fix:** take the log from the sent mail: **(verified)** `vendor/six-it/pimcore-source/lib/Mail.php:527,829-831` stores it in `$lastLogEntry` during `send()` and exposes `getLastLogEntry()` (the property is typed and uninitialised when logging is disabled, so guard with `try`/`\Error` or a reflection `isInitialized()` check). The note listener already has the `Mail` via `MailEvent::getMail()`; pass the log id through and drop the "latest log" query. As a minimum also filter by recipient (`to LIKE`) and a short time window.
+
+### PB-24 — `deleteNote()` dispatches `coreshop.note.<type>.pot_delete` (typo) — (verified by reading) (latent) (new)
+- **Where:** `DataObject/NoteService.php:147-165` (`:163`). `storeNote()` uses `post_add` (`:141`).
+- **Latent:** no caller in the repository (OrderBundle deletes notes directly through the DAO, OrderBundle TODO-1). Any listener subscribed to `…post_delete` never runs.
+- **Fix:** dispatch `post_delete` (and keep `pot_delete` for one minor version, `@deprecated`). Move event names to constants. `method_exists($note, 'delete')` (`:157`) is always `true`; remove it.
+
+### PB-25 — `getObjectNotes()` does not filter by element type; `storeNote()` contract and retry are inconsistent — (verified by reading) (new)
+- **Where:** `DataObject/NoteService.php:62-71` (only `type` and `cid`), `:92-145`, `NoteServiceInterface.php:40-43`.
+- **Problem:**
+  - Notes of an asset or document with the same id and type are returned with the object's notes (`ctype` is not checked). With CoreShop's own note types this needs a custom note of that type on an asset; with project types it is plausible.
+  - `storeNote()` is declared `?Note` in the interface but `Note` in the class and never returns `null`.
+  - `storeNote()` opens its own transaction (`:97-99`). Called inside an outer transaction (e.g. during an order commit), a failure rolls back to the savepoint and is re-thrown, while a retry loop with `usleep()` runs inside the caller's open transaction and keeps its locks. Document that the method must not be called inside a transaction, or skip the retry loop when `Db::get()->isTransactionActive()`.
+- **Fix:** `addConditionParam('ctype = ?', 'object')`; align the return type to `Note`; see TODO-3 **PI-19**.
+
+## Cloning and copying objects
+
+### PB-26 — `ObjectCloner` makes a shallow clone: containers and properties are shared with the original, and the clone keeps the original's dates, owner and version counter — (verified by reading) (new) (dependent)
+- **Where:** `DataObject/ObjectCloner.php:27-46`. **(verified)** `Concrete::__clone()` / `AbstractObject::__clone()` / `AbstractElement::__clone()` only reset `class`, `versions`, `scheduledTasks`, `parent`, `siblings`, `dependencies`, `dao` (`vendor/six-it/pimcore-source/models/DataObject/Concrete.php:731-737`, `AbstractObject.php:1020-1027`, `models/Element/AbstractElement.php:672-676`, `lib/Model/AbstractModel.php:222-225`).
+- **Problem:**
+  - `creationDate`, `modificationDate`, `userOwner`, `userModification`, `versionCount`, `published` and the `properties` array (same `Property` instances; `AbstractObject::update()` sets their `cid` to the new id, which also changes the original's in-memory properties) are copied. **(dependent)** `Core/Order/Committer/{OrderCommitter.php:83-103,QuoteCommitter.php:77-97}` clone the customer's addresses into the order: the order address shows the creation date of the customer's address.
+  - `localizedfields`, field-collection and object-brick containers are the **same object** in original and clone (latent for CoreShop's address class, which has none of them; real for any project class passed to the cloner).
+  - The interface docblock (`ObjectClonerInterface.php:26-29`) says "returns it unsaved", while the default is `$saveDirectly = true`.
+- **Fix:** use Pimcore's deep copy (`Pimcore\Model\Element\Service::cloneMe($object)`), then `setId(null)`, reset `creationDate`, `modificationDate`, `versionCount`, `userOwner` and properties; fix the docblock.
+
+### PB-27 — `ObjectService::copyObject()` shares container objects between both objects — (verified by reading) (latent) (new)
+- **Where:** `DataObject/ObjectService.php:40-53`: `$to->setLocalizedfields($from->getLocalizedfields())`, field collections and bricks are assigned by reference; relations are copied, but `null` values overwrite existing data in `$to`; the comment "load all in case of lazy loading fields" does not match the code (no `loadAllObjectFields()`), so lazy-loaded relations may be copied as empty.
+- **Latent:** no caller in the repository.
+- **Fix:** `Service::loadAllObjectFields($fromObject)` first, deep-copy container values (`Element\Service::cloneMe()`), and document whether `null` overwrites. Or deprecate the method.
+
+## Data loading and link generation
+
+### PB-28 — `DataLoader` drops advanced relations and non-object relation targets, and re-loads shared objects exponentially — (verified by reading) (new) (dependent)
+- **Where:** `DataObject/DataLoader.php:26-82`.
+- **Problem:**
+  - `AdvancedManyToManyRelation` extends `ManyToManyRelation` (**verified** `ClassDefinition/Data/AdvancedManyToManyRelation.php:32`), so it enters the branch at `:48`; its items are `ObjectMetadata`, not `Concrete` → always `[]`.
+  - Assets / documents in many-to-one / many-to-many relations are silently dropped (`:43`, `:56`), while `ManyToManyObjectRelation` (not a subclass) goes through `getDataForEditmode()` → inconsistent shapes for "a list of related objects" depending on the field type.
+  - `$loadedObjects` is passed by value, so the same object reachable through two siblings is loaded and serialised twice (e.g. `defaultAddress` + `addresses`); the graph can grow exponentially. `:75` appends to the local copy after the loop and has no effect.
+  - The `Money` special case (`:63`) refers to `CoreShop\Bundle\MoneyBundle\…` from a component (layering).
+- **Fix:** together with TODO-1 **PC-06**: depth limit, shared visited set (`array &$loadedObjects` or an `\SplObjectStorage` property), explicit handling of metadata relations, field allow-list.
+
+### PB-29 — `AbstractSluggableLinkGenerator::slugify()` removes every non-Latin character: Cyrillic, Greek, CJK names produce an empty slug — (verified by reading) (new) (dependent)
+- **Where:** `DataObject/AbstractSluggableLinkGenerator.php:25-45` (only `&…acute;`-style entities are transliterated, then `~[^0-9a-z]+~i` → `-`). **(dependent)** `CoreBundle/Pimcore/LinkGenerator/{DataObjectLinkGenerator,ResourceConfigurationLinkGenerator}.php`, route `coreshop_product_detail` (`FrontendBundle/Resources/install/pimcore/staticroutes.yml:32-37`, `(.*?)` accepts empty).
+- **Impact:** for shops in Russian, Ukrainian, Greek, Bulgarian, Chinese … every product / category URL generated by these fallback generators is `/ru/shop/~p123` (no name part), also characters like `ß`, `ł`, `đ` vanish (`Straße` → `stra-e`). Links still work, but SEO and readability suffer and differ from the slugs made by `SluggableSlugger` (Symfony `AsciiSlugger`, which transliterates).
+- **Fix:** use `Symfony\Component\String\Slugger\AsciiSlugger` (`->slug($string, '-', $locale)->lower()`), the same as TODO-1 scope `Slug/SluggableSlugger.php`.
+
+### PB-30 — `CompositeLinkGenerator` stops at the first generator that throws anything else than `LinkGenerationNotPossibleException` — (verified by reading) (new) (dependent)
+- **Where:** `DataObject/CompositeLinkGenerator.php:44-55`. **(dependent)** `Slug/SluggableLinkGenerator.php:37-39` throws `\InvalidArgumentException` for non-`Concrete` objects, `CoreBundle/Pimcore/LinkGenerator/DataObjectLinkGenerator.php` uses `Assert::isInstanceOf` (`InvalidArgumentException`); a warning-turned-`ErrorException` in debug (TODO-2 **PB-12**) also escapes.
+- **Problem:** a generator with higher priority that "does not support" the object signals it with the wrong exception type → the chain is aborted although a lower-priority generator could build the link; the final exception has no message (`:54`), so the log does not say which object failed.
+- **Fix:** make the generators throw `LinkGenerationNotPossibleException` for unsupported objects (or add `supports(object): bool` to the generators); include class, id and the collected reasons in the final exception message.

@@ -148,3 +148,86 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
   - `DataObjectSlugGenerator` with fake `SluggableInterface` + stub site generator: keeps manual site slugs (TODO-1 **PC-02**), keeps edited slug (TODO-2 **PB-06**), `null` slug list (TODO-2 **PB-12**); `DataObjectSiteSlugGenerator`: listener returning a fixed slug terminates (TODO-2 **PB-08**).
   - Batch listings (kernel test or listing stub): deleted id in the middle (TODO-1 **PC-03**), stable order (TODO-2 **PB-01**), `count()` equals number of yielded objects.
   - `PersistedPrintablePdfRenderer` with a fake inner renderer: re-renders when outdated (TODO-1 **PC-04**), uses `$params` consistently (TODO-2 **PB-09**).
+
+---
+
+# `DataObject/` scan (added 2026-10-29)
+
+Scope and markers: see the `DataObject/` section of [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+### PI-15 — One scoped-state helper instead of five copies; remove the unused / confusing ones
+- **Where:** `DataObject/{InheritanceHelper,LocaleFallbackHelper,LocalizedFallbackHelper,UnpublishedHelper,VersionHelper}.php`.
+- **Fix:**
+  - One private generic implementation (`@template T`, `@param \Closure(): T $function`, `@return T`) with `try/finally` (TODO-2 **PB-15**); the public static methods stay as thin wrappers for BC. Accept `callable` instead of `\Closure` (first-class callables `$this->save(...)` work with both, but `callable` also takes `[$obj, 'm']`).
+  - `LocalizedFallbackHelper::useFallback()` duplicates `LocaleFallbackHelper::useFallbackValues()` with the **opposite default** (`false` vs `true`) and has no caller; deprecate it.
+  - `UnpublishedHelper::hideUnpublished(…, bool $hide = false)` is named "hide" but defaults to *showing* unpublished objects; no caller in the repository. Rename (`withUnpublished()` / `withoutUnpublished()`) or deprecate. It calls `Concrete::getHideUnpublished()`, which lives on `AbstractObject` (works through inheritance; call it there).
+  - `VersionHelper`: use `Version::isEnabled()` instead of reading the public static `Version::$disabled` (`:35`); add native return types (`mixed`) where only docblocks exist (`UnpublishedHelper.php:30-32`, `VersionHelper.php:31-33`).
+  - Mark the helper classes `final` with a private constructor (static-only).
+
+### PI-16 — Definition updates: readable traversal, types, testability
+- **Where:** `DataObject/AbstractDefinitionUpdate.php`, `ClassUpdate.php`, `BrickDefinitionUpdate.php`, `FieldCollectionDefinitionUpdate.php`, `ClassUpdateInterface.php`.
+- **Fix:**
+  - Empty constructor with odd formatting (`AbstractDefinitionUpdate.php:34-36`, `CompositeLinkGenerator.php:34-37`); remove it and the `parent::__construct()` calls.
+  - `ClassUpdate::$classDefinition` is `?ClassDefinition` (`:26`) although it is always set; make it `private readonly ClassDefinition`. Same `readonly` for the brick / field-collection definitions.
+  - `findField()` (`:217-253`): replace the self-referencing closure (`use (&$traverseFunction)`) by a private recursive method `walk(array &$node, …): bool` that returns "found"; this also fixes TODO-2 **PB-16** and makes `hasField()` easy to implement on the tree (TODO-2 **PB-19**).
+  - The eight `insert*/replace*/remove*` methods repeat the same `array_splice` closures; keep two private helpers (`insertRelative(string $name, bool $layout, int $offset, array $def)`, `mutate(string $name, bool $layout, callable $fn)`).
+  - `protected string $childrenPath = 'children'` never changes → `private const CHILDREN = 'children'`.
+  - `setProperty(string $property, $value)` → `mixed $value` in interface and class; `#[\Override]` on implementations; array shapes for `$jsonFieldDefinition` (`array{name: string, fieldtype: string, …}`).
+  - Add `hasChanges(): bool` (`getOriginalJsonDefinition() !== getJsonDefinition()`) so callers can skip no-op saves (ClassDefinitionPatchBundle TODO-2 **B-04**), and a factory interface for tests (ClassDefinitionPatchBundle TODO-3 **I-13**).
+  - Remove `@psalm-suppress` (`BrickDefinitionUpdate.php:41`, `FieldCollectionDefinitionUpdate.php:41`) once TODO-2 **PB-20** is fixed.
+  - `DefinitionFieldReNamerInterface` is `@experimental` and has no implementation in the repository; implement it (rename column + definition + query table) or remove it.
+
+### PI-17 — `ClassInstaller`: same behaviour for classes, bricks and field collections; public Pimcore APIs
+- **Where:** `DataObject/ClassInstaller.php`, `ClassInstallerInterface.php`.
+- **Fix:**
+  - One `bool $update` parameter on all three methods (TODO-1 **PC-07**), named consistently (`$updateClass` today only on `createClass`).
+  - `ClassDefinition::getByName($className)` instead of `new ClassDefinition()` + `getDao()->getIdByName()` (`:48-60`); `getByKey()` of bricks / field collections returns `null` in Pimcore 11 — check whether the `NotFoundException` catches (`:30`, `:101`) are still needed.
+  - The brick re-save loop (`:77-91`, three nesting levels, `!empty()` checks, loose `==`) → `foreach ((new Listing())->load() as $brick) { if (in_array($class->getId(), array_column($brick->getClassDefinitions(), 'classname'), true)) { $brick->save(); } }` with a comment explaining **why** (regenerates brick getters for the class).
+  - `final`, `#[\Override]`; return the import result (`bool`) or throw when Pimcore reports failure — today the result of `import*FromJson()` is ignored.
+
+### PI-18 — `DataLoader`: injectable service with an explicit field list
+- **Where:** `DataObject/DataLoader.php`, `DataLoaderInterface.php`; **(dependent)** `OrderBundle/Controller/{OrderController.php:776-785,OrderCreationController.php:315-324}` (`new DataLoader()`).
+- **Fix:** register it as a service (it is not in `PimcoreBundle/Resources/config/services.yml`) and inject it; signature `getDataForObject(Concrete $object, ?array $fields = null, int $depth = 1): array` (TODO-1 **PC-06**, TODO-2 **PB-28**); move the `Money` special case into MoneyBundle (a decorator or a tagged "field normaliser") so the component no longer references a bundle class; `@return array<string, mixed>`.
+
+### PI-19 — `NoteService`: typed events, constants, simpler retry
+- **Where:** `DataObject/NoteService.php`, `NoteServiceInterface.php`.
+- **Fix:**
+  - `final`, `private readonly` dependencies; logger injected via the `monolog.logger` tag (PimcoreBundle TODO-3 **I-07**).
+  - Event names as constants (`NoteEvents::postAdd(string $type)`), and typed event classes instead of `GenericEvent` (keep dispatching the old names for BC).
+  - The retry loop (`:94-137`) is 40 lines for "retry 5× on `RetryableException`"; extract a small `retryOnDeadlock(callable $fn, int $max = 5)` helper (or use `Pimcore\Db::get()->transactional()` with a retry wrapper). Remove the dead `method_exists($note, 'delete')` (TODO-2 **PB-24**).
+  - `@return list<Note>` for `getObjectNotes()`; `storeNote(): Note` in the interface (TODO-2 **PB-25**); remove the `@psalm-suppress` comments (`:76`, `:85`) — `Log\Listing` and `Note::addData()` are `@internal` in Pimcore, so wrap them in one place.
+
+### PI-20 — `ObjectCloner` / `ObjectService`: no reflection, clear contracts
+- **Where:** `DataObject/ObjectCloner.php:32-36`, `ObjectService.php`, interfaces.
+- **Fix:**
+  - Replace the reflection block by `$newObject->setId(null)` (**verified** public `AbstractElement::setId(?int $id)`, `models/Element/AbstractElement.php:209`); `ReflectionProperty::setAccessible()` is a no-op since PHP 8.1 and deprecated in PHP 8.5.
+  - Fix the interface docblock (TODO-2 **PB-26**) and consider `cloneObject(…, bool $save = false)` to match what it says.
+  - `ObjectService::createFolderByPath()`: the `@var Folder` / `@psalm-return` comments (`:27-36`) hide that `Service::createFolderByPath()` returns `Concrete|Folder`; add `Assert::isInstanceOf($folder, Folder::class)`.
+  - `final` for `ObjectService`, `#[\Override]` everywhere.
+
+### PI-21 — Link generators: Symfony slugger, tagged iterator instead of laminas `PriorityQueue`
+- **Where:** `DataObject/AbstractSluggableLinkGenerator.php`, `CompositeLinkGenerator.php`; **(dependent)** `PimcoreBundle/DependencyInjection/Compiler/LinkGeneratorPass.php`.
+- **Fix:**
+  - `slugify(?string $string): string` (untyped parameter today, `:25`) using `AsciiSlugger` (TODO-2 **PB-29**); as a trait or injected `SluggerInterface` rather than an abstract base class whose only purpose is one helper.
+  - `CompositeLinkGenerator`: `final`, constructor `public function __construct(#[AutowireIterator('coreshop.link_generator', defaultPriorityMethod: …)] private readonly iterable $generators)` replaces `addContext()` + `LinkGeneratorPass` + `Laminas\Stdlib\PriorityQueue` (the component then no longer needs `laminas/laminas-stdlib`, TODO-3 **PI-01**). Keep `addContext()` deprecated for BC.
+  - The `@var PriorityQueue|LinkGeneratorInterface[]` docblock (`:27-31`) is wrong (it is never an array).
+
+### PI-22 — Grid interfaces and `GridConfigInstaller`
+- **Where:** `DataObject/Grid/{GridActionInterface,GridFilterInterface}.php`, `GridConfigInstaller.php`.
+- **Fix:**
+  - `GridActionInterface::apply(array $processIds): string` → `@param list<int> $processIds`, document that the string is a user-facing (translated) message; `supports(string $type)` vs `GridFilterInterface::supports(string $listType)` — use one name.
+  - `GridFilterInterface::filter()` returns the listing it got; make it `void` (mutates) or document that a new listing may be returned.
+  - `GridConfigInstaller`: seven `@psalm-suppress InternalMethod` lines (`:27-56`) because `Pimcore\Bundle\AdminBundle\Model\GridConfig` is `@internal`; keep the dependency in one class and say so in the docblock; `final`; behaviour from TODO-2 **PB-22**.
+
+### PI-23 — `composer.json` additions found in `DataObject/`
+- **Where:** `composer.json:26-30`.
+- **Fix:** in addition to TODO-3 **PI-01**: `doctrine/dbal` (`RetryableException`, `NoteService.php:21`), `psr/log`, `symfony/event-dispatcher` (`GenericEvent`), `symfony/dependency-injection` if PI-21 uses `#[AutowireIterator]`. `six-it/admin-ui-classic-bundle` is needed only by `GridConfigInstaller` and `laminas/laminas-stdlib` only by `CompositeLinkGenerator` (both removable with PI-21 / an optional admin integration). `DataLoader` references `CoreShop\Bundle\MoneyBundle` (PI-18).
+
+### PI-24 — Tests for `DataObject/`
+- **Where:** extends TODO-3 **PI-14**.
+- **Fix:**
+  - `AbstractDefinitionUpdate` with a test subclass (no DB needed, as used for this scan): before first child (TODO-2 **PB-18**), remove + insert in one instance (**PB-17**), duplicate layout names (**PB-16**), localized-field `hasField()` (**PB-19**), nameless layout elements, idempotency (apply twice → same JSON).
+  - Helpers: closure throws → flag restored (**PB-15**).
+  - `DataLoader`: password fields never present, depth limit, shared objects serialised once (TODO-1 **PC-06**, **PB-28**).
+  - `CompositeLinkGenerator`: fallback order and exception types (**PB-30**); `slugify()` with Cyrillic / German input (**PB-29**).
+  - `ClassInstaller` (kernel test): existing field collection with an extra field is not touched without `update` (TODO-1 **PC-07**).

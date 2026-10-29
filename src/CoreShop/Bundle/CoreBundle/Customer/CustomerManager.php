@@ -24,9 +24,12 @@ use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Core\Model\UserInterface;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use CoreShop\Component\User\Model\User as BaseUser;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Pimcore\Db;
 use Pimcore\File;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Service;
+use Pimcore\Model\Element\ValidationException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Webmozart\Assert\Assert;
 
@@ -57,62 +60,86 @@ class CustomerManager implements CustomerManagerInterface
         $userBackup = $customer->getObjectVar('user');
 
         /**
-         * @var CustomerInterface $customer
+         * Customer, addresses and user are saved one after another: roll all of them back if one fails,
+         * e.g. when a concurrent registration took the same login identifier, so no orphaned customer remains.
          */
-        $customer->setUser(null);
-        $customer->setAddresses([]);
-        $customer->setPublished(true);
-        $customer->setParent(
-            $this->folderCreationService->createFolderForResource($customer, [
-                'path' => ($userBackup ? 'customer' : 'guest'),
-                'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
-            ]),
-        );
-        $customer->setKey(File::getValidFilename($customer->getEmail()));
-        /** @psalm-suppress InvalidArgument */
-        $customer->setKey(Service::getUniqueKey($customer));
-        $customer->save();
+        $db = Db::get();
+        $db->beginTransaction();
 
-        foreach ($addressBackup as $address) {
-            $address->setPublished(true);
-            $address->setKey(uniqid());
-            $address->setParent(
-                $this->folderCreationService->createFolderForResource($address, [
-                    'prefix' => $customer->getFullPath(),
+        try {
+            /**
+             * @var CustomerInterface $customer
+             */
+            $customer->setUser(null);
+            $customer->setAddresses([]);
+            $customer->setPublished(true);
+            $customer->setParent(
+                $this->folderCreationService->createFolderForResource($customer, [
+                    'path' => ($userBackup ? 'customer' : 'guest'),
+                    'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
                 ]),
             );
-            $address->save();
-        }
-
-        if ($userBackup) {
-            if ($this->loginIdentifier === 'email') {
-                $userBackup->setLoginIdentifier($customer->getEmail());
-            }
-            $userBackup->setCustomer($customer);
-            $userBackup->setPassword($userBackup->getPlainPassword());
-            $userBackup->setPublished(true);
-            $userBackup->setParent(
-                $this->folderCreationService->createFolderForResource($userBackup, [
-                    'prefix' => $customer->getFullPath(),
-                ]),
-            );
-            $userBackup->setKey(File::getValidFilename($customer->getEmail()));
+            $customer->setKey(File::getValidFilename($customer->getEmail()));
             /** @psalm-suppress InvalidArgument */
-            $userBackup->setKey(Service::getUniqueKey($userBackup));
-            $userBackup->save();
+            $customer->setKey(Service::getUniqueKey($customer));
+            $customer->save();
 
-            if ($userBackup instanceof BaseUser) {
-                $userBackup->setPlainPassword(null);
+            foreach ($addressBackup as $address) {
+                $address->setPublished(true);
+                $address->setKey(uniqid());
+                $address->setParent(
+                    $this->folderCreationService->createFolderForResource($address, [
+                        'prefix' => $customer->getFullPath(),
+                    ]),
+                );
+                $address->save();
             }
-        }
 
-        if (count($addressBackup) > 0) {
-            $customer->setDefaultAddress($addressBackup[0]);
-        }
+            if ($userBackup) {
+                if ($this->loginIdentifier === 'email') {
+                    $userBackup->setLoginIdentifier($customer->getEmail());
+                }
+                $userBackup->setCustomer($customer);
+                $userBackup->setPassword($userBackup->getPlainPassword());
+                $userBackup->setPublished(true);
+                $userBackup->setParent(
+                    $this->folderCreationService->createFolderForResource($userBackup, [
+                        'prefix' => $customer->getFullPath(),
+                    ]),
+                );
+                $userBackup->setKey(File::getValidFilename($customer->getEmail()));
+                /** @psalm-suppress InvalidArgument */
+                $userBackup->setKey(Service::getUniqueKey($userBackup));
+                $userBackup->save();
 
-        $customer->setUser($userBackup);
-        $customer->setAddresses($addressBackup);
-        $customer->save();
+                if ($userBackup instanceof BaseUser) {
+                    $userBackup->setPlainPassword(null);
+                }
+            }
+
+            if (count($addressBackup) > 0) {
+                $customer->setDefaultAddress($addressBackup[0]);
+            }
+
+            $customer->setUser($userBackup);
+            $customer->setAddresses($addressBackup);
+            $customer->save();
+
+            $db->commit();
+        } catch (\Throwable $exception) {
+            $db->rollBack();
+
+            $customer->setUser($userBackup);
+            $customer->setAddresses($addressBackup);
+
+            if ($exception instanceof UniqueConstraintViolationException ||
+                ($exception instanceof ValidationException && $exception->getPrevious() instanceof UniqueConstraintViolationException)
+            ) {
+                throw new CustomerAlreadyExistsException('A customer with this login identifier already exists.', 0, $exception);
+            }
+
+            throw $exception;
+        }
 
         $this->eventDispatcher->dispatch(new CustomerRegistrationEvent($customer, []), 'coreshop.customer.register');
     }

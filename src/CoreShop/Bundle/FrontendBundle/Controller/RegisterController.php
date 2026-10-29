@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\FrontendBundle\Controller;
 
 use Carbon\Carbon;
+use CoreShop\Bundle\CoreBundle\Customer\CustomerAlreadyExistsException;
 use CoreShop\Bundle\CoreBundle\Customer\CustomerManagerInterface;
 use CoreShop\Bundle\CoreBundle\Form\Type\CustomerRegistrationType;
 use CoreShop\Bundle\UserBundle\Event\RequestPasswordChangeEvent;
@@ -32,6 +33,7 @@ use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\User\Repository\UserRepositoryInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -60,9 +62,14 @@ class RegisterController extends FrontendController
                 $customer = $form->getData();
                 $customer->setLocaleCode($this->container->get('coreshop.context.locale')->getLocaleCode());
 
-                $this->container->get(CustomerManagerInterface::class)->persistCustomer($customer);
+                try {
+                    $this->container->get(CustomerManagerInterface::class)->persistCustomer($customer);
 
-                return $this->redirect($redirect);
+                    return $this->redirect($redirect);
+                } catch (CustomerAlreadyExistsException) {
+                    // a concurrent registration took the same login identifier after the form was validated
+                    $form->addError(new FormError($this->container->get('translator')->trans('coreshop.form.customer.email.unique', [], 'validators')));
+                }
             }
         }
 

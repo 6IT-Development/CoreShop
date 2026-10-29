@@ -377,25 +377,40 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
                 continue;
             }
 
-            $newStoreValue = clone $storeValue;
-
-            $reflectionClass = new \ReflectionClass($newStoreValue);
-            $property = $reflectionClass->getProperty('id');
-            $property->setAccessible(true);
-            $property->setValue($newStoreValue, null);
-
-            $property = $reflectionClass->getProperty('product');
-            $property->setAccessible(true);
-            $property->setValue($newStoreValue, null);
-
-            $property = $reflectionClass->getProperty('productUnitDefinitionPrices');
-            $property->setAccessible(true);
-            $property->setValue($newStoreValue, new ArrayCollection());
-
-            $newStoreValues[] = $newStoreValue;
+            $newStoreValues[] = $this->copyStoreValues($storeValue, false);
         }
 
         return $newStoreValues;
+    }
+
+    /**
+     * Creates a new, unsaved copy (no id, no product) of the given store values. A plain clone would keep
+     * the id and share the unit definition prices, which would make Doctrine update the original record.
+     */
+    private function copyStoreValues(ProductStoreValuesInterface $storeValues, bool $withUnitDefinitionPrices = true): ProductStoreValuesInterface
+    {
+        $copy = clone $storeValues;
+
+        $this->setPropertyValue($copy, 'id', null);
+        $this->setPropertyValue($copy, 'product', null);
+        $this->setPropertyValue($copy, 'productUnitDefinitionPrices', new ArrayCollection());
+
+        if ($withUnitDefinitionPrices) {
+            foreach ($storeValues->getProductUnitDefinitionPrices() as $unitDefinitionPrice) {
+                $unitDefinitionPriceCopy = clone $unitDefinitionPrice;
+                $this->setPropertyValue($unitDefinitionPriceCopy, 'id', null);
+
+                $copy->addProductUnitDefinitionPrice($unitDefinitionPriceCopy);
+            }
+        }
+
+        return $copy;
+    }
+
+    private function setPropertyValue(object $object, string $property, mixed $value): void
+    {
+        $reflectionProperty = (new \ReflectionClass($object))->getProperty($property);
+        $reflectionProperty->setValue($object, $value);
     }
 
     public function load(Localizedfield|\Pimcore\Model\DataObject\Fieldcollection\Data\AbstractData|AbstractData|Concrete $object, array $params = []): mixed
@@ -449,9 +464,18 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
                     //This means that we inherited store values and also changed something, thus we break the inheritance and
                     //give the product its own record
                     if (count($changeSet) > 0) {
-                        $productStoreValue = clone $productStoreValue;
+                        $inheritedStoreValue = $productStoreValue;
+
+                        $productStoreValue = $this->copyStoreValues($inheritedStoreValue);
                         $productStoreValue->setProduct($object);
                         $productStoreValue->setFieldName($this->getName());
+
+                        //Revert the changes on the record of the other product, otherwise they would be flushed as well
+                        if ($this->getEntityManager()->getUnitOfWork()->isInIdentityMap($inheritedStoreValue)) {
+                            $this->getEntityManager()->refresh($inheritedStoreValue);
+                        } else {
+                            $this->getEntityManager()->detach($inheritedStoreValue);
+                        }
                     }
                 } else {
                     $productStoreValue->setProduct($object);
@@ -669,8 +693,16 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
                 $storeValuesEntity = $productStoreValuesRepository->find($storeValuesId);
             }
 
-            if ($storeValuesEntity instanceof ProductStoreValuesInterface && $storeValuesEntity->getProduct() && $storeValuesEntity->getProduct()->getId() !== $object->getId()) {
-                $storeValuesEntity = clone $storeValuesEntity;
+            //Never trust a submitted id that belongs to another field or store
+            if ($storeValuesEntity instanceof ProductStoreValuesInterface &&
+                ($storeValuesEntity->getFieldName() !== $this->getName() || $storeValuesEntity->getStore()?->getId() !== (int) $storeId)
+            ) {
+                $storeValuesEntity = null;
+            }
+
+            //Inherited (or foreign) store values: edit a new copy and never touch the record of the other product
+            if ($storeValuesEntity instanceof ProductStoreValuesInterface && $storeValuesEntity->getProduct()?->getId() !== $object->getId()) {
+                $storeValuesEntity = $this->copyStoreValues($storeValuesEntity);
                 $storeValuesEntity->setProduct($object);
                 $storeValuesEntity->setFieldName($this->getName());
             }

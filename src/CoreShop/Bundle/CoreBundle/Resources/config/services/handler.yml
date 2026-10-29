@@ -11,4 +11,5 @@ services:
             - name: 'kernel.event_listener'
               event: 'Symfony\Component\Security\Http\Event\LogoutEvent'
               method: 'onLogoutSuccess'
+              priority: 65
               dispatcher: security.event_dispatcher.coreshop_frontend

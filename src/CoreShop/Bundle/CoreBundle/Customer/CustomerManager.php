@@ -23,6 +23,7 @@ use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Core\Model\UserInterface;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
+use CoreShop\Component\User\Model\User as BaseUser;
 use Pimcore\File;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Service;
@@ -99,6 +100,10 @@ class CustomerManager implements CustomerManagerInterface
             /** @psalm-suppress InvalidArgument */
             $userBackup->setKey(Service::getUniqueKey($userBackup));
             $userBackup->save();
+
+            if ($userBackup instanceof BaseUser) {
+                $userBackup->setPlainPassword(null);
+            }
         }
 
         if (count($addressBackup) > 0) {

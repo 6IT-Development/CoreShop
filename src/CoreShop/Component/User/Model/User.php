@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace CoreShop\Component\User\Model;
 
 use CoreShop\Component\Resource\Pimcore\Model\AbstractPimcoreModel;
-use Pimcore\Model\DataObject\ClassDefinition\Data\Password;
 
 abstract class User extends AbstractPimcoreModel implements UserInterface
 {
@@ -29,7 +28,7 @@ abstract class User extends AbstractPimcoreModel implements UserInterface
 
     protected ?string $plainPassword = null;
 
-    public function setPlainPassword(string $password)
+    public function setPlainPassword(?string $password)
     {
         $this->plainPassword = $password;
 
@@ -56,16 +55,17 @@ abstract class User extends AbstractPimcoreModel implements UserInterface
     }
 
     /**
-     * Trigger the hash calculation to remove the plain text password from the instance. This
-     * is necessary to make sure no plain text passwords are serialized.
-     *
-     * {@inheritdoc}
+     * Intentionally empty: the plain text password is never serialized (see getBlockedVars())
+     * and gets cleared after the password has been hashed.
      */
+    #[\Deprecated]
     public function eraseCredentials(): void
     {
-        /** @var Password $field */
-        $field = $this->getClass()->getFieldDefinition('password');
-        $field->getDataForResource($this->getPassword(), $this);
+    }
+
+    protected function getBlockedVars(): array
+    {
+        return array_merge(parent::getBlockedVars(), ['plainPassword']);
     }
 
     public function getRoles(): array

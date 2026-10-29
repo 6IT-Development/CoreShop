@@ -9,12 +9,14 @@ coreshop_admin_payment_provider_config:
 
 coreshop_admin_configuration_save_all:
     path: /%coreshop.admin.route.base%/configurations/save-all
+    methods: [POST]
     defaults: { _controller: 'coreshop.admin_controller.configuration::saveAllAction'}
     options:
         expose: true
 
 coreshop_admin_configuration_get_all:
     path: /%coreshop.admin.route.base%/configurations/get-all
+    methods: [GET]
     defaults: { _controller: 'coreshop.admin_controller.configuration::getAllAction'}
     options:
         expose: true

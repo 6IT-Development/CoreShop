@@ -103,6 +103,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - Add a Behat/functional test: edit inherited store values on a variant, assert the parent rows are unchanged.
 
 ### C-09 — Generated `set<Field>ForStore()` on a freshly loaded product deletes the store values of **all other stores** on save
+- **Status:** fixed — the generated `set<Field>ForStore()` now loads the field through `preGetData()` (keyed by store id) before it writes the store entry. Existing projects must regenerate their data-object classes (`pimcore:deployment:classes-rebuild` or re-save the class) to get the new setter. The defensive merge in `save()` was not added.
 - **Where:** generated setter code `CoreExtension/StoreValues.php:257-260` (`$this->storeValues[$store->getId()] = $value; … preSetData()`), `:354-361` (`preSetData()` marks the lazy key as loaded), `:401-408` (`load()` returns `null` unless `force`), `:420-480` (`save()` removes every DB row whose id is not in the in-memory array). (dependent) Pimcore `models/DataObject/Concrete/Dao.php:141-155` (calls `load()` without `force` on object load, so the property stays `null`).
 - **Problem:**
   - After `Product::getById()`, `$product->storeValues` is `null` and not marked loaded. `setStoreValuesForStore($v, $store2)` auto-vivifies `null` to `[2 => $v]` (**(reproduced)**, PHP 8.4 allows `null` → array) and `preSetData()` marks the field as loaded.

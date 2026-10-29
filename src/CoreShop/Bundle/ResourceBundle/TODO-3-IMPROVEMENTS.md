@@ -383,3 +383,104 @@ Scope and evidence: see the "Scan 3" section in [TODO-1-CRITICAL.md](TODO-1-CRIT
 ### I-47 — `RouteFactory`: types
 - **Where:** `Routing/RouteFactory.php`, `Routing/RouteFactoryInterface.php`
 - The interface declares `string|array $schemes` / `$methods`, but `$path`, `$host`, `$condition` are untyped, and the implementation drops the types of `$schemes` / `$methods` entirely. Use `string $path, …, ?string $host = '', string|array $schemes = [], string|array $methods = [], ?string $condition = ''`, matching `Symfony\Component\Routing\Route::__construct()`. Remove the parameter docblocks that only repeat the types.
+
+---
+
+# Scan 4 (2026-10-29): `Installer/`, `Serialization/`, `Slug/`, `Validator/`
+
+Scope and evidence: see the "Scan 4" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+---
+
+## Installer
+
+### I-48 — One base class for the YAML-driven installers
+- **Where:** `Installer/Pimcore{Routes,Documents,ImageThumbnails,GridConfig,Class,Permission,DependantBundle}Installer.php`, `Installer/SqlInstaller.php`
+- The same code is repeated in each of the 8 installers: the progress bar setup (5 lines), the "app parameter or `coreshop.all.*`" lookup, and the "locate file → `file_exists` → `Yaml::parse` → `Processor::processConfiguration`" loop. Extract an `AbstractYamlResourceInstaller` with `loadDefinitions(string $parameterSuffix, ConfigurationInterface $tree): array` and `createProgressBar(OutputInterface)`.
+- Inject the parameters (or a `ParameterBagInterface`) instead of calling `$this->kernel->getContainer()->getParameter()` at run time. The kernel is then only needed for `locateResource()` (use `FileLocator` instead).
+- A configured file that does not exist is skipped silently (`if (file_exists($file))`). Print a warning.
+- `in_array($name, $options['allowed'])` → strict. Rename `$routeFilesToInstall` in `PimcoreGridConfigInstaller` (copy-paste name).
+- `CompositeResourceInstaller` → `final`, `private readonly`.
+- The installer order lives only in `installer.yml` priorities (ascending: classes 100, routes/grid 200, documents 250, thumbnails 300, permissions 350, SQL 400, bundles 550). Document it next to the tag, because `PimcoreGridConfigInstaller` depends on it (TODO-2 **B-44**).
+
+### I-49 — `PimcorePermissionInstaller` cleanup
+- **Where:** `Installer/PimcorePermissionInstaller.php`
+- `$columns` (`:65-67`) introspects `users_permission_definitions` and is never used. Remove it.
+- The `'all'` branch (`:51-55`) is unreachable: `$parameter !== 'coreshop.all.permissions'` implies `$applicationName !== null`.
+- `count($permissionGroups, COUNT_RECURSIVE)` also counts the group keys, so the progress bar overshoots its maximum.
+- `'`key`'` with hand-written backticks is MySQL-only. Use `Permission\Definition::create($key)->setCategory(…)->save()` (Pimcore API) or `$connection->quoteIdentifier('key')`.
+
+### I-50 — `SqlInstaller`: right DBAL call and idempotency
+- **Where:** `Installer/SqlInstaller.php:55`
+- `executeQuery()` is meant for result sets. DDL and multi-statement files should use `executeStatement()`. Multi-statement strings only work with PDO emulated prepares, and stop working with DBAL 4 / native prepares. Split the file, or use `Connection::getNativeConnection()->exec()`.
+- The files run on **every** `coreshop:resources:install`. Document that they must be idempotent, or record executed files.
+- No bundle in the repository configures `install.sql` today. Consider deprecating this installer in favour of Doctrine migrations.
+
+### I-51 — `PimcoreImageThumbnailsInstaller`: catch only "not found"
+- **Where:** `Installer/PimcoreImageThumbnailsInstaller.php:87-116`
+- `catch (\Exception)` treats **any** failure of `getByName()` (for example an unreadable config storage) as "thumbnail missing" and saves a new config with the same name, which overwrites the existing definition. Catch Pimcore's `NotFoundException` only, or use `Config::getByName($name)` and check for `null`.
+- `$properties['description'] ?? ''` is redundant (the tree defaults it to `''`).
+
+### I-52 — Install configuration trees: dead code and keys that match the installers
+- **Where:** `Installer/Configuration/*.php`
+- `TranslationConfiguration` is not used anywhere (no translation installer exists). The `admin-translations.yml` files in `CoreBundle` and `UserBundle` are not referenced by any code either **(dependent)**. Delete them, or add the missing installer.
+- `RouteConfiguration`: remove `module` / `action`, and declare `defaults` as a string node that the installer applies (TODO-2 **B-43**). `DocumentConfiguration`: add `title` / `template`, remove `module` / `action` (TODO-2 **B-42**).
+- `->prototype('scalar')` → `->scalarPrototype()`. `DocumentConfiguration`'s closing `->end()` calls are mis-indented (`:54-57`), which makes the tree hard to read.
+
+### I-53 — `PimcoreDependantBundleInstaller`: avoid Pimcore internals, report failures
+- **Where:** `Installer/PimcoreDependantBundleInstaller.php`
+- `getActiveBundle()`, `canBeInstalled()` and `install()` of `PimcoreBundleManager` are `@internal` (hence the three Psalm suppressions). Use the bundle's installer (`$bundle->getInstaller()`) or run `pimcore:bundle:install` instead.
+- On `BundleNotFoundException` the error is written with `setMessage()` and immediately replaced by the next item, so it is never visible. Write it with `$output->writeln()` and return a non-zero status from the command.
+
+---
+
+## Serialization
+
+### I-54 — JMS handlers: one element handler, batched loads, types
+- **Where:** `Serialization/*Handler.php`
+- `PimcoreObjectHandler`, `PimcoreAssetHandler` and `PimcoreDocumentHandler` are identical except for the element class. Use one `PimcoreElementHandler` configured with the class (or `Element\Service::getElementById($type, $id)`).
+- `deserializeRelation()` loads arrays element by element (`getById()` per ID). Use one listing with `id IN (…)` for arrays.
+- `PimcoreSiteHandler` has no class filter and returns `false`-y values as `null` inconsistently.
+- `RelationsHandler::serializeRelation()` calls `iterator_to_array()` on Doctrine collections, which initializes lazy collections just to output IDs. For `PersistentCollection`s that are not initialized, read the IDs with one query (or accept the cost and document it). `findById()` does one `find()` per element.
+- `CarbonHandler::deserializeRelation()` is not registered for deserialization (only `serialization` is tagged in `services.yml`). Register it or remove it.
+- All handlers: native types on `$value` / return types, `final`, and constants for the type names (`'pimcoreObject'`, …) shared with `services.yml`.
+
+### I-55 — `PimcoreDataObjectDriver` silently disables the bundle's own serializer YAMLs for Pimcore base classes
+- **Where:** `Serialization/Driver/PimcoreDataObjectDriver.php:31-43`; `Resources/config/serializer/Model.DataObject.{AbstractObject,Concrete,Localizedfield,Fieldcollection}.yml`
+- Every class whose namespace is exactly `Pimcore\Model\DataObject` gets an empty metadata object. That includes `AbstractObject`, `Concrete` and `Localizedfield` (and `Fieldcollection` explicitly), so the virtual properties defined in `Model.DataObject.AbstractObject.yml` (`id`, `creationDate`, `modificationDate`) and the rules in the other three files never apply. Either this is intended ("we don't want Pimcore entities serialized directly") and the four YAML files are dead config that should be deleted, or the check should only target the generated classes (`instanceof Concrete && !in_array($class->name, [AbstractObject::class, Concrete::class, …])`). Verify which one, and add a test that serializes a CoreShop Pimcore model.
+- Remove the stray `$name = ` assignment and the `//        //` comment.
+
+### I-56 — `VersionObjectConstructor` is an unmarked fork of JMS `DoctrineObjectConstructor`
+- **Where:** `Serialization/VersionObjectConstructor.php`
+- The class copies `JMS\Serializer\Construction\DoctrineObjectConstructor` (jms/serializer 3.32.9) and only changes where the manager comes from (context attribute `em` instead of a manager registry) and the "id = 0 → fallback" rule. Upstream fixes (for example around embeddables or `isTransient()`) do not reach it. Add a docblock that names the upstream version it is based on, a constant for the `'em'` attribute (used in four CoreExtensions), and a test for the "id missing / 0 / not found" paths. `fallbacksFallbackConstructor` → a clearer name (`unserializeConstructor`).
+
+---
+
+## Slug
+
+### I-57 — `ResourceConfigurationSlugGenerator`: match subclasses and allow the YAML config to set `slug`
+- **Where:** `Slug/ResourceConfigurationSlugGenerator.php:33-44`; `Component/Resource/Metadata/Registry.php:39-59`
+- `hasClass($sluggable::class)` compares the exact class name. Pimcore class overrides (`pimcore.models.class_overrides`) or project subclasses of a registered model are not found, so their `slug: false` setting is ignored and slugs are generated anyway. Look the model up with `is_a()` (or by interface).
+- `hasClass()` followed by `getByClass()` scans the registry twice. Use one `try { getByClass() } catch`.
+- Only `#[AsPimcoreModel(slug: false)]` can set the parameter, because the YAML `pimcore` config tree has no `slug` key (TODO-3 **I-36**). Add it to the tree.
+
+---
+
+## Validator
+
+### I-58 — Constraint and validator code quality
+- **Where:** `Validator/Constraints/*.php`, `Resources/config/services/validators.yml`
+- `validate($value, Constraint $constraint)` → `validate(mixed $value, Constraint $constraint)`.
+- `ActiveValidator` is not registered as a service. That is fine (default `validatedBy()`), but `UniqueEntity` uses the alias `coreshop.unique_entity`. Use the class name in both for consistency (`validatedBy()` default plus autoconfigured validator).
+- `UniqueEntityValidator`: `protected` promoted properties in a `final` class → `private readonly`. `Assert::isInstanceOf($value, Concrete::class)` → `UnexpectedValueException` for wrong types, `return` for `null`.
+
+---
+
+## Tests
+
+### I-59 — Tests for the scan 4 findings
+- **Where:** none exist
+- `coreshop:resources:install` with an `#[AsPimcoreModel]` model without `installFile` completes (TODO-2 **B-41**).
+- The documents installer links translations between two languages, and accepts `title` (**B-42**). The routes installer keeps `defaults` (**B-43**). The grid-config installer works when run alone (**B-44**).
+- `UniqueEntity` with the default message and a plain field name, on create and on re-save of the same object (**B-38**, **B-39**). `Active` on `null` (**B-40**). Load both constraints from YAML without deprecations (**B-37**).
+- JMS: deserialize a `pimcoreAsset` property without a class parameter, and serialize a `CarbonImmutable` as `type: carbon` (**B-45**).

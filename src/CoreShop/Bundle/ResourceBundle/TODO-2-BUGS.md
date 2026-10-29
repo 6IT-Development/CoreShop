@@ -295,3 +295,85 @@ Scope and evidence: see the "Scan 3" section in [TODO-1-CRITICAL.md](TODO-1-CRIT
 - **Where:** `EventListener/ORMTranslatableListener.php:165-178`
 - **Problem:** Doctrine also accepts unique constraints declared with `fields` instead of `columns`. A translation entity that declares its `(translatable, locale)` constraint with `fields` hits `Undefined array key "columns"`, and then `array_diff(null, …)` → `TypeError` during metadata loading. The schema can then not be generated at all.
 - **Fix:** `$constraint['columns'] ?? []` (and map `fields` to column names via `$metadata->getColumnName()`).
+
+---
+
+# Scan 4 (2026-10-29): `Installer/`, `Serialization/`, `Slug/`, `Validator/`
+
+Scope and evidence: see the "Scan 4" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+---
+
+## Validator
+
+### B-37 — `Active` and `UniqueEntity` trigger Symfony 7.3/7.4 deprecations and will stop working on Symfony 8 — (reproduced)
+- **Where:** `Validator/Constraints/Active.php`, `Validator/Constraints/UniqueEntity.php` (`getRequiredOptions()`, public properties filled from the options array). Symfony: `vendor/symfony/validator/Constraint.php`, `Mapping/Loader/AbstractLoader.php`.
+- **Problem:** constructing them the way the YAML/XML loaders do (options array) emits, with Symfony 7.4.21 on PHP 8.4.27:
+  - `Since symfony/validator 7.4: Support for evaluating options in the base Constraint class is deprecated. Initialize properties in the constructor of …\Active instead.` (same for `UniqueEntity`).
+  - `Since symfony/validator 7.3: Using constraints not supporting named arguments is deprecated. Try adding the HasNamedArguments attribute to …\UniqueEntity.` (when loaded from YAML).
+  - On Symfony 8 the options array path is removed: `message`, `fields`, `values`, `allowSameEntity` and `groups` would no longer be applied, and the required-options check for `fields` / `values` disappears.
+  - Neither class has `#[\Attribute]`, so they cannot be used as PHP attributes.
+- **Fix:** add `#[\Attribute(\Attribute::TARGET_CLASS)]` (`UniqueEntity`) / `#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]` (`Active`), and a `#[HasNamedArguments]` constructor that sets every property and calls `parent::__construct(null, $groups, $payload)`. Validate the required `fields` in the constructor and drop `getRequiredOptions()`.
+
+### B-38 — `UniqueEntityValidator` evaluates the **message** as an expression, and passes non-string values to `setParameter()` — (reproduced)
+- **Where:** `Validator/Constraints/UniqueEntityValidator.php:39-46`, `:59`, `:123-129`; service `Resources/config/services/validators.yml` (`@coreshop.expression_language`, `@service_container`).
+- **Problem:**
+  - `$this->evaluateExpression([$constraint->message])` runs the message through ExpressionLanguage. The default message `This entity already exists.` throws `SyntaxError: Variable "This" is not valid around position 1` (reproduced). So any use with the default message crashes with a 500 exactly when a duplicate is found. Messages only work when written as quoted expression literals (`"'my.translation.key'"`).
+  - `fields` are evaluated as expressions too. A plain `fields: [email]` fails with `Variable "email" is not valid`. It has to be written `"'email'"`. Nothing documents this.
+  - `->setParameter('{{ value }}', $criteria[$fields[0]])`: `ConstraintViolationBuilder::setParameter(string $key, string $value)` takes a string (verified on 7.4.21). An `int` field (or an object such as a relation) throws `TypeError` under `strict_types`. `setInvalidValue()` would accept it.
+  - Expressions get the whole `service_container` as a variable. That is not a vulnerability (expressions come from mapping config), but it lets any mapping file call any public service.
+- **Fix:** do not evaluate `message`, and use it as a translation key like every Symfony constraint. Evaluate `fields`/`values` only when they start with an explicit marker (for example `expr:`), or move the dynamic part to `values` only. Use `$this->formatValue($value)` for the parameter. Pass only the variables that are needed (or a small service locator) instead of `service_container`.
+
+### B-39 — `UniqueEntityValidator` flags the object being validated as its own duplicate, and builds SQL that fails for localized fields or `null` — (plausible)
+- **Where:** `Validator/Constraints/UniqueEntityValidator.php:66-130`
+- **Problem:**
+  - Unless `allowSameEntity: true` is set, the object itself is never excluded. Re-saving an existing object that is already stored with the same values reports "already exists" for itself. The flag name suggests an edge case, but without it the constraint can only be used for objects that are being created.
+  - The listing has no limit: every matching object (including unpublished ones) is loaded just to test whether at least one exists. Use `setLimit(2)` (or a count query) and exclude the current ID in SQL.
+  - Field names are put into SQL as column names unquoted. Localized fields (stored in `object_localized_*`) and relation fields have no column in the object's table → `Unknown column` SQL error. A `null` value becomes `field = NULL` and never matches.
+- **Fix:** add `AND id != ?` for persisted objects (keep `allowSameEntity` only for BC), check that each field is a plain, non-localized field definition (`$class->getFieldDefinition($name)`, otherwise `ConstraintDefinitionException`), use `IS NULL` for `null`, and quote identifiers.
+
+### B-40 — `ActiveValidator` throws on `null` and other non-toggleable values instead of ignoring them
+- **Where:** `Validator/Constraints/ActiveValidator.php:34-43`
+- **Problem:** any value that is not a `ToggleableInterface`, including `null`, throws `UnexpectedTypeException`. Symfony constraints treat `null` as valid and leave it to `NotNull`. Putting `Active` on an optional relation (for example an optional carrier or payment provider) therefore turns every submission without a value into a 500 instead of a valid form. `formatValue($value)` on an object prints only `object`.
+- **Fix:** `if (null === $value) { return; }`. Throw `UnexpectedValueException` (not `UnexpectedTypeException`) for other types, as Symfony recommends for value mismatches.
+
+---
+
+## Installer
+
+### B-41 — `PimcoreClassInstaller` aborts `coreshop:resources:install` for models registered with `#[AsPimcoreModel]` without an install file — (dependent)
+- **Where:** `Installer/PimcoreClassInstaller.php:60-85`; data from `DependencyInjection/CoreShopResourceExtension.php` `autoRegisterPimcoreModels()` (`'install_file' => $resource->getInstallFile()`, default `null`). See TODO-2 **B-13**.
+- **Problem:** `array_key_exists('install_file', …)` is `true` for the attribute's `null`. `$this->kernel->locateResource(null)` then throws `TypeError` (`locateResource(string $name)`), which the `catch (\InvalidArgumentException)` does not catch. The whole composite install stops (classes are the first installer, priority 100 in ascending order), so routes, documents, thumbnails, permissions and grid configs are not installed either. `CoreShop\Behat\Model\Car` is such a model.
+- **Fix:** `if (!empty($pimcoreModel['classes']['install_file']))`. Also log the "file not found" case (currently a silent `continue`), and count only installable items for the progress bar (`$progress->start()` uses all models, so the bar never completes).
+
+### B-42 — `PimcoreDocumentsInstaller` never links document translations and rejects its own documented options
+- **Where:** `Installer/PimcoreDocumentsInstaller.php:81`, `:100-135`, `:144-215`; `Installer/Configuration/DocumentConfiguration.php`
+- **Problem:**
+  - `$languagesDone` is initialized to `[]` and never appended to. The "Link translations" block (`:119-131`) therefore never runs, and installed documents (for example the shop pages and e-mail documents from `FrontendBundle/Resources/install/pimcore/documents.yml`) are never connected as translations of each other.
+  - `installDocument()` reads `$properties['title']` and `$properties['template']`, but `DocumentConfiguration` does not define those keys. `processConfiguration()` rejects any YAML that sets them (`Unrecognized option "title"`), so a page title or template can never be installed. `module` and `action` are defined but never used.
+  - `setParent(Document::getByPath(…/path))` gets `null` when the parent path does not exist (documents listed before their parent, or a typo in `path`). Saving a document without a parent then fails.
+  - The root is the **first** site's root document (`$sites[0]`), which is arbitrary for multi-site installs. `!empty($content)` skips the legitimate value `"0"`.
+- **Fix:** `$languagesDone[] = $language;` after each language. Add `title` / `template` to the config tree (and remove `module` / `action`). Check that the parent exists and fail with a clear message. Make the target site configurable. Use `null !== $content && '' !== $content`.
+
+### B-43 — `PimcoreRoutesInstaller` drops the `defaults` of static routes
+- **Where:** `Installer/PimcoreRoutesInstaller.php:90-109`, `Installer/Configuration/RouteConfiguration.php:45`; Pimcore `bundles/StaticRoutesBundle/src/Model/Staticroute.php:251` (`setDefaults(string)`)
+- **Problem:** the config tree accepts `defaults` (and `module`, `action`), but `installRoute()` never sets them. A route defined in an install YAML with `defaults` (for example a default `_locale` or format) is created without them, and URL generation or matching then differs from what the YAML says. Existing routes are never updated, so a corrected YAML is not applied on upgrade. That is fine for the migration that only adds `coreshop_payment_token` (`CoreBundle/Migrations/Version20240117102103.php`), but it should be documented.
+- **Fix:** `if (null !== $properties['defaults']) { $route->setDefaults($properties['defaults']); }`. Remove `module` / `action` from the tree (Pimcore 11 static routes only have `controller`). Optionally add an `update` option like the class installer has.
+
+### B-44 — `PimcoreGridConfigInstaller` can only resolve a class ID when the class installer ran in the same process — (dependent)
+- **Where:** `Installer/PimcoreGridConfigInstaller.php:95-120`
+- **Problem:**
+  - The first lookup, `$this->objectManager->getRepository($metadata->getParameter('model'))`, can never succeed: `ObjectManager::getRepository()` always throws, because no repository is ever registered (TODO-2 **B-25**). Also `model` is a **class** entry (`getClass('model')`), not a parameter, so `getParameter('model')` would throw as well.
+  - The fallback only knows classes that `PimcoreClassInstaller` created or loaded **earlier in the same run** and that have an `install_file`. Running the grid-config installer on its own (or for an application whose classes were installed in an earlier run without install files) fails with `Could'nt find ClassID for Identifier …` (also misspelled).
+- **Fix:** resolve the ID directly: `$model = $metadata->getClass('model'); return $model::classId();` (or `ClassDefinition::getByName($metadata->getParameter('pimcore_class'))->getId()`). Drop the `ObjectManager` and `PimcoreClassInstaller` dependencies.
+
+---
+
+## Serialization
+
+### B-45 — JMS handlers fail on types declared without a class parameter, and `CarbonHandler` accepts only `Carbon` — (reproduced, mechanism)
+- **Where:** `Serialization/{PimcoreObjectHandler,PimcoreAssetHandler,PimcoreDocumentHandler}.php` `deserializeRelation()` (`$obj instanceof $className` with `$className = $type['params'][0]['name'] ?? null`); `Serialization/RelationsHandler.php:57-65` (`getClassMetadata($className)` with `null`); `Serialization/CarbonHandler.php:28-35` (`: int`, `return $value`). Mappings without a parameter: `PaymentBundle/…/Model.PaymentProvider.yml:24` and `ShippingBundle/…/Model.Carrier.yml:24` (`type: pimcoreAsset`), `AddressBundle/…/Model.{Country,Zone}.yml`, `CoreBundle/…/Model.PaymentProvider.yml:7`, `IndexBundle/…/Model.Filter.yml:28` (`type: relation`).
+- **Problem:**
+  - Deserializing such a property runs `$obj instanceof null` → `Error: Class name must be a valid object or a string` (reproduced), or `getClassMetadata(null)` → `TypeError`. Today deserialization only goes through the `fromArray()` calls in the `StoreValues` / price-rule / unit-definition CoreExtensions, whose types all carry a parameter, so this is latent. Any new `fromArray()` / `deserialize()` on those resources (imports, APIs) crashes.
+  - `CarbonHandler::serializeRelation()` returns the value unchanged when it is not a `Carbon`, but the return type is `int`. A getter that returns `CarbonImmutable`, `\DateTime` or `\DateTimeImmutable` for a `type: carbon` property → `TypeError`.
+- **Fix:** when no class parameter is given, fall back to the element base class (`Concrete`, `Asset`, `Document`) and, for `relation`, throw a clear `RuntimeException('type "relation" needs a class parameter')`. Or add the missing parameters to the mapping files. In `CarbonHandler`, accept `\DateTimeInterface` and return `?int`.

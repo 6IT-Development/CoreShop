@@ -1,0 +1,181 @@
+# ResourceBundle – TODO 3: Improvements
+
+Target: **Symfony 7.4**, **PHP 8.4**. Scan date: 2026-10-29 (branch `s74-p84`).
+The scope and markers are the same as in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md). These items are about code quality, readability and logic. None of them is a functional bug on its own. Bugs are in [TODO-2-BUGS.md](TODO-2-BUGS.md).
+Paths are relative to the bundle root unless noted otherwise.
+
+Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2-BUGS.md)
+
+---
+
+## Commands
+
+### I-01 — Use `#[AsCommand]` and the `Command::SUCCESS` / `FAILURE` constants
+- **Where:** `Command/{CreateDatabaseTablesCommand,DropDatabaseTablesCommand,InstallResourcesCommand}.php` `configure()`; `Resources/config/services/commands.yml`
+- The name is defined twice: `setName()` in `configure()` and `command:` in the `console.command` tag. Move name and description into `#[AsCommand(name: 'coreshop:resources:create-tables', description: '…')]` and drop `setName()` / `setDescription()` and the tag attribute (autoconfiguration, or keep only the bare tag).
+- `return 0;` → `return Command::SUCCESS;`.
+- Help texts: "command install Resources" → "installs resources (static routes, Pimcore classes, …)"; "Create Tables." / "Drop Tables." → say which tables (the Doctrine tables of the given application).
+
+### I-02 — Merge the create/drop commands and make them fail loudly
+- **Where:** `Command/CreateDatabaseTablesCommand.php`, `Command/DropDatabaseTablesCommand.php` (about 90 identical lines)
+- Extract an abstract base (`AbstractSchemaCommand`) with the shared argument/options, metadata collection and output. Only the SQL source (`getUpdateSchemaSql` vs `getDropSchemaSQL`) and the execute call differ. Fix TODO-2 **B-02** once, in the base.
+- Unknown `application-name` → print the known application names and return `FAILURE`. Today it silently "succeeds" with 0 queries.
+- Neither `--dump-sql` nor `--force` → print a hint and return `FAILURE` (as Doctrine's own `orm:schema-tool:*` commands do). Today it does nothing and exits 0.
+- Only collect resources with `driver === CoreShopResourceBundle::DRIVER_DOCTRINE_ORM`, and use the resource's configured manager instead of always the default `EntityManagerInterface`.
+- `drop-tables --force`: ask for confirmation (`$ui->confirm()`), unless `--no-interaction`.
+
+### I-03 — `InstallResourcesCommand`: inject what it needs instead of pulling the kernel out of the application
+- **Where:** `Command/InstallResourcesCommand.php:32-35`, `:63-84`
+- `protected ResourceInstallerInterface $resourceInstaller` in a `final` class → `private readonly`.
+- `$this->getApplication()->getKernel()` assumes a FrameworkBundle `Application` and fails with `Error` when the command runs without one (for example `CommandTester` without an application). Inject `%kernel.environment%` (`#[Autowire('%kernel.environment%')] string $environment`) instead.
+- `--update-classes` is passed as a raw `mixed`. Cast it with `(bool)`.
+
+---
+
+## Controllers
+
+### I-04 — `EventDispatcher`: type the event name and remove the four copies
+- **Where:** `Controller/EventDispatcher.php:34-77`, `Controller/EventDispatcherInterface.php:27-45`
+- `$eventName` is untyped in the interface and the implementation → `string $eventName`.
+- The four methods only differ in the prefix (`''`, `pre_`, `post_`, `initialize_`). Use one private `doDispatch(string $prefix, …)`. Remove the empty `@param string            $eventName` docblocks.
+
+### I-05 — `AsPimcoreModel`: tighter types, fewer getters, parity with YAML config
+- **Where:** `Attribute/AsPimcoreModel.php`
+- `?array $pimcoreController = []`, `?array $options = []` → `array` (null is never meaningful). `?bool $slug = null` → `bool $slug = false` (the extension does `?: false` anyway).
+- `type`: accept only `CoreShopResourceBundle::PIMCORE_MODEL_TYPE_*`. Validate in the constructor, or use a backed enum.
+- `repository: null` → default `PimcoreRepository::class`, like `Configuration.php` does for YAML.
+- `adminController` is not supported for Pimcore models (TODO-2 **B-13**). Remove it or wire it.
+- PHP 8.4: the 13 trivial getters can be replaced by `public private(set)` (or `public readonly`) promoted properties. Keep the getters as BC wrappers for one minor version if external code uses them.
+- Add `@param class-string` for `pimcoreModel`, `interface`, `factory`, `repository`.
+
+### I-06 — Make the stateless services `final readonly`
+- **Where:** `Controller/ViewHandler.php`, `Controller/EventDispatcher.php`, `Controller/ResourceFormFactory.php`, the three commands
+- `final class X { public function __construct(private Foo $foo) }` → `final readonly class X` (PHP 8.2+), or `private readonly` promoted properties in the commands (they extend `Command`, so the class itself cannot be readonly).
+
+### I-07 — One permission check for all CoreShop admin controllers
+- **Where:** `Controller/PimcoreController.php:45-68`, `Controller/ResourceController.php:59-78`
+- There are two implementations with different behaviour (two different exception classes, `TokenStorageInterface` vs `TokenStorageUserResolver`, different null handling). See TODO-2 **B-05** and **B-06**.
+- Put a single `protected function denyUnlessGranted(?string $permission): void` in `AdminController`, based on `UserAwareController::checkPermission()`. `ResourceController` builds the permission name from metadata. `PimcoreController` uses `getPermission()`.
+- `ResourceController` then no longer needs the `TokenStorageInterface` constructor argument (remove it together with the matching argument in `AbstractDriver::addController()`).
+
+### I-08 — `listAction()`: pagination or no pagination, but not dead variables
+- **Where:** `Controller/ResourceController.php:80-89`
+- `$start` / `$limit` are read and ignored ("TODO: use start and limit as soon as Admin UI has pagination"). Either implement them (`findBy([], ['id' => 'ASC'], min($limit, 500), $start)` + `total`) and adapt `Resources/public/pimcore/js/resource/list.js`, or delete the two lines.
+- Add the missing permission check (TODO-1 **C-01**).
+
+### I-09 — Return real HTTP status codes and map persistence errors
+- **Where:** `Controller/ViewHandler.php:32-42`, `Controller/ViewHandlerInterface.php:25`, all `ResourceController` actions
+- `ViewHandler::handle()` always returns 200, also for `success: false`. Add an `int $status = 200` parameter and use `400`/`404`/`409`/`422` for validation errors, a missing ID and constraint violations.
+- `flush()` exceptions (`UniqueConstraintViolationException`, `ForeignKeyConstraintViolationException` on delete) become a raw 500 today. Catch them and return `success: false` with a translated message.
+- `deleteAction()` returns `success: false` with 200 for an unknown ID. Use `findOr404()` like the other actions.
+
+### I-10 — Read request data from the right place, with types
+- **Where:** `Controller/AdminController.php:43-63` (`getParameterFromRequest()`), all actions
+- The helper mirrors `Request::get()`, which Symfony 7.4 deprecates ("since Symfony 7.4, use properties `->attributes`, `query` or `request` directly instead", reproduced). As a replacement it is fine, but it returns `mixed` from three bags, which is the source of TODO-2 **B-03**.
+- In each action, read from the bag the route actually uses (route attribute or query `id` for get/save/delete, POST body for add/save) with typed getters (`getInt()`, `getString()`). Add `requirements: { id: '\d+' }` to the generated routes in `Routing/ResourceLoader.php`.
+
+### I-11 — Wrap pre-event + persist + flush + post-event in one transaction
+- **Where:** `Controller/ResourceController.php:115-127`, `:151-167`, `:197-202`, `:216-221`
+- If a `post_save` / `post_delete` listener throws, the entity is already flushed, but the client gets an error. Use `EntityManagerInterface::wrapInTransaction()` (the `ObjectManager` type has to become `EntityManagerInterface`, or check `instanceof`), or document that post-events run after commit.
+
+### I-12 — `ResourceSettingsController::getConfigAction()`: stable response shape and cleaner code
+- **Where:** `Controller/ResourceSettingsController.php:45-97`
+- `full_stack` is only created inside the loop. Initialize it as `[]` next to `classMap` and `stack`. `coreShopRelation(s).js:53` uses `coreshop.full_stack` as a combo store, and `undefined` breaks the class editor when there is no stack.
+- `$alias` holds an array and then a string. Use `[$application, $name] = explode('.', $key, 2);`.
+- The result only changes on deploy. Consider caching it (or an `ETag`), because it is requested on every admin load.
+- `getParameter()` (`:84`) and `parameterBag->get()` (`:56`) are mixed. Use one.
+
+### I-13 — `folderConfigurationAction()` naming and null guard
+- **Where:** `Controller/ResourceController.php:229-261`
+- `$customerClassDefinition` is a leftover name. Use `$classDefinition`.
+- With no `path` (or `null`, TODO-2 **B-13**), `'/' . $folderPath` is `/` and returns the root folder ID. Return `folderId: null` instead.
+
+---
+
+## CoreExtension (Pimcore data types)
+
+### I-14 — Type the data-type classes and remove the blanket Psalm suppressions
+- **Where:** `CoreExtension/Select.php`, `CoreExtension/CoreShopRelation.php`, `CoreExtension/CoreShopRelations.php`, `CoreExtension/Multiselect.php`, `CoreExtension/Document/Select.php`
+- `Select`: `public $allowEmpty` → `public bool $allowEmpty = false`; `isAllowEmpty(): bool`; `setAllowEmpty(bool $allowEmpty): static`; `abstract protected function getRepository(): RepositoryInterface`.
+- `CoreShopRelation(s)`: `getStack(): ?string`, `setStack(?string $stack): static` (Pimcore setters return `static`), `getCoreShopPimcoreClasses(): array`.
+- `Multiselect` / `Select`: give the overridden methods the parent signatures (`isDiffChangeAllowed(Concrete $object, array $params = []): bool`, etc.). The untyped versions are legal, but they hide mismatches.
+- Wrong docblocks: `@param string $data` / `@param null $object` / `@return int|string|null` on `getDataFor*Resource()`. Remove them or correct them to `ResourceInterface|null`.
+- `@psalm-suppress InvalidReturnType, InvalidReturnStatement` on every class hides real issues (for example TODO-2 **B-15**). Remove it and fix what Psalm reports.
+
+### I-15 — `Select`: simplify the resource checks
+- **Where:** `CoreExtension/Select.php:169-208`
+- `$data !== null && method_exists($data, 'getId') && is_a($data, $this->getModel())` → `$data instanceof ResourceInterface && is_a($data, $this->getModel())`. `method_exists()` also accepts class-name strings, which is not intended here.
+- `getDataForQueryResource()` is a copy of `getDataForResource()`. Delegate to it.
+- `preSetData()`: `if ((int) $data)` also accepts `"12abc"`. Use `is_numeric()` / `ctype_digit()`.
+- `getQueryColumnType()` / `getColumnType()` return `int(11)`. MySQL 8.0.17+ deprecates display widths. Pimcore core still uses `int(11)`, so keep it for now, but track it for the MySQL 9 / MariaDB strict-mode switch.
+
+### I-16 — `Select::preGetData()` reloads the resource on every getter call
+- **Where:** `CoreExtension/Select.php:137-160`
+- Every `$object->getCountry()` runs `repository->find()` and `$container->setValue()` (the "Dirty Fix" comment). The Doctrine identity map normally makes `find()` cheap, but after `ObjectManager::clear()` (TODO-2 **B-08**) each call queries the database again, and `setValue()` runs the generated setter and `preSetData()` every time.
+- Skip the reload when the entity is already managed (`$em->contains($data)`). Explain in the comment which Pimcore path reads properties without the getter, so the side effect can be removed later.
+
+### I-17 — `TempEntityManagerTrait`: document why a second EntityManager is needed, or remove it
+- **Where:** `CoreExtension/TempEntityManagerTrait.php`; users listed in TODO-2 **B-01**
+- Each call creates a full new `EntityManager` (new UnitOfWork) that shares the connection, configuration **and event manager** with the default one. Listeners that keep a reference to the default manager (Gedmo, optimistic lock) then act on the wrong manager. Add a docblock explaining the use case (isolated flush of price rules / store values during a Pimcore save). Check whether `$em->getUnitOfWork()->computeChangeSet()` or a `flush($entity)` replacement covers it. Return `EntityManagerInterface`, not the concrete class.
+
+### I-18 — Dead code in `CoreShopRelation(s)`
+- **Where:** `CoreExtension/CoreShopRelations.php:51-54`, `CoreExtension/CoreShopRelation.php:113-120`, `CoreShopRelations.php:109-116`
+- `CoreShopRelations::enrichLayoutDefinition()` is never called. Pimcore only calls it on `LayoutDefinitionEnrichmentInterface` (`DataObject/Service.php:1347`), which `ManyToManyRelation` does not implement. Either implement the interface with its signature `enrichLayoutDefinition(?Concrete $object, array $context = []): static` and `return $this;`, or delete the method.
+- `CoreShopRelation::__set_state()`: `$obj->classes = $obj->getClasses()` is a no-op (the parent getter returns `$this->classes`).
+- `setClasses(array $classes)` ignores its argument by design (classes come from the stack). Add a comment so nobody "fixes" it.
+
+### I-19 — Centralize the `\Pimcore::getContainer()` lookups
+- **Where:** `CoreExtension/CoreShopRelation.php:65-81`, `CoreExtension/CoreShopRelations.php:56-89`, `CoreExtension/Document/Select.php:125-134`, all `Select` subclasses (`getRepository()` / `getModel()`)
+- Pimcore instantiates data types and editables itself, so constructor injection is not available. However, the same container parameters are fetched several times per field per request (`coreshop.all.stack`, `coreshop.all.stack.pimcore_class_names`). Put them in one small static resolver with memoization, so there is one place to swap later.
+
+### I-20 — `Document\Select` editable: fewer queries, safer input
+- **Where:** `CoreExtension/Document/Select.php`
+- `getConfig()` runs `findAll()` (unsorted, unlimited) on every editmode render. `isEmpty()` runs a `find()` each time. Memoize `getResourceObject()` per instance, and sort the store by the name property.
+- `if ($this->resource)` treats `'0'` as empty. Use `null !== $this->resource && '' !== $this->resource`.
+- `setDataFromEditmode()` / `setDataFromResource()` assign untyped data to `string|int|null`. An array or bool from a broken payload causes a `TypeError`. Type them `mixed $data` and normalize to `int|string|null`.
+- `getResourceName()` builds a getter name by hand. Use `PropertyAccessor` (it also supports `isX` / `hasX`).
+
+---
+
+## Cache
+
+### I-21 — `CoreCacheHandlerDecorator` is a subclass replacement, not a decorator
+- **Where:** `Cache/CoreCacheHandlerDecorator.php`, `Resources/config/services.yml` (`decorates: Pimcore\Cache\Core\CoreCacheHandler`, explicit constructor args)
+- The `.inner` service is never used. The YAML repeats Pimcore's constructor arguments (`pimcore.cache.pool`, `WriteLock`, `event_dispatcher`, `setLogger`). If Pimcore changes the constructor or adds a setter call, the replacement silently differs from core. Use `parent:` on the core definition, or add a test that compares the two definitions. Rename it (for example `CoreShopCacheHandler`).
+- `CoreCacheHandler` is `@internal` (hence the `InternalClass` / `InternalMethod` suppressions). Record this as a known BC risk in the upgrade notes.
+- `load()`: `$data->getClass()` throws when the class definition was deleted while objects are still cached. Catch it and treat the entry as a cache miss.
+- Only top-level field definitions are (un)marshalled. Marshaller fields inside localized fields, object bricks or field collections are cached fully. This is consistent on both sides, but document it. See TODO-2 **B-18** for the marshalling side.
+- Unmarshalling runs one repository `find()` per marshalled field per loaded object. For listings this is N×M queries. Consider batching by entity class.
+
+---
+
+## Config
+
+### I-22 — Routes and service visibility
+- **Where:** `Resources/config/pimcore/routing.yml`, `Resources/config/services.yml`, `Resources/config/services/{commands,controller}.yml`
+- Add `methods:` to both routes (`coreshop_helper_get_nice_path`: `POST`; `coreshop_resource_class_map`: `GET`).
+- `_defaults: public: true` makes every service public. Only controllers (and services fetched via `\Pimcore::getContainer()->get()`, see **I-19**) need that. Commands do not.
+- `ViewHandler` / `EventDispatcher` are private, but their interface aliases inherit `public: true` from `_defaults`. That is fine, but state it explicitly so it is not accidental.
+
+### I-23 — Docblocks and naming
+- **Where:** the whole scope
+- Remove `@return mixed` / `@param mixed` lines that only repeat the native types (`AdminController.php:44-47`, `Multiselect.php:38-43`).
+- `EventDispatcherInterface` docblocks have odd spacing and no content. Remove them when the parameters get types (**I-04**).
+- `ResourceController.php:110-124`: the repeated inline `@var ResourceInterface $resource` comments are not needed once `findOr404()` / `$form->getData()` are typed.
+
+---
+
+## Tests
+
+### I-24 — Add tests; none exist for these directories
+- **Where:** no `Tests/` folder in the bundle, nothing under `tests/` covers these classes
+- Functional (admin kernel):
+  - `list` / `get` / `save` / `add` / `delete` without the resource permission → 403 (TODO-1 **C-01**, TODO-2 **B-05**, **B-06**).
+  - Missing or invalid parameters → 4xx, not 500 (TODO-2 **B-03**).
+  - `get-nice-path` filters elements outside the user's workspace (TODO-2 **B-04**).
+- Command: `create-tables --dump-sql` for an application never contains `DROP TABLE` for foreign tables (TODO-2 **B-02**). Unknown application → `FAILURE` (**I-02**).
+- Unit:
+  - `CoreShopRelation(s)` with `null` / `''` / unknown stack (TODO-2 **B-14**, **B-15**).
+  - `Select::getDataForSearchIndex()` returns the selected resource's ID (TODO-2 **B-16**).
+  - `AsPimcoreModel` registration produces the same metadata as the equivalent YAML (TODO-2 **B-12**, **B-13**).
+- Cache: saving an object with `force: true` leaves the in-memory object unchanged, and a load returns entities again (TODO-2 **B-18**).

@@ -19,19 +19,29 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CoreBundle\Customer;
 
 use CoreShop\Component\Core\Model\UserInterface;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 final class CustomerLoginService implements CustomerLoginServiceInterface
 {
     public function __construct(
-        private TokenStorageInterface $securityTokenStorage,
+        private Security $security,
+        private RequestStack $requestStack,
+        private string $firewallName = 'coreshop_frontend',
+        private string $authenticatorName = 'form_login',
     ) {
     }
 
     public function loginCustomer(UserInterface $user): void
     {
-        $token = new UsernamePasswordToken($user, 'coreshop_frontend', $user->getRoles());
-        $this->securityTokenStorage->setToken($token);
+        if (null === $this->requestStack->getCurrentRequest()) {
+            return;
+        }
+
+        /**
+         * Use Symfony's login flow, so the user checker runs, the session id gets migrated
+         * (no session fixation) and the LoginSuccessEvent is dispatched.
+         */
+        $this->security->login($user, $this->authenticatorName, $this->firewallName);
     }
 }

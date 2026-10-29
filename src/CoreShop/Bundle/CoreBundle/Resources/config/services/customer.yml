@@ -16,7 +16,8 @@ services:
     CoreShop\Bundle\CoreBundle\Customer\CustomerLoginServiceInterface: '@CoreShop\Bundle\CoreBundle\Customer\CustomerLoginService'
     CoreShop\Bundle\CoreBundle\Customer\CustomerLoginService:
         arguments:
-            - '@security.token_storage'
+            - '@security.helper'
+            - '@request_stack'
 
     CoreShop\Bundle\CoreBundle\EventListener\CustomerNewsletterConfirmListener:
         arguments:

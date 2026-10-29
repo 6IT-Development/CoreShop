@@ -44,6 +44,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 - **Fix:** add `methods: [POST]` to both configuration routes (and to any other mutating CoreShop admin route lacking it — the customer-transformer dispatch routes already specify POST, good). Keep the permission check from C-02.
 
 ### C-04 — Auto-login after registration skips Symfony's login flow: no session-id migration (session fixation), no user checker, no login events
+- **Status:** fixed — `CustomerLoginService` now calls `Security::login()` (`form_login` on `coreshop_frontend`, both overridable constructor arguments). Login is skipped when there is no request. The firewall name is still a default value, see TODO-2 B-02. No functional test was added.
 - **Where:** `Customer/CustomerLoginService.php:32-36`, `EventListener/CustomerLoginListener.php:32-38`, `Resources/config/services/customer.yml:16-34`; caller `FrontendBundle/Controller/RegisterController.php:63` → `Customer/CustomerManager.php:112`.
 - **Problem:**
   - `loginCustomer()` creates a `UsernamePasswordToken` and writes it straight to `security.token_storage`. Session migration happens only in `SessionStrategyListener` on `LoginSuccessEvent`, and this path never dispatches that event. So the session id from before registration becomes an authenticated session id. An attacker who can plant a session cookie (sibling subdomain, cookie injection) gets a logged-in session for the new account.

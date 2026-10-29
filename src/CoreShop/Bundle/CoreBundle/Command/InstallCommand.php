@@ -77,6 +77,9 @@ EOT
 
         $this->ensureDirectoryExistsAndIsWritable($this->kernel->getCacheDir(), $output);
 
+        // decide before the database step creates the tables
+        $freshInstall = !$this->installer->isSchemaPresent();
+
         $errored = false;
         foreach ($this->commands as $step => $command) {
             try {
@@ -95,7 +98,15 @@ EOT
             }
         }
 
-        $this->installer->markAllMigrationsInstalled();
+        if ($errored) {
+            $outputStyle->warning('Migrations have not been marked as executed, as an installation step failed. Run "coreshop:migrate" once the problem is solved.');
+        } elseif ($freshInstall) {
+            // the schema and classes have just been created in their latest version
+            $this->installer->markAllMigrationsInstalled();
+        } else {
+            // existing installation: classes are not updated by the resources step, so pending migrations must stay pending
+            $outputStyle->note('CoreShop was already installed in this database, its migrations have not been marked as executed. Run "coreshop:migrate" to execute pending migrations.');
+        }
 
         $outputStyle->newLine(2);
         $outputStyle->success($this->getProperFinalMessage($errored));

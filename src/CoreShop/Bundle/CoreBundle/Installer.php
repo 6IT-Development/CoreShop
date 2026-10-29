@@ -21,6 +21,7 @@ namespace CoreShop\Bundle\CoreBundle;
 use Doctrine\Migrations\Metadata\AvailableMigration;
 use Pimcore\Console\Application;
 use Pimcore\Extension\Bundle\Installer\SettingsStoreAwareInstaller;
+use Pimcore\Model\Tool\SettingsStore;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -63,6 +64,11 @@ class Installer extends SettingsStoreAwareInstaller
         $this->markInstalled();
     }
 
+    public function isSchemaPresent(): bool
+    {
+        return in_array('coreshop_store', $this->dependencyFactory->getConnection()->createSchemaManager()->listTableNames(), true);
+    }
+
     public function install(): void
     {
         /** @psalm-suppress InternalClass, InternalMethod */
@@ -72,6 +78,10 @@ class Installer extends SettingsStoreAwareInstaller
         $options = array_merge($options, ['--no-interaction' => true, '--application-name coreshop']);
         $application->run(new ArrayInput($options));
 
-        parent::install();
+        /**
+         * Do not call parent::install(): it would mark every migration as executed, also on an existing
+         * installation. coreshop:install already marked them on a fresh install.
+         */
+        SettingsStore::set($this->getSettingsStoreInstallationId(), true, SettingsStore::TYPE_BOOLEAN, 'pimcore');
     }
 }

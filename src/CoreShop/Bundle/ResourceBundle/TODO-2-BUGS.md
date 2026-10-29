@@ -204,3 +204,94 @@ Scope and evidence: see the "Scan 2" section in [TODO-1-CRITICAL.md](TODO-1-CRIT
 - **Where:** `DependencyInjection/CoreShopResourceExtension.php:72` (`$container->setParameter('coreshop.resources', [])`); writers: `Extension/AbstractModelExtension.php:42-44`, `:54-56`. Readers: `RegisterResourcesPass`, `DoctrineTargetEntitiesResolverPass`, `CreateDatabaseTablesCommand`, `DropDatabaseTablesCommand`.
 - **Problem:** every extension's `load()` starts from the parameters merged so far and appends to `coreshop.resources`. This extension overwrites the accumulated list with `[]`. In the current setup the ResourceBundle extension loads first (CoreShopCoreBundle registers it as a dependency), and the compiled container has all 50 Doctrine resources in the parameter. A project that registers a resource bundle before `CoreShopResourceBundle` in `config/bundles.php` silently loses those resources from the registry, the target-entity resolution and the table commands, while their services still exist. `coreshop.all.pimcore_classes` / `coreshop.all.stack` are guarded with `hasParameter()` and are not affected.
 - **Fix:** `if (!$container->hasParameter('coreshop.resources')) { $container->setParameter('coreshop.resources', []); }`, like the other two parameters.
+
+---
+
+# Scan 3 (2026-10-29): `EventListener/`, `Form/`, `Pimcore/`, `Routing/`
+
+Scope and evidence: see the "Scan 3" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+---
+
+## Pimcore repositories and object manager
+
+### B-27 — `StackRepository::findBy()` always produces invalid SQL, and `findOneBy()` crashes when nothing matches — (reproduced, `findOneBy`)
+- **Where:** `Pimcore/Repository/StackRepository.php:86-91`, `:93-102`. Services: `coreshop.repository.stack.<name>` (`DependencyInjection/Compiler/StackRepositoryPass.php`), used by `CoreBundle` (`ProductValidationController`, `ProductsReport`, `GiftProductActionProcessor`, `CartCreationCartItemTypeExtension`).
+- **Problem:**
+  - `findBy()` adds `$criteria['variable'] = '"Product","Variant"'`. `normalizeCriteria()` (`Pimcore/PimcoreDaoRepository.php:198-201`) turns that into the condition `variable = ?`. `objects` has no `variable` column, so every `findBy()` / `findOneBy()` on a stack repository fails with `Unknown column 'variable'`. The class filter it was apparently meant to add is already applied by `getList()` (`className IN (…)`).
+  - `findOneBy()` calls `class_implements($instance)` without a null check. When nothing matches, it throws `TypeError: class_implements(): Argument #1 ($object_or_class) must be of type object|string, null given` (reproduced under `strict_types`).
+  - This is latent: the current core callers only use `find()` / `findAll()`.
+- **Fix:** remove the `variable` line (or delegate to `parent::findBy()` unchanged), and add `if (null === $instance) { return null; }` in `findOneBy()`. Also use `$instance instanceof $this->interface` instead of `in_array(…, class_implements())`.
+
+### B-28 — `PimcoreDaoRepository::findBy()` does not follow Doctrine's `findBy()` semantics
+- **Where:** `Pimcore/PimcoreDaoRepository.php:99-153`, `:177-210`. Pimcore: `lib/Model/Listing/AbstractListing.php:189` (`addConditionParam(string $condition, …)`).
+- **Problem:**
+  - An array value (`findBy(['id' => [1, 2]])`, which means `IN` in Doctrine) has no `condition` key, so the array itself becomes the condition → `TypeError` in `addConditionParam(string …)`.
+  - A `null` value becomes `field = ?` with `NULL`, which never matches (Doctrine generates `IS NULL`).
+  - The array key is concatenated into SQL unquoted (`$key . ' = ?'`). No caller passes request-controlled keys today (checked), but the injected `$connection` could quote it (`quoteIdentifier()`).
+  - `findOneBy()` loads **all** matching objects and returns the first. Pass `limit: 1`.
+  - `getList()` (duplicated in `PimcoreRepository.php:46-65`) checks `class_exists($className)` instead of `class_exists($listClass)`, so a model without a `Listing` class fails with `Class "…\Listing" not found` instead of the intended `InvalidArgumentException`.
+- **Fix:** map arrays to `field IN (?)`, `null` to `field IS NULL`, quote the field with `$this->connection->quoteIdentifier()`, set limit 1 in `findOneBy()`, fix the `class_exists()` check, and remove the duplicated `getList()` from `PimcoreRepository`.
+
+### B-29 — `Pimcore\ObjectManager`: new objects are treated as existing ones, and a failed `flush()` replays everything
+- **Where:** `Pimcore/ObjectManager.php:49-78`, `:116-139`, `:174-183` (`getResourceId()`). See also TODO-2 **B-25** (`getRepository()` always throws).
+- **Problem:**
+  - `getResourceId()` falls back to `spl_object_hash()` for objects without an ID. `if ($id)` is therefore always true: new objects go to `modelsToUpdate` (`modelsToInsert` is never filled), and `remove()` of an **unsaved** object schedules `->delete()` on it at `flush()`. That calls Pimcore's delete on an element without an ID — (plausible).
+  - `flush()` clears the queues only after the loop. If one `save()`/`delete()` throws (validation, mandatory field, DB error), every queued delete/save before it already happened, and the next `flush()` runs them **again**. There is no transaction, so a failure part-way through leaves a partial result.
+  - `contains()`, `detach()`, `refresh()`, `getClassMetadata()`, `getMetadataFactory()`, `initializeObject()` throw `InvalidArgumentException('Not implemented')`. Generic code that receives `coreshop.manager.<pimcore model>` as a `Doctrine\Persistence\ObjectManager` (for example `ResourceController::saveAction()`'s `clear()`/`refresh()` pattern from TODO-2 **B-08**) fails with a misleading exception type.
+- **Fix:** use the real ID only (`$object->getId()`), and put objects without an ID in `modelsToInsert`. Ignore `remove()` for unsaved objects. In `flush()`, take the queues into local variables and reset them first (or wrap them in `Db::get()->transactional()`), so a retry does not replay finished work. Throw `\BadMethodCallException` / `\LogicException` for unsupported methods, and implement `contains()` (check the queues) and `refresh()` (`$class::getById($id, ['force' => true])`).
+
+---
+
+## Doctrine listeners
+
+### B-30 — Translation `locale` is mapped as `VARCHAR(5)`, but Pimcore allows longer locales — (plausible)
+- **Where:** `EventListener/ORMTranslatableListener.php:137-144` (`'length' => 5`), unique constraint `:147-162`; the table DDL in `CoreBundle/Migrations/Version20230829163505.php:38` (`locale VARCHAR(5)`). Locales come from `Component/Resource/Translation/Provider/PimcoreTranslationLocaleProvider.php` → `Pimcore\Tool::getValidLanguages()`.
+- **Problem:** Pimcore system languages can be longer than 5 characters (`zh_Hant_TW`, `zh_Hans_CN`, `sr_Latn_RS`, `en_US_POSIX`). With such a language configured, every translatable resource save fails with `Data too long for column 'locale'` (strict SQL mode), or the value is silently truncated. Two languages then truncate to the same value (`zh_Ha`) and collide on the unique `(translatable_id, locale)` constraint, so one language's translations overwrite the other's.
+- **Fix:** map `locale` with `length: 10` (or 20) and add a migration that widens all `*_translation.locale` columns.
+
+### B-31 — `ErrorSerializer` translates the message **template** with the wrong domain: validation errors are shown untranslated — (plausible)
+- **Where:** `Form/Helper/ErrorSerializer.php:39-54`. Symfony: `form/Extension/Validator/ViolationMapper/ViolationMapper.php:213-219` (`new FormError($message, $messageTemplate, …)`, where `$message` is already translated by the validator in the `validators` domain).
+- **Problem:** the serializer ignores `$e->getMessage()`, translates `getMessageTemplate()` with the default `messages` domain (where the Symfony constraint texts do not exist), and then substitutes parameters by hand. Admin users on a non-English locale therefore see English constraint messages. Pluralized messages (`getMessagePluralization()`) lose their plural form (`… character.|… characters.` is shown raw).
+- **Fix:** `$message = $e->getMessage();` and keep the field-name prefix. Drop the manual `str_replace()` loop.
+
+### B-32 — Selection types silently turn an unknown ID into "no value"
+- **Where:** `Form/DataTransformer/PimcoreResourceDataTransformer.php:41-48`; `Form/Type/PimcoreResourceSelectionType.php` (parent `NumberType`). Users: `CustomerBundle/Form/Type/CustomerSelectionType.php`, `OrderBundle/Form/Type/PurchasableSelectionType.php` (admin order creation).
+- **Problem:** `reverseTransform()` returns `$this->repository->find($value)` and so `null` for an ID that does not exist (deleted customer, wrong product ID, typo). There is no `TransformationFailedException`, so the form is valid, and the field is just empty. Compare `PimcoreAssetDataTransformer`, which does throw. The `NumberType` parent also produces a `float` (`12.0`), which only works because the repositories cast to `int`.
+- **Fix:** throw `TransformationFailedException` when `find()` returns `null` for a non-empty value, and use `IntegerType` as the parent.
+
+### B-33 — `ResourceFieldGetter` grid operator throws `TypeError` for resource forward targets and array elements — (reproduced, `method_exists`)
+- **Where:** `Pimcore/GridColumnConfig/ResourceFieldGetter.php:52`, `:64-76`. Interface: `admin-ui-classic-bundle/src/DataObject/GridColumnConfig/ConfigElementInterface.php:30` (`getLabeledValue(array|ElementInterface $element)`).
+- **Problem:**
+  - `method_exists($element, $getter)` with an `array` element (allowed by the signature) throws `TypeError: method_exists(): Argument #1 … array given` under `strict_types` (reproduced).
+  - When `forwardAttribute` returns a CoreShop Doctrine resource (for example `store`, `currency`, `country`, which is exactly what the operator is for), it is passed to the child operator's `getLabeledValue(array|ElementInterface)` → `TypeError`. The grid / export request ends with a 500.
+- **Fix:** guard with `is_object($element)`. For the forward branch, when `$forwardObject` is not an `ElementInterface`, resolve the child's attribute directly on the resource (as the no-children branch does) instead of delegating to the child operator.
+
+---
+
+## Request handling
+
+### B-34 — `BodyListener` reads every request body into memory, on every route — (plausible)
+- **Where:** `EventListener/BodyListener.php:28-50`; registered for **all** requests in `DependencyInjection/CoreShopResourceExtension.php` (`kernel.request`, priority 10).
+- **Problem:**
+  - `$request->getContent()` (`:35`) runs **before** the method / content-type checks, so the full body of every request is copied into a PHP string, including Pimcore WebDAV `PUT` uploads and other raw binary uploads. Large files can hit `memory_limit` even though the listener does nothing with them.
+  - The listener is not limited to the admin. Every frontend, webhook (payment providers, `Payum` notify) and DataHub request with a JSON content type is rewritten. A JSON body that is valid but not an object or array (`true`, `"ok"`, `123`) is rejected with **400** on any route.
+- **Fix:** check method and content type first, and only then read the body. Limit the listener to admin-context requests (`PimcoreContextResolver::CONTEXT_ADMIN`) and the main request. Use `json_decode(..., flags: JSON_THROW_ON_ERROR)` instead of `@`. See TODO-3 **I-38**.
+
+---
+
+## Doctrine ORM 3 / persistence 4
+
+### B-35 — ORM 3 and doctrine/persistence 4 blockers in the listeners and `ObjectManager` — (dependent)
+- **Where:**
+  - `EventListener/ORMMappedSuperClassSubscriber.php:25`, `:41-52`, `:92-116` and `ORMTranslatableListener.php:29`, `:51-53`: `Doctrine\ORM\Mapping\ClassMetadataInfo` (ORM 3 merged it into `ClassMetadata`).
+  - `ORMMappedSuperClassSubscriber.php:83-86`, `:98-101`: association mappings used as arrays (`$value['type']`) and array assignment into `associationMappings`. In ORM 3 these are `AssociationMapping` objects.
+  - `ORMMappedSuperClassSubscriber.php:46`: `LoadClassMetadataEventArgs::getEntityManager()`, which ORM 3 removed. Use `getObjectManager()`.
+  - `ORMTranslatableListener.php:104`: `'cascade' => ['persist', 'merge', 'remove']`. ORM 3 rejects the `merge` cascade. `EntityMerger` (TODO-2 **B-21**) relies on this `merge` cascade on translations.
+  - `Pimcore/ObjectManager.php`: implements `Doctrine\Persistence\ObjectManager` with untyped methods. persistence 3.4.5 (installed) only documents the types in docblocks; persistence 4 declares native return types, so `contains()`, `getClassMetadata()`, `getMetadataFactory()`, `getRepository()` without them become fatal signature errors. `merge()` is no longer part of the interface.
+- **Fix:** switch to `ClassMetadata` and `getObjectManager()`, rebuild the copied mappings through `$metadata->mapOneToMany()` / `mapManyToMany()` instead of array assignment, remove `merge` from the cascade (together with replacing `EntityMerger`, TODO-3 **I-25**), and add native types to `ObjectManager` matching persistence 3.4's docblocks (compatible with both 3 and 4).
+
+### B-36 — `ORMTranslatableListener::hasUniqueConstraint()` fails on constraints declared with `fields` — (plausible)
+- **Where:** `EventListener/ORMTranslatableListener.php:165-178`
+- **Problem:** Doctrine also accepts unique constraints declared with `fields` instead of `columns`. A translation entity that declares its `(translatable, locale)` constraint with `fields` hits `Undefined array key "columns"`, and then `array_diff(null, …)` → `TypeError` during metadata loading. The schema can then not be generated at all.
+- **Fix:** `$constraint['columns'] ?? []` (and map `fields` to column names via `$metadata->getColumnName()`).

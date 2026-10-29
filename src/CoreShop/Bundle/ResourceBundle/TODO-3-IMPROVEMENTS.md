@@ -290,3 +290,96 @@ Scope and evidence: see the "Scan 2" section in [TODO-1-CRITICAL.md](TODO-1-CRIT
 - `ResourceController`: a `pre_save` listener calling `stop()` prevents the flush and returns the listener's message (**B-22**).
 - `EntityMerger` (as long as it exists): merge an entity with a non-merge one-to-many and initialize the collection afterwards (**B-19**). Merge `ProductStoreValues` with changed unit-definition prices (the `StoreValues` regression path).
 - `ValidatorAutoMappingFixPass` removal: compare validator metadata of all CoreShop entities with and without the pass (**I-34**).
+
+---
+
+# Scan 3 (2026-10-29): `EventListener/`, `Form/`, `Pimcore/`, `Routing/`
+
+Scope and evidence: see the "Scan 3" section in [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md).
+
+---
+
+## EventListener
+
+### I-38 — `BodyListener`: use Symfony's payload handling and limit the scope
+- **Where:** `EventListener/BodyListener.php`, registration in `DependencyInjection/CoreShopResourceExtension.php`
+- Symfony 6.3+ has `Request::getPayload()` (it decodes JSON or returns the form bag) and `#[MapRequestPayload]`. Admin controllers can read the body that way, and the listener can go.
+- If it stays: register it with `#[AsEventListener]` or a service definition in YAML instead of building a `Definition` in the extension. Return early for sub-requests and non-admin contexts. `in_array(…, true)`. Read the `Content-Type` header once. Make the class `final`. See TODO-2 **B-34**.
+
+### I-39 — Doctrine listeners: one registration style, cheaper metadata work
+- **Where:** `EventListener/{AbstractDoctrineSubscriber,ORMMappedSuperClassSubscriber,ORMRepositoryClassSubscriber,ORMTranslatableListener}.php`, `Resources/config/services/integrations/{doctrine/orm,translation}.yml`
+- The classes implement `Doctrine\Common\EventSubscriber` (`getSubscribedEvents()`), but are registered as `doctrine.event_listener` with explicit events, so `getSubscribedEvents()` is never used. Drop the interface and use `#[AsDoctrineListener(event: Events::loadClassMetadata, priority: 8192)]`.
+- Registration is inconsistent: `orm.yml` listeners have no `connection` (all connections), `translation.yml` uses `connection: default`. Resources on a second entity manager (`options.object_manager`) therefore get repository classes and superclass mappings, but no translation mapping.
+- `ORMMappedSuperClassSubscriber::setAssociationMappings()` calls `$metadataDriver->getAllClassNames()` (a scan of all mapping files) for **every parent class of every entity** while metadata loads, and builds a throw-away `ClassMetadata` per parent. Cache the class-name list once per request (or once per instance). This only costs time on metadata cache warmup, but it is the slowest part of `cache:clear` for large projects.
+- `AbstractDoctrineSubscriber` creates its own `RuntimeReflectionService`. Use the one from the event's entity manager (`$em->getMetadataFactory()` / `getReflectionService()` in ORM 2.x), so a custom reflection service stays in effect.
+- `ORMMappedSuperClassSubscriber` and `ResourceMappingDriverChain` (TODO-3 **I-27**) both handle "resource mapped superclass" mapping. Keep one.
+
+### I-40 — `ORMTranslatableListener`: configurable column and clearer constraint handling
+- **Where:** `EventListener/ORMTranslatableListener.php`
+- Make the `locale` length a constant or parameter (TODO-2 **B-30**).
+- The generated unique-constraint name `<table>_uniq_trans` differs from the migration's `translatable_id_locale` (`CoreBundle/Migrations/Version20230829163505.php:38`). `doctrine:schema:validate` / `diff` then reports a rename for the tables created by that migration. Align the name, or let the listener detect the existing index by columns only (it already does) and keep its name.
+- `mapTranslatable()` fetches `<alias>_translation` with `get()`, which throws if a resource declares `translation` but the translation resource was not registered. Catch it and raise a clear configuration exception.
+- `postLoad` runs the locale assigner for every translatable entity load. Document that the locale comes from the `LocaleContextInterface` (in CLI without a request this is the default locale).
+
+---
+
+## Form
+
+### I-41 — Form types: lazy choices, lazy locales, documented defaults
+- **Where:** `Form/Type/*.php`, `Form/Helper/ErrorSerializer.php`
+- `PimcoreClassChoiceType::configureOptions()` loads `ClassDefinition\Listing` every time the options are resolved, even when `choices` is overridden. Use `'choice_loader' => ChoiceList::lazy($this, fn () => …)`.
+- `ResourceTranslationsType` reads the locales in its **constructor**. In long-running processes (Messenger workers, FrankenPHP/RoadRunner workers) a language added in Pimcore settings is not picked up until restart. Read them in `configureOptions()` closures (`'entries' => fn () => …`, normalizer).
+- `ResourceTranslationsType` SUBMIT listener: guard `null === $translations` before `foreach`.
+- `AbstractResourceType` sets `allow_extra_fields: true` and `csrf_protection: false` for every resource form. Add a comment that CSRF is covered by Pimcore's admin CSRF header (`CsrfProtectionListener`), and consider `allow_extra_fields: false` for admin forms so typos in JS field names are reported instead of silently ignored.
+- `ErrorSerializer`: `protected TranslatorInterface $trans` in a `final` class → `private readonly`. After TODO-2 **B-31**, the translator is no longer needed at all.
+- The transformers: declare `@implements DataTransformerInterface<Asset, int>` (Symfony 7 templates), make them `final`, and use `int` instead of `%d` with a `mixed` value in the asset exception message.
+- `PimcoreResourceSelectionType`: `protected RepositoryInterface $repository` → `private readonly` (the subclasses only pass it to the parent constructor). Use `IntegerType` as the parent (TODO-2 **B-32**).
+
+---
+
+## Pimcore
+
+### I-42 — Merge `PimcoreRepository` / `PimcoreDaoRepository` duplication and add types
+- **Where:** `Pimcore/PimcoreRepository.php`, `Pimcore/PimcoreDaoRepository.php`, `Pimcore/Repository/StackRepository.php`
+- `getList()` exists twice with identical code (`PimcoreDaoRepository.php:52-71`, `PimcoreRepository.php:46-65`). Keep one.
+- `forceFind()` casts to `int` in both classes. Keep it in the base.
+- Untyped methods (`getClassName()`, `getList()`, `findAll()`, `find($id)`, `forceFind($id, …)`, `findBy(…, $limit, $offset)`, `normalizeCriteria($criteria)`) → native types matching `PimcoreRepositoryInterface` / Doctrine `ObjectRepository`.
+- `add()` / `remove()` throw a plain `\Exception` with `__CLASS__` repeated in `__METHOD__` (`"…PimcoreDaoRepository:…PimcoreDaoRepository::add not supported"`). Use `\BadMethodCallException(sprintf('%s() is not supported', __METHOD__))`.
+- `StackRepository` wraps class names in double quotes (`'"' . $name . '"'`) inside SQL. That breaks with the `ANSI_QUOTES` SQL mode. Use `$this->connection->quote()` or a parameterised `IN (?)`.
+- `StackRepository::getClassIds()` calls `$stackClass::classId()` per call. Cache it.
+- `normalizeCriteria()` docblock describes `conditionVariables`, but the code reads `variable`. Fix the doc.
+
+### I-43 — `Pimcore\ObjectManager`: smaller and honest
+- **Where:** `Pimcore/ObjectManager.php`
+- `remove()` repeats the `Concrete` class-name lookup that `getResourceClassName()` already does (`:69-73`).
+- `find($className, $id)` calls `$className::getById()` without checking the class. Add `Assert::methodExists()` or type `class-string<Concrete>`.
+- Replace the many "Not implemented" methods with a clear `\BadMethodCallException` (TODO-2 **B-29**) and list the supported subset in the class docblock.
+- Remove the `@psalm-suppress InvalidReturnType` / `InvalidReturnStatement` by giving `find()` a correct generic return type.
+
+### I-44 — Rename `Pimcore\CacheMarshallerInterface`
+- **Where:** `Pimcore/CacheMarshallerInterface.php`; Pimcore has `Pimcore\Cache\Core\CacheMarshallerInterface` with a different contract (`marshalForCache(): mixed`, no arguments)
+- Two interfaces with the same short name and different signatures, both used in the cache code path (`CoreCacheHandler::storeCacheData()` and `DeepCopySubscriber`), are easy to mix up in `use` statements. Rename the CoreShop one (for example `FieldDefinitionCacheMarshallerInterface`) and keep a deprecated alias.
+
+### I-45 — `ResourceFieldGetter`: readability
+- **Where:** `Pimcore/GridColumnConfig/ResourceFieldGetter.php`
+- Only `$children[0]` is used. Document that, or reject more than one child in the JS config.
+- Duplicate "call getter if it exists, map resource to ID" logic in three places. Extract a private `readAttribute(object $o): mixed`.
+- `$result->label = $this->label` and the `stdClass` result: use Pimcore's `ResultContainer` (the interface already allows it).
+
+---
+
+## Routing
+
+### I-46 — `ResourceLoader`: use the configured admin prefix and remove dead options
+- **Where:** `Routing/ResourceLoader.php`, `Routing/Configuration.php`
+- `$rootPath = '/admin/' . …` is hard-coded, while the bundle's own routes use `%coreshop.admin.route.base%` (`/admin/coreshop`). Resource routes therefore do not follow a changed admin prefix, and could end up outside the admin firewall pattern. Inject the parameter.
+- `Configuration` defines `path` and `identifier`, but the loader ignores them (the code that used them is commented out, `:92-93`). `getRouteName()` reads `$configuration['section']`, which the config tree does not allow, so `processConfiguration()` would reject it. Remove all three, or implement them.
+- `alias` is not `isRequired()`. Without it, `$this->modelRegistry->get($configuration['alias'])` gets `null` → `TypeError` while routes are loading. Make it required.
+- `no_default_routes` is a `scalarNode` with `defaultFalse()` → `booleanNode`.
+- `additional_routes` entries: `path` and `action` are optional. A missing `action` produces `_controller: …::Action`, and a missing `methods` produces a route that accepts every method. Make `path`/`action` required and default `methods` to `['GET']`.
+- `->prototype('scalar')` → `->scalarPrototype()`.
+- Add `requirements` support (and pass it through) so additional routes with placeholders can be constrained.
+
+### I-47 — `RouteFactory`: types
+- **Where:** `Routing/RouteFactory.php`, `Routing/RouteFactoryInterface.php`
+- The interface declares `string|array $schemes` / `$methods`, but `$path`, `$host`, `$condition` are untyped, and the implementation drops the types of `$schemes` / `$methods` entirely. Use `string $path, …, ?string $host = '', string|array $schemes = [], string|array $methods = [], ?string $condition = ''`, matching `Symfony\Component\Routing\Route::__construct()`. Remove the parameter docblocks that only repeat the types.

@@ -77,6 +77,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - In `CartBlamerListener`, do not take over a cart that belongs to another registered customer. When the customer changes, reset the addresses that belong to the previous customer.
 
 ### C-07 — (dependent) Guest checkout with someone else's e-mail overwrites that person's existing guest customer
+- **Status:** fixed — the `findGuestByEmail()` lookup is removed from `GuestRegistrationType`. Only the guest already attached to the cart is reused, otherwise a new guest is created. `setDataLocked(false)` stays because the listener still swaps in a new customer. The `$customerRepository` constructor argument is kept for BC but no longer used. CustomerBundle C-02 is covered by this change.
 - **Where:** `Form/Type/GuestRegistrationType.php:90-117` (`PRE_SUBMIT` listener with `findGuestByEmail()` and `$form->setData($customer)`, and `setDataLocked(false)` at `:117`). Used by `Checkout/Step/CustomerCheckoutStep.php:61-70,88-92`, which calls `CustomerManager::persistCustomer()` on the result. `Form/DataMapper/CustomerDataMapper.php:62-67` replaces the address list.
 - **Problem:** this is already described as **CustomerBundle `TODO-1-CRITICAL.md` C-02**; it is not repeated here. Two refinements from this slice:
   1. `setDataLocked(false)` is the reason the swap works here but not in the registration form (see TODO-2 **B-06**). The data lock was removed on purpose.

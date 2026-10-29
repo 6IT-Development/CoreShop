@@ -97,18 +97,11 @@ class GuestRegistrationType extends AbstractResourceType
                 }
 
                 /**
-                 * @var CustomerInterface $customer
+                 * Never look up an existing guest by the submitted e-mail address: a typed address is
+                 * no proof of ownership. Only the guest already attached to the cart is reused,
+                 * otherwise a new guest customer gets created.
                  */
-                $customer = $this->customerRepository->findGuestByEmail($data['email']['first']);
-
-                // assign existing customer or create a new one
-                if (null !== $customer && null === $customer->getUser()) {
-                    $form->setData($customer);
-
-                    return;
-                }
-
-                if (null === $formCustomer || null !== $formCustomer->getUser()) {
+                if (!$formCustomer instanceof CustomerInterface || null !== $formCustomer->getUser()) {
                     $customer = $this->customerFactory->createNew();
                     $customer->setEmail($data['email']['first']);
                     $form->setData($customer);

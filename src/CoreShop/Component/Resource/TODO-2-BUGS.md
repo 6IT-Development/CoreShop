@@ -40,7 +40,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
   - Output fields check `array_key_exists($doctrineClass, $this->classMap)` (`DoctrineProvider.php:208`), but the input closure (`:268-294`, lookups at `:272`, `:284`) and the query-filter closure (`:305-320`, `:309`) do **not** → `getTypeName()` (`:383-388`) reads an undefined key (warning, `null`) → `getInputType(null)` → `'type' => null` / `Type::listOf(null)`.
   - `:252-261`: parent interface `getType($parentName . '__Interface')` is `null` when the child is initialized before the parent (order of `$this->classMap`) or when the parent is not exposed.
 - **Effect:** the `__Input` / `__QueryFilter` types (used by `getGraphQlQuery()`) fail as soon as an exposed entity has an association to a non-exposed one (e.g. a project disables one resource — compare TODO-1 **CC-03**).
-- **Fix:** one `isExposed(string $class): bool` helper, used by all three closures; build interfaces lazily (`'interfaces' => fn () => ...`) so order does not matter; make `getTypeName()` throw a descriptive exception instead of returning `null` with a warning (TODO-3 **CI-17**).
+- **Fix:** one `isExposed(string $class): bool` helper, used by all three closures; build interfaces lazily (`'interfaces' => fn () => ...`) so order does not matter; make `getTypeName()` throw a descriptive exception instead of returning `null` with a warning (TODO-3 **CI-14**).
 
 ### CB-06 — `resolveType` of inheritance interfaces calls `getDataValue()` on a Doctrine entity — (verified) (plausible trigger: no CoreShop mapping uses inheritance today)
 - **Where:** `DoctrineProvider.php:236-242` expects a `GraphEntity` (`DataHub/GraphEntity.php:45-48`), but the list resolver returns plain entities from `$query->getResult()` (`:575`). `GraphHydrator`, the only producer of `GraphEntity`, is not used anywhere.
@@ -140,6 +140,6 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Exceptions
 
 ### CB-22 — `ImplementedByPimcoreException` is returned instead of thrown in a Behat model — (verified) (dependent)
-- **Where:** `Behat/Model/Index/TestIndexFields.php:46,51` (`return new ImplementedByPimcoreException(...)`); the other 17 callers throw it.
+- **Where:** `Behat/Model/Index/TestIndexFields.php:46,51` (`return new ImplementedByPimcoreException(...)`); all other call sites (`Behat/Model/Index/TestIndex.php`, `Behat/Model/Lock/OptimisticLock.php`, the component models) throw it.
 - **Effect:** the method returns an exception object where callers expect a value → misleading `TypeError` (or silent wrong value) in Behat runs.
 - **Fix (dependent):** `throw`. Component side: TODO-3 **CI-11** (`never`-returning named constructor makes the mistake impossible to type-check through).

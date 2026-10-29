@@ -22,6 +22,7 @@ use CoreShop\Bundle\AddressBundle\CoreShopAddressBundle;
 use CoreShop\Bundle\ClassDefinitionPatchBundle\CoreShopClassDefinitionPatchBundle;
 use CoreShop\Bundle\ConfigurationBundle\CoreShopConfigurationBundle;
 use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterIndexProductExtensionPass;
+use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterLogoutListenerPass;
 use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterPortletsPass;
 use CoreShop\Bundle\CoreBundle\DependencyInjection\Compiler\RegisterReportsPass;
 use CoreShop\Bundle\CurrencyBundle\CoreShopCurrencyBundle;
@@ -68,6 +69,7 @@ final class CoreShopCoreBundle extends AbstractResourceBundle
         $container->addCompilerPass(new RegisterIndexProductExtensionPass());
         $container->addCompilerPass(new RegisterReportsPass());
         $container->addCompilerPass(new RegisterPortletsPass());
+        $container->addCompilerPass(new RegisterLogoutListenerPass());
     }
 
     public static function registerDependentBundles(BundleCollection $collection): void

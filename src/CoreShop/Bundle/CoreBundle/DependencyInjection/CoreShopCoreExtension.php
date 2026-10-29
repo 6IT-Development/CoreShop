@@ -76,6 +76,7 @@ final class CoreShopCoreExtension extends AbstractModelExtension implements Prep
         }
 
         $container->setParameter('coreshop.after_logout_redirect_route', $configs['after_logout_redirect_route']);
+        $container->setParameter('coreshop.security.firewall_name', $configs['security']['firewall_name']);
 
         $bundles = $container->getParameter('kernel.bundles');
 

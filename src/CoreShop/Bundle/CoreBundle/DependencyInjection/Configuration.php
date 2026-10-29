@@ -40,6 +40,12 @@ final class Configuration implements ConfigurationInterface
                 ->scalarNode('checkout_manager_factory')->cannotBeEmpty()->end()
                 ->scalarNode('after_logout_redirect_route')->defaultValue('coreshop_index')->cannotBeEmpty()->end()
                 ->scalarNode('autoconfigure_with_attributes')->defaultFalse()->end()
+                ->arrayNode('security')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('firewall_name')->defaultValue('coreshop_frontend')->cannotBeEmpty()->end()
+                    ->end()
+                ->end()
             ->end()
         ;
         $this->addModelsSection($rootNode);

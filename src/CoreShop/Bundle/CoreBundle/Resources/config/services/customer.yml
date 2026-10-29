@@ -18,6 +18,7 @@ services:
         arguments:
             - '@security.helper'
             - '@request_stack'
+            - '%coreshop.security.firewall_name%'
 
     CoreShop\Bundle\CoreBundle\EventListener\CustomerNewsletterConfirmListener:
         arguments:

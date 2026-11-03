@@ -114,6 +114,9 @@ class CartsReport implements ReportInterface, PortletInterface
         return $data;
     }
 
+    /**
+     * Chart report without a paginator, so there is no total to report.
+     */
     public function getTotal(): int
     {
         return $this->totalRecords;

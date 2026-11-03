@@ -91,7 +91,7 @@ class PaymentProvidersReport implements ReportInterface
             }
 
             $data[] = [
-                'provider' => $paymentProvider instanceof PaymentProviderInterface ? $paymentProvider->getTitle() : 'unkown',
+                'provider' => $paymentProvider instanceof PaymentProviderInterface ? $paymentProvider->getTitle() : 'unknown',
                 'data' => (float) $result['percentage'],
             ];
         }
@@ -99,6 +99,9 @@ class PaymentProvidersReport implements ReportInterface
         return $data;
     }
 
+    /**
+     * Chart report without a paginator, so there is no total to report.
+     */
     public function getTotal(): int
     {
         return $this->totalRecords;

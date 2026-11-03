@@ -134,6 +134,9 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
     /**
      * {@inheritd}
      */
+    /**
+     * Chart report without a paginator, so there is no total to report.
+     */
     public function getTotal(): int
     {
         return $this->totalRecords;

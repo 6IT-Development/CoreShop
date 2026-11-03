@@ -454,6 +454,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add `ORDER BY orderCount DESC`; group/select consistent column names.
 
 ### B-63 — `PaymentProvidersReport` renders provider title as literal 'unkown' typo and never sets `totalRecords`
+- **Status:** fixed — the label reads `unknown`, and `getTotal()` of the four chart reports documents that they have no total.
 - **Where:** `PaymentProvidersReport.php:97` (`'unkown'`); `CarriersReport.php`, `PaymentProvidersReport.php`, `CartsReport.php`, `SalesReport.php` all leave `$totalRecords = 0` while `getTotal()` returns it.
 - **Problem:** Chart reports never populate `totalRecords`; harmless for charts (no paginator) but `getTotal()` is part of `ReportInterface` and returns a misleading 0. The user-visible 'unkown' is a typo.
 - **Fix:** fix the spelling; document that chart reports have no total, or compute it.

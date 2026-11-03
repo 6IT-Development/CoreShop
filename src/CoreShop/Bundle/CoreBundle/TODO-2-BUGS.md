@@ -164,6 +164,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** act only on `published: true → false` (or for unavailability in general). Use `isset($this->productIdsToCheck[$id])`. Implement `ResetInterface`, and clear the entry in a `finally` / on the failure event.
 
 ### B-23 — `RecursiveVariantCacheInvalidationEventListener` clears the payment-rule tag for shipping rules
+- **Status:** fixed — shipping rules now clear `SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG`. No `post_delete` subscription was added: a deleted rule is never evaluated again, so its cache entries are not read. The `match` stays in TODO-3 **I-26**. Not run against a cache.
 - **Where:** `EventListener/RecursiveVariantCacheInvalidationEventListener.php:67-71`; tag constant `Component/Core/Shipping/Rule/Condition/ProductsConditionChecker.php:33`.
 - **Problem:** for `ShippingRuleInterface` it calls `Cache::clearTag(PaymentRuleProductsConditionChecker::PAYMENT_PROVIDER_RULE_RECURSIVE_VARIANT_CACHE_TAG)`. The shipping checker caches under `cs_shipping_rule_recursive_variant`, which is never cleared. After editing a shipping rule's product list (with "include variants"), the old product set stays cached until the Pimcore cache expires or is cleared. Carriers stay wrongly available or unavailable.
 - **Fix:** use `ShippingProductsConditionChecker::SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG`. Also subscribe to `*.post_delete`, and write the dispatch as a `match` (TODO-3 **I-26**).

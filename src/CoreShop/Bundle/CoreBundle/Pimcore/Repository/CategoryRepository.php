@@ -66,7 +66,7 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
             SELECT oo_id as id FROM (
                 SELECT CONCAT(path, `key`) as realFullPath FROM objects WHERE id IN (:categories)
             ) as categories
-            INNER JOIN ' . $dao->getTableName() . " children ON children.path LIKE CONCAT(categories.realFullPath, '/%')
+            INNER JOIN ' . $dao->getTableName() . " children ON LEFT(children.path, CHAR_LENGTH(categories.realFullPath) + 1) = CONCAT(categories.realFullPath, '/')
             WHERE children.stores LIKE :store
         ";
 
@@ -105,7 +105,7 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
             ->from($dao->getTableName())
             ->where('path LIKE :path')
             ->andWhere('stores LIKE :stores')
-            ->setParameter('path', $category->getRealFullPath() . '/%')
+            ->setParameter('path', addcslashes($category->getRealFullPath(), '%_\\') . '/%')
             ->setParameter('stores', '%,' . $store->getId() . ',%')
         ;
 

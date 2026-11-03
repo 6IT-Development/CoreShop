@@ -51,7 +51,7 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
         $list->setObjectTypes([AbstractObject::OBJECT_TYPE_VARIANT]);
 
         if ($recursive) {
-            $list->setCondition('path LIKE ?', [$product->getRealFullPath() . '/%']);
+            $list->setCondition('path LIKE ?', [addcslashes($product->getRealFullPath(), '%_\\') . '/%']);
         } else {
             $list->setCondition('parentId = ?', [$product->getId()]);
         }
@@ -72,7 +72,7 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
             SELECT oo_id as id FROM (
                 SELECT CONCAT(path, `key`) as realFullPath FROM objects WHERE id IN (:products)
             ) as products
-            INNER JOIN ' . $dao->getTableName() . " variants ON variants.path LIKE CONCAT(products.realFullPath, '/%')
+            INNER JOIN ' . $dao->getTableName() . " variants ON LEFT(variants.path, CHAR_LENGTH(products.realFullPath) + 1) = CONCAT(products.realFullPath, '/')
             WHERE variants.stores LIKE :store
         ";
 
@@ -117,7 +117,7 @@ class ProductRepository extends BaseProductRepository implements ProductReposito
             ->where('path LIKE :path')
             ->andWhere('stores LIKE :stores')
             ->andWhere('type = :variant')
-            ->setParameter('path', $product->getRealFullPath() . '/%')
+            ->setParameter('path', addcslashes($product->getRealFullPath(), '%_\\') . '/%')
             ->setParameter('stores', '%,' . $store->getId() . ',%')
             ->setParameter('variant', 'variant')
         ;

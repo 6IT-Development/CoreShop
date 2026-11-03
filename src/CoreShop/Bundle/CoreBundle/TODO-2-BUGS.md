@@ -313,6 +313,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add `WHERE variants.stores LIKE :store` (rename the alias to `children`), as in the product variant.
 
 ### B-42 — Path prefix queries use unescaped `LIKE` patterns; `_` and `%` in object keys match unrelated trees
+- **Status:** fixed — bound `LIKE` patterns are escaped with `addcslashes()`. The two joins, where the prefix is a column, compare `LEFT(path, n) = prefix` instead. That comparison cannot use an index on `path`. Not run against a DB.
 - **Where:** `Pimcore/Repository/ProductRepository.php:54,75,117-120`, `Pimcore/Repository/CategoryRepository.php:69,104-106`.
 - **Problem:** `path LIKE '<fullPath>/%'` treats `_` in the parent's key as a wildcard. `/products/shirt_1/%` also matches `/products/shirtX1/…`. Pimcore keys commonly contain `_`. Price rule conditions "product incl. variants" / "category incl. children" can then match foreign products.
 - **(plausible)**

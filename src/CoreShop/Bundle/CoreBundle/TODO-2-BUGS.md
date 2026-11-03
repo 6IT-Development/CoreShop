@@ -248,6 +248,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** delete the block from `form.yml:95-97`.
 
 ### B-35 — Block-prefix collisions between rule forms
+- **Status:** fixed — the payment types now use `coreshop_payment_provider_rule_action_addition_amount` / `..._discount_amount`, and `StoreOrderMailConfigurationType` uses `coreshop_notification_rule_action_store_order_mail`. Nothing in this repo references the old prefixes, but a project form theme that targets them for these types must be renamed.
 - **Where:** `Form/Type/Payment/Rule/Action/AdditionAmountActionConfigurationType.php:73-76` returns `coreshop_shipping_rule_action_addition_amount`, and `Payment/.../DiscountAmountActionConfigurationType.php:73-76` returns `coreshop_shipping_rule_action_discount_amount`. Both are identical to the Shipping types. `Form/Type/Notification/Action/StoreOrderMailConfigurationType.php:48-51` returns `coreshop_notification_rule_action_store_mail`, the same as `StoreMailConfigurationType.php:46-49`.
 - **Problem:** form-theme blocks, default form names and the profiler cannot tell the types apart, and a theme override for one changes the other. This is the same class of issue as CustomerBundle `TODO-2-BUGS.md` B-15.
 - **Fix:** `coreshop_payment_provider_rule_action_addition_amount` / `..._discount_amount` and `coreshop_notification_rule_action_store_order_mail`.

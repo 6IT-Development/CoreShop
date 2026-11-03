@@ -47,6 +47,6 @@ class StoreOrderMailConfigurationType extends AbstractType
 
     public function getBlockPrefix(): string
     {
-        return 'coreshop_notification_rule_action_store_mail';
+        return 'coreshop_notification_rule_action_store_order_mail';
     }
 }

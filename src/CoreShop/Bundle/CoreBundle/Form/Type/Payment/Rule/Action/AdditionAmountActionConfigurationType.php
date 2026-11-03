@@ -72,6 +72,6 @@ class AdditionAmountActionConfigurationType extends AbstractType
 
     public function getBlockPrefix(): string
     {
-        return 'coreshop_shipping_rule_action_addition_amount';
+        return 'coreshop_payment_provider_rule_action_addition_amount';
     }
 }

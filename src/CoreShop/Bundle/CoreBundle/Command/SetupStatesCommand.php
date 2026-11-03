@@ -87,8 +87,10 @@ EOT
 
         $createdStates = 0;
         $skippedStates = 0;
+        $invalidStates = 0;
         $countriesProcessed = 0;
         $activatedCountries = 0;
+        $failedCountries = 0;
 
         foreach ($countryCodes as $countryCode) {
             $io->section(sprintf('Processing country: %s', $countryCode));
@@ -111,71 +113,124 @@ EOT
             }
 
             // Activate country if requested
+            $activated = false;
             if ($activateCountry && !$country->getActive()) {
                 $country->setActive(true);
                 $this->entityManager->persist($country);
-                $activatedCountries++;
-                $io->writeln(sprintf('  <comment>Activated country: %s</comment>', $countryCode));
+                $activated = true;
             }
 
             // Get divisions (states/regions)
             $divisions = $rinvexCountry->getDivisions();
 
+            $created = 0;
+            $skipped = 0;
+
             if (!is_array($divisions) || empty($divisions)) {
                 $io->writeln(sprintf('  <comment>No divisions/states found for %s</comment>', $countryCode));
-                $countriesProcessed++;
+            } else {
+                foreach ($divisions as $isoCode => $division) {
+                    if (!is_array($division) || !is_string($division['name'] ?? null) || '' === $division['name']) {
+                        continue;
+                    }
+
+                    // some division files are lists, their keys are no ISO codes
+                    if (!is_string($isoCode)) {
+                        $invalidStates++;
+                        $io->writeln(sprintf('  <comment>Skipping state without ISO code: %s</comment>', $division['name']));
+
+                        continue;
+                    }
+
+                    // Rinvex prefixes some codes with the country (NO-01), coreshop_state.isoCode holds 4 characters
+                    if (str_starts_with($isoCode, $countryCode . '-')) {
+                        $isoCode = substr($isoCode, strlen($countryCode) + 1);
+                    }
+
+                    if ('' === $isoCode || strlen($isoCode) > 4) {
+                        $invalidStates++;
+                        $io->writeln(sprintf('  <comment>Skipping state with invalid ISO code: %s (%s)</comment>', $division['name'], $isoCode));
+
+                        continue;
+                    }
+
+                    // Check if state already exists
+                    $existingState = $this->stateRepository->findOneBy([
+                        'isoCode' => $isoCode,
+                        'country' => $country,
+                    ]);
+
+                    if ($existingState !== null) {
+                        $skipped++;
+                        $io->writeln(sprintf('  <comment>Skipping existing state: %s (%s)</comment>', $division['name'], $isoCode), OutputInterface::VERBOSITY_VERBOSE);
+
+                        continue;
+                    }
+
+                    /**
+                     * @var StateInterface $state
+                     */
+                    $state = $this->stateFactory->createNew();
+
+                    foreach ($languages as $lang) {
+                        $state->setName($division['name'], $lang);
+                    }
+
+                    $state->setIsoCode($isoCode);
+                    $state->setCountry($country);
+                    $state->setActive(true);
+
+                    $this->entityManager->persist($state);
+                    $created++;
+
+                    $io->writeln(sprintf('  <info>Created state: %s (%s)</info>', $division['name'], $isoCode), OutputInterface::VERBOSITY_VERBOSE);
+                }
+            }
+
+            // flush per country, so one failing country does not lose the others
+            try {
+                $this->entityManager->flush();
+            } catch (\Exception $e) {
+                $failedCountries++;
+                $io->error(sprintf('States of country "%s" could not be saved: %s', $countryCode, $e->getMessage()));
+
+                // a failed flush closes the entity manager
+                if (!$this->entityManager->isOpen()) {
+                    break;
+                }
+
+                $this->entityManager->clear();
 
                 continue;
             }
 
-            foreach ($divisions as $isoCode => $division) {
-                if (!$division['name']) {
-                    continue;
-                }
+            $this->entityManager->clear();
 
-                // Check if state already exists
-                $existingState = $this->stateRepository->findOneBy([
-                    'isoCode' => $isoCode,
-                    'country' => $country,
-                ]);
-
-                if ($existingState !== null) {
-                    $skippedStates++;
-                    $io->writeln(sprintf('  <comment>Skipping existing state: %s (%s)</comment>', $division['name'], $isoCode), OutputInterface::VERBOSITY_VERBOSE);
-
-                    continue;
-                }
-
-                /**
-                 * @var StateInterface $state
-                 */
-                $state = $this->stateFactory->createNew();
-
-                foreach ($languages as $lang) {
-                    $state->setName($division['name'], $lang);
-                }
-
-                $state->setIsoCode($isoCode);
-                $state->setCountry($country);
-                $state->setActive(true);
-
-                $this->entityManager->persist($state);
-                $createdStates++;
-
-                $io->writeln(sprintf('  <info>Created state: %s (%s)</info>', $division['name'], $isoCode), OutputInterface::VERBOSITY_VERBOSE);
+            if ($activated) {
+                $activatedCountries++;
+                $io->writeln(sprintf('  <comment>Activated country: %s</comment>', $countryCode));
             }
 
+            $createdStates += $created;
+            $skippedStates += $skipped;
             $countriesProcessed++;
         }
 
-        $this->entityManager->flush();
-
-        $io->success([
+        $summary = [
             sprintf('Countries processed: %d', $countriesProcessed),
             sprintf('States created: %d', $createdStates),
             sprintf('States skipped (already exist): %d', $skippedStates),
+            sprintf('States skipped (invalid ISO code): %d', $invalidStates),
             sprintf('Countries activated: %d', $activatedCountries),
-        ]);
+        ];
+
+        if ($failedCountries > 0 || $countriesProcessed === 0) {
+            $io->error(array_merge($summary, [sprintf('Countries failed: %d', $failedCountries)]));
+
+            return Command::FAILURE;
+        }
+
+        $io->success($summary);
 
         return Command::SUCCESS;
     }

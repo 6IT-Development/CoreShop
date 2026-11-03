@@ -258,6 +258,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
         // load the persisted values of all stores first, otherwise saving would delete the values of every other store
         $code .= "\t" . '$this->' . $key . ' = $this->getClass()->getFieldDefinition("' . $key . '")->preGetData($this);' . "\n";
         $code .= "\t" . '$this->' . $key . '[$store->getId()] = $' . $key . ';' . "\n";
+        $code .= "\t" . '$this->markFieldDirty("' . $key . '", true);' . "\n";
         $code .= "\t" . '$this->' . $key . ' = ' . '$this->getClass()->getFieldDefinition("' . $key . '")->preSetData($this, $this->' . $key . ');' . "\n";
         $code .= "\t" . 'return $this;' . "\n";
         $code .= "}\n\n";
@@ -275,6 +276,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
         $code .= '*/' . "\n";
         $code .= 'public function set' . ucfirst($key) . ' (array $' . $key . '): self {' . "\n";
         $code .= "\t" . '$this->' . $key . ' = $' . $key . ';' . "\n";
+        $code .= "\t" . '$this->markFieldDirty("' . $key . '", true);' . "\n";
         $code .= "\t" . '$this->' . $key . ' = ' . '$this->getClass()->getFieldDefinition("' . $key . '")->preSetData($this, $this->' . $key . ');' . "\n";
         $code .= "\t" . 'return $this;' . "\n";
         $code .= "}\n\n";

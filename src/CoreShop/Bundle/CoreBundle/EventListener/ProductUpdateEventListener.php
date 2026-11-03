@@ -21,9 +21,12 @@ namespace CoreShop\Bundle\CoreBundle\EventListener;
 use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
 use CoreShop\Component\Order\Model\PurchasableInterface;
 use Pimcore\Event\Model\DataObjectEvent;
+use Pimcore\Model\Element\DirtyIndicatorInterface;
 
 final class ProductUpdateEventListener
 {
+    private const STOCK_FIELDS = ['onHand', 'onHold'];
+
     public function __construct(
         private ConfigurationServiceInterface $configurationService,
     ) {
@@ -37,6 +40,25 @@ final class ProductUpdateEventListener
             return;
         }
 
+        if ($this->isStockOnlyUpdate($object)) {
+            return;
+        }
+
         $this->configurationService->set('SYSTEM.PRICE_RULE.UPDATE', time());
+    }
+
+    /**
+     * Inventory updates run for every order and cannot change a price. Fields that do not
+     * report changes are not in the dirty map, so a save without dirty fields still counts.
+     */
+    private function isStockOnlyUpdate(object $object): bool
+    {
+        if (!$object instanceof DirtyIndicatorInterface) {
+            return false;
+        }
+
+        $dirtyFields = $object->getDirtyFields();
+
+        return $dirtyFields !== [] && array_diff($dirtyFields, self::STOCK_FIELDS) === [];
     }
 }

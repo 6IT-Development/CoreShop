@@ -24,6 +24,8 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
 use Pimcore\Model\Document;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 
@@ -34,6 +36,7 @@ final class NotificationRulesFixture extends Fixture implements FixtureGroupInte
         private KernelInterface $kernel,
         private NotificationRuleRepositoryInterface $notificationRuleRepository,
         private FormFactoryInterface $formFactory,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -51,51 +54,64 @@ final class NotificationRulesFixture extends Fixture implements FixtureGroupInte
 
         $totalExistingRules = count($this->notificationRuleRepository->findAll());
 
-        if (file_exists($jsonFile)) {
-            $json = file_get_contents($jsonFile);
+        if (!file_exists($jsonFile)) {
+            return;
+        }
 
-            try {
-                $json = json_decode($json, true);
-                $totalImported = 0;
+        $rules = json_decode(file_get_contents($jsonFile), true, 512, \JSON_THROW_ON_ERROR);
+        $totalImported = 0;
 
-                foreach ($json as $rule) {
-                    try {
-                        $existingRules = $this->notificationRuleRepository->findBy(['name' => $rule['name']]);
+        foreach ($rules as $rule) {
+            $existingRules = $this->notificationRuleRepository->findBy(['name' => $rule['name']]);
 
-                        if (count($existingRules) > 0) {
-                            continue;
-                        }
-
-                        foreach ($rule['actions'] as &$action) {
-                            foreach ($action['configuration']['mails'] as &$mail) {
-                                $document = Document::getByPath('/' . $mail);
-
-                                if ($document instanceof Document\Email) {
-                                    $mail = $document->getId();
-                                } else {
-                                    $mail = null;
-                                }
-                            }
-                        }
-
-                        $form = $this->formFactory->createNamed('', NotificationRuleType::class);
-                        $form->submit($rule);
-
-                        $notificationRule = $form->getData();
-                        $notificationRule->setSort($totalExistingRules + $totalImported + 1);
-
-                        $manager->persist($notificationRule);
-
-                        ++$totalImported;
-                    } catch (\Exception $ex) {
-                        throw $ex;
-                        //If some goes wrong, we just ignore it
-                    }
-                }
-            } catch (\Exception) {
-                //If some goes wrong, we just ignore it
-                return;
+            if (count($existingRules) > 0) {
+                continue;
             }
+
+            foreach ($rule['actions'] as &$action) {
+                $mails = [];
+
+                foreach ($action['configuration']['mails'] ?? [] as $language => $mail) {
+                    $path = '/' . ltrim($mail, '/');
+                    $document = Document::getByPath($path);
+
+                    if (!$document instanceof Document\Email) {
+                        $this->logger->warning(sprintf(
+                            'Notification rule "%s": the e-mail document "%s" does not exist, no mail is sent for the language "%s".',
+                            $rule['name'],
+                            $path,
+                            $language,
+                        ));
+
+                        continue;
+                    }
+
+                    $mails[$language] = $document->getId();
+                }
+
+                $action['configuration']['mails'] = $mails;
+            }
+            unset($action);
+
+            $form = $this->formFactory->createNamed('', NotificationRuleType::class);
+            $form->submit($rule);
+
+            if (!$form->isValid()) {
+                $this->logger->error(sprintf(
+                    'Notification rule "%s" is invalid and was not imported: %s',
+                    $rule['name'],
+                    (string) $form->getErrors(true),
+                ));
+
+                continue;
+            }
+
+            $notificationRule = $form->getData();
+            $notificationRule->setSort($totalExistingRules + $totalImported + 1);
+
+            $manager->persist($notificationRule);
+
+            ++$totalImported;
         }
 
         $manager->flush();

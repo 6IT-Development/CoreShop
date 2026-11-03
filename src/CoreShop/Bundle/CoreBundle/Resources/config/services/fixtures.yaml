@@ -34,6 +34,7 @@ services:
       - '@kernel'
       - '@coreshop.repository.notification_rule'
       - '@form.factory'
+      - '@logger'
     tags:
       - { name: doctrine.fixture.orm }
 

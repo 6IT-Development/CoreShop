@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\CoreBundle;
 
 use Doctrine\Migrations\Metadata\AvailableMigration;
 use Pimcore\Console\Application;
+use Pimcore\Extension\Bundle\Installer\Exception\InstallationException;
 use Pimcore\Extension\Bundle\Installer\SettingsStoreAwareInstaller;
 use Pimcore\Model\Tool\SettingsStore;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -74,9 +75,17 @@ class Installer extends SettingsStoreAwareInstaller
         /** @psalm-suppress InternalClass, InternalMethod */
         $application = new Application($this->kernel);
         $application->setAutoExit(false);
-        $options = ['command' => 'coreshop:install'];
-        $options = array_merge($options, ['--no-interaction' => true, '--application-name coreshop']);
-        $application->run(new ArrayInput($options));
+
+        // the installer output is shown by bundle:install and the admin UI
+        $exitCode = $application->run(
+            new ArrayInput(['command' => 'coreshop:install', '--no-interaction' => true]),
+            $this->getOutput(),
+        );
+
+        if (0 !== $exitCode) {
+            // the reason is in getOutput(), which the caller prints
+            throw new InstallationException(sprintf('The command "coreshop:install" failed with the exit code %d.', $exitCode));
+        }
 
         /**
          * Do not call parent::install(): it would mark every migration as executed, also on an existing

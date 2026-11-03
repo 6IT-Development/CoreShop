@@ -522,6 +522,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Return `Command::FAILURE` when `$errored`. Throw one dedicated `CommandFailedException` (with command name and exit code) for any non-zero code and catch it in `InstallCommand`. Stop after the first failing step, because later steps depend on earlier ones.
 
 ### B-72 — `Installer::install()` ignores the result of `coreshop:install` and passes a malformed argument
+- **Status:** fixed — the bogus `'--application-name coreshop'` element is removed. The command writes into the installer's own `BufferedOutput` (`getOutput()`), which `bundle:install` and the admin UI show. A non-zero exit code throws Pimcore's `InstallationException` before the bundle is marked as installed. Exceptions of the sub-commands still propagate (`AbstractInstallCommand` disables `catchExceptions`), which also prevents the marking. Not run against a real install.
 - **Where:** `Installer.php:66-76`.
 - **Problem:**
   - `['--no-interaction' => true, '--application-name coreshop']` adds the string as list element `0`. `ArrayInput` treats the integer key as a positional argument and stores it silently. The option is never passed **(reproduced: `inst.php` → command runs, the value ends up as `arguments[0]`)**. `coreshop:install` has no such option anyway.

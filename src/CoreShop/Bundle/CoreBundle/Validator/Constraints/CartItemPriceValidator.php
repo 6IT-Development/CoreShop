@@ -95,12 +95,10 @@ final class CartItemPriceValidator extends ConstraintValidator
         } catch (NoPurchasablePriceFoundException) {
         }
 
-        // a product can be priced by fixed quantity ranges only
+        // a product can be priced by fixed quantity ranges only; a relative range on a missing price gives 0
         if ($product instanceof QuantityRangePriceAwareInterface) {
             try {
-                $this->quantityReferenceDetector->detectQuantityPrice($product, (float) $item->getQuantity(), 0, $context);
-
-                return true;
+                return $this->quantityReferenceDetector->detectQuantityPrice($product, (float) $item->getQuantity(), 0, $context) > 0;
             } catch (NoRuleFoundException|NoPriceFoundException) {
             }
         }

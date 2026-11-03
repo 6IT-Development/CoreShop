@@ -60,14 +60,9 @@ class UnitVolumeCalculator implements CalculatorInterface
             throw new NoPriceFoundException(__CLASS__);
         }
 
-        $price = $this->inner->calculateRangePrice($locatedRange, $subject, $originalPrice, $context);
-
-        if ($price === 0) {
-            throw new NoPriceFoundException(__CLASS__);
-        }
-
+        // A range price of 0 (a free tier, or a 100 % decrease) is a valid price, like for products without a unit.
         // The item quantity factor is applied by the caller (CartItemsProcessor), like for products without a unit
-        return $price;
+        return $this->inner->calculateRangePrice($locatedRange, $subject, $originalPrice, $context);
     }
 
     public function calculateForRange(

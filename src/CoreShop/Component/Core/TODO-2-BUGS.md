@@ -45,6 +45,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** treat "no price found" as not purchasable: remove the item or mark the cart invalid in `CartItemsProcessor` or an add-to-cart/checkout validator, instead of using 0.
 
 ### B-06 — Quantity-range calculation treats a price of 0 as "no price" only for items with a unit
+- **Status:** fixed — a range price of 0 is a valid price in both paths. `UnitVolumeCalculator::calculateForQuantity()` no longer throws `NoPriceFoundException` for 0, so a free tier (`fixed 0`) or a 100 % decrease gives 0 with and without a unit, like `VolumeCalculator`. `NoPriceFoundException` is still thrown when no range matches. The B-05 `CartItemPriceValidator` accepts a product without a base price only if its quantity range gives a price above 0, so a relative range on a missing price is still rejected.
 - **Where:** `ProductQuantityPriceRules/Calculator/UnitVolumeCalculator.php:66-68`; compare `Component/ProductQuantityPriceRules/Calculator/VolumeCalculator.php` `calculateForQuantity()`.
 - **Problem:** with a unit, a range that gives 0 (a 100 % decrease, or `fixed 0` for a free tier) throws `NoPriceFoundException`, and the cart silently falls back to the normal price. Without a unit, the same range returns 0, so the same rule behaves differently depending on whether the line has a unit.
 - **Fix:** decide whether 0 is allowed, then handle it the same way in both paths and document it.

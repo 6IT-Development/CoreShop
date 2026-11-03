@@ -568,6 +568,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** In the `else` branch, set the reference from the existing entity (as `StoreFixture` does). Guard `ProductUnitFixture` with `findOneBy(['name' => …])`. Add `ProductUnitFixture::class` to `ProductWithUnitFixture::getDependencies()`.
 
 ### B-77 — `AttributeGroupsFixture` overwrites its sorting counter
+- **Status:** fixed — the inner key is `$position`, so the groups get sorting `10`, `20`, `30`.
 - **Where:** `Fixtures/Data/Demo/AttributeGroupsFixture.php:75,85,97,109,128`.
 - **Problem:** The inner `foreach ($attributes as $index => $attributeKey)` reuses `$index`, the outer group-sorting counter. The groups get sorting `10`, `12`, `13` instead of `10`, `20`, `30`.
 - **Fix:** Rename the inner key (`$position`).

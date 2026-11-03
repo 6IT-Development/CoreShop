@@ -94,7 +94,7 @@ class AttributeGroupsFixture extends Fixture implements FixtureGroupInterface
 
                 $attributeGroup->save();
 
-                foreach ($attributes as $index => $attributeKey) {
+                foreach ($attributes as $position => $attributeKey) {
                     /**
                      * @var AttributeInterface $attribute
                      */
@@ -106,7 +106,7 @@ class AttributeGroupsFixture extends Fixture implements FixtureGroupInterface
                     $attribute->setKey($attributeKey);
                     $attribute->setPublished(true);
                     $attribute->setAttributeGroup($attributeGroup);
-                    $attribute->setSorting(($index + 1) * 10);
+                    $attribute->setSorting(($position + 1) * 10);
 
                     foreach (Tool::getValidLanguages() as $language) {
                         if ($key === 'size') {

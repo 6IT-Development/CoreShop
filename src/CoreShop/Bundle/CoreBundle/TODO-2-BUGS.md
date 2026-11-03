@@ -462,6 +462,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Controllers
 
 ### B-64 — `OrderCreationController::getSubscribedServices` lists the same service twice
+- **Status:** fixed — every service is listed once. The bare `CarriersResolverInterface` entry stays: `RegisterServiceSubscribersPass` already let it override the `SubscribedService` entry, so the locator still gets the decorated interface service.
 - **Where:** `Controller/OrderCreationController.php:148-154`.
 - **Problem:** `TaxedShippingCalculatorInterface::class` appears on both line 150 and line 153 (and `CarriersResolverInterface` is both a `SubscribedService` autowire alias and a bare class entry). Harmless (the locator de-dupes; confirmed the compiled container builds, `subs.php` shows 17 merged entries) but it is dead duplication and signals a copy-paste error.
 - **Fix:** list each service once.

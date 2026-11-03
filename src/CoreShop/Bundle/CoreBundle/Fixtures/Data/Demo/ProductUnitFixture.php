@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\CoreBundle\Fixtures\Data\Demo;
 
 use CoreShop\Component\Product\Model\ProductUnitInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
+use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -28,6 +29,7 @@ class ProductUnitFixture extends Fixture implements FixtureGroupInterface
 {
     public function __construct(
         private FactoryInterface $productUnitFactory,
+        private ?RepositoryInterface $productUnitRepository = null,
     ) {
     }
 
@@ -38,57 +40,50 @@ class ProductUnitFixture extends Fixture implements FixtureGroupInterface
 
     public function load(ObjectManager $manager): void
     {
-        $factory = $this->productUnitFactory;
+        $units = [
+            'unit-piece' => [
+                'name' => 'Piece',
+                'en' => ['Pc', 'Pcs', 'Piece', 'Pieces'],
+                'de' => ['Stk', 'Stk', 'Stück', 'Stück'],
+            ],
+            'unit-carton' => [
+                'name' => 'Carton',
+                'en' => ['Ctn', 'Ctns', 'Carton', 'Cartons'],
+                'de' => ['Ktn', 'Ktne', 'Karton', 'Kartone'],
+            ],
+            'unit-palette' => [
+                'name' => 'Palette',
+                'en' => ['Pal', 'Pals', 'Palette', 'Palettes'],
+                'de' => ['Pal', 'Paln', 'Palette', 'Paletten'],
+            ],
+        ];
 
-        /**
-         * @var ProductUnitInterface $productUnitPiece
-         */
-        $productUnitPiece = $factory->createNew();
-        $productUnitPiece->setName('Piece');
-        $productUnitPiece->setShortLabel('Pc', 'en');
-        $productUnitPiece->setShortPluralLabel('Pcs', 'en');
-        $productUnitPiece->setFullLabel('Piece', 'en');
-        $productUnitPiece->setFullPluralLabel('Pieces', 'en');
-        $productUnitPiece->setShortLabel('Stk', 'de');
-        $productUnitPiece->setShortPluralLabel('Stk', 'de');
-        $productUnitPiece->setFullLabel('Stück', 'de');
-        $productUnitPiece->setFullPluralLabel('Stück', 'de');
+        foreach ($units as $reference => $unit) {
+            // the name is unique, a second run reuses the existing unit
+            $productUnit = $this->productUnitRepository?->findOneBy(['name' => $unit['name']]);
 
-        /**
-         * @var ProductUnitInterface $productUnitCarton
-         */
-        $productUnitCarton = $factory->createNew();
-        $productUnitCarton->setName('Carton');
-        $productUnitCarton->setShortLabel('Ctn', 'en');
-        $productUnitCarton->setShortPluralLabel('Ctns', 'en');
-        $productUnitCarton->setFullLabel('Carton', 'en');
-        $productUnitCarton->setFullPluralLabel('Cartons', 'en');
-        $productUnitCarton->setShortLabel('Ktn', 'de');
-        $productUnitCarton->setShortPluralLabel('Ktne', 'de');
-        $productUnitCarton->setFullLabel('Karton', 'de');
-        $productUnitCarton->setFullPluralLabel('Kartone', 'de');
+            if (!$productUnit instanceof ProductUnitInterface) {
+                /**
+                 * @var ProductUnitInterface $productUnit
+                 */
+                $productUnit = $this->productUnitFactory->createNew();
+                $productUnit->setName($unit['name']);
 
-        /**
-         * @var ProductUnitInterface $productUnitPalette
-         */
-        $productUnitPalette = $factory->createNew();
-        $productUnitPalette->setName('Palette');
-        $productUnitPalette->setShortLabel('Pal', 'en');
-        $productUnitPalette->setShortPluralLabel('Pals', 'en');
-        $productUnitPalette->setFullLabel('Palette', 'en');
-        $productUnitPalette->setFullPluralLabel('Palettes', 'en');
-        $productUnitPalette->setShortLabel('Pal', 'de');
-        $productUnitPalette->setShortPluralLabel('Paln', 'de');
-        $productUnitPalette->setFullLabel('Palette', 'de');
-        $productUnitPalette->setFullPluralLabel('Paletten', 'de');
+                foreach (['en', 'de'] as $language) {
+                    [$shortLabel, $shortPluralLabel, $fullLabel, $fullPluralLabel] = $unit[$language];
 
-        $manager->persist($productUnitPiece);
-        $manager->persist($productUnitCarton);
-        $manager->persist($productUnitPalette);
+                    $productUnit->setShortLabel($shortLabel, $language);
+                    $productUnit->setShortPluralLabel($shortPluralLabel, $language);
+                    $productUnit->setFullLabel($fullLabel, $language);
+                    $productUnit->setFullPluralLabel($fullPluralLabel, $language);
+                }
+
+                $manager->persist($productUnit);
+            }
+
+            $this->setReference($reference, $productUnit);
+        }
+
         $manager->flush();
-
-        $this->setReference('unit-piece', $productUnitPiece);
-        $this->setReference('unit-carton', $productUnitCarton);
-        $this->setReference('unit-palette', $productUnitPalette);
     }
 }

@@ -78,6 +78,11 @@ class CarrierFixture extends Fixture implements DependentFixtureInterface, Fixtu
             $manager->flush();
 
             $this->setReference('carrier', $carrier);
+        } else {
+            // the shipping rule groups use the reference, also when carriers already exist
+            $carriers = $this->carrierRepository->findAll();
+
+            $this->setReference('carrier', reset($carriers));
         }
     }
 }

@@ -62,6 +62,23 @@ class TaxRateFixture extends Fixture implements FixtureGroupInterface
 
             $this->addReference('taxRate', $taxRate);
             $this->addReference('taxRate10', $taxRate10);
+        } else {
+            // later fixtures use the references, also when the tax rates already exist
+            $taxRates = $this->taxRateRepository->findAll();
+
+            $this->addReference('taxRate', $this->findTaxRate($taxRates, 20) ?? reset($taxRates));
+            $this->addReference('taxRate10', $this->findTaxRate($taxRates, 10) ?? reset($taxRates));
         }
+    }
+
+    private function findTaxRate(array $taxRates, float $rate): ?TaxRateInterface
+    {
+        foreach ($taxRates as $taxRate) {
+            if ($taxRate instanceof TaxRateInterface && (float) $taxRate->getRate() === $rate) {
+                return $taxRate;
+            }
+        }
+
+        return null;
     }
 }

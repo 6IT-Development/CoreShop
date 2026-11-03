@@ -27,9 +27,17 @@ use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Provider\Barcode;
 use Faker\Provider\Lorem;
+use Pimcore\Model\DataObject\Service;
 
 class ProductWithUnitFixture extends AbstractProductFixture implements FixtureGroupInterface
 {
+    public function getDependencies(): array
+    {
+        return array_merge(parent::getDependencies(), [
+            ProductUnitFixture::class,
+        ]);
+    }
+
     public static function getGroups(): array
     {
         return ['demo'];
@@ -37,6 +45,11 @@ class ProductWithUnitFixture extends AbstractProductFixture implements FixtureGr
 
     public function load(ObjectManager $manager): void
     {
+        // the products of an earlier run are kept, a second run would add 10 more
+        if (Service::pathExists('/demo/products-with-unit')) {
+            return;
+        }
+
         $stores = $this->storeRepository->findAll();
 
         $productsCount = 10;

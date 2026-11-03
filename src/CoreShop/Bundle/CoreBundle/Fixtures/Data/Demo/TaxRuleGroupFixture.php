@@ -78,6 +78,11 @@ class TaxRuleGroupFixture extends Fixture implements DependentFixtureInterface, 
             $manager->flush();
 
             $this->setReference('taxRule', $taxRuleGroup);
+        } else {
+            // carriers and products use the reference, also when tax rule groups already exist
+            $taxRuleGroups = $this->taxRuleGroupRepository->findAll();
+
+            $this->setReference('taxRule', reset($taxRuleGroups));
         }
     }
 }

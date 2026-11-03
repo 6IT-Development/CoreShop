@@ -24,6 +24,7 @@ use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Provider\Barcode;
 use Faker\Provider\Lorem;
+use Pimcore\Model\DataObject\Service;
 
 class ProductWithAttributesFixture extends AbstractProductFixture implements FixtureGroupInterface
 {
@@ -41,6 +42,11 @@ class ProductWithAttributesFixture extends AbstractProductFixture implements Fix
 
     public function load(ObjectManager $manager): void
     {
+        // the products of an earlier run are kept, a second run would add 5 more with their variants
+        if (Service::pathExists('/demo/products-with-attributes')) {
+            return;
+        }
+
         $productsCount = 5;
         $variants = 6;
         $faker = Factory::create();

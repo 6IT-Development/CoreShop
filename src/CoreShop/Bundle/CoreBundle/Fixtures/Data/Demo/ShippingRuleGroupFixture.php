@@ -55,27 +55,23 @@ class ShippingRuleGroupFixture extends AbstractFixture implements DependentFixtu
         if (!count($this->shippingRuleGroupRepository->findAll())) {
             $carrier = $this->getReference('carrier');
 
-            /**
-             * @var ShippingRuleGroupInterface $shippingRuleGroup
-             */
-            $shippingRuleGroup = $this->shippingRuleGroupFactory->createNew();
-            $shippingRuleGroup->setShippingRule($this->getReference('shippingRule0'));
-            $shippingRuleGroup->setPriority(1);
-            $shippingRuleGroup->setCarrier($carrier);
+            for ($index = 0; $index < 3; ++$index) {
+                // fewer rules may exist when they were not created by ShippingRuleFixture
+                if (!$this->hasReference('shippingRule' . $index)) {
+                    continue;
+                }
 
-            $shippingRuleGroup2 = $this->shippingRuleGroupFactory->createNew();
-            $shippingRuleGroup2->setShippingRule($this->getReference('shippingRule1'));
-            $shippingRuleGroup2->setPriority(1);
-            $shippingRuleGroup2->setCarrier($carrier);
+                /**
+                 * @var ShippingRuleGroupInterface $shippingRuleGroup
+                 */
+                $shippingRuleGroup = $this->shippingRuleGroupFactory->createNew();
+                $shippingRuleGroup->setShippingRule($this->getReference('shippingRule' . $index));
+                $shippingRuleGroup->setPriority(1);
+                $shippingRuleGroup->setCarrier($carrier);
 
-            $shippingRuleGroup3 = $this->shippingRuleGroupFactory->createNew();
-            $shippingRuleGroup3->setShippingRule($this->getReference('shippingRule2'));
-            $shippingRuleGroup3->setPriority(1);
-            $shippingRuleGroup3->setCarrier($carrier);
+                $manager->persist($shippingRuleGroup);
+            }
 
-            $manager->persist($shippingRuleGroup);
-            $manager->persist($shippingRuleGroup2);
-            $manager->persist($shippingRuleGroup3);
             $manager->flush();
         }
     }

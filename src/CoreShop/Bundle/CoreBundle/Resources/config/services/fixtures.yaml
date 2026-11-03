@@ -89,6 +89,7 @@ services:
   CoreShop\Bundle\CoreBundle\Fixtures\Data\Demo\ProductUnitFixture:
     arguments:
       - '@coreshop.factory.product_unit'
+      - '@coreshop.repository.product_unit'
     tags:
       - { name: doctrine.fixture.orm }
 

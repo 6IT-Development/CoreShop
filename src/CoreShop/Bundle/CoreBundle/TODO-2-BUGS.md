@@ -558,6 +558,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Fixtures / test support
 
 ### B-76 — Demo fixtures are not re-runnable and depend on references that are only set on first creation
+- **Status:** fixed — `ProductUnitFixture` reuses a unit with the same name (new optional constructor argument `coreshop.repository.product_unit`) and always sets the `unit-*` references. When their data already exists, `TaxRateFixture` (the 20 % and 10 % rates, else the first rate), `TaxRuleGroupFixture`, `CarrierFixture` and `ShippingRuleFixture` (the first three rules) set their references from it. `ShippingRuleGroupFixture` skips missing `shippingRule<n>` references. `ProductWithUnitFixture` and `ProductWithAttributesFixture` return when their `/demo/products-with-unit` or `/demo/products-with-attributes` folder exists, and `ProductWithUnitFixture` depends on `ProductUnitFixture`. Not run against a DB.
 - **Where:** `Fixtures/Data/Demo/ProductUnitFixture.php:41-92`, `ProductWithUnitFixture.php:41-122`, `CarrierFixture.php:58-80`, `ShippingRuleGroupFixture.php:53-79`, `TaxRuleGroupFixture.php:57-80`, `AbstractProductFixture.php:562-568,647`. **(dependent)** `ProductBundle/Resources/config/doctrine/model/ProductUnit.orm.xml:12` (`name` unique).
 - **Problem:**
   - `ProductUnitFixture` has no existence guard and `name` is unique. A second `coreshop:install:demo` fails with `UniqueConstraintViolationException`.

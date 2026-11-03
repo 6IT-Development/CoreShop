@@ -140,6 +140,11 @@ class ShippingRuleFixture extends Fixture implements FixtureGroupInterface
             }
 
             $manager->flush();
+        } else {
+            // the shipping rule groups use the references, also when shipping rules already exist
+            foreach (array_slice(array_values($this->shippingRuleRepository->findAll()), 0, 3) as $index => $rule) {
+                $this->setReference('shippingRule' . $index, $rule);
+            }
         }
     }
 }

@@ -37,7 +37,7 @@ class StorePrice extends AbstractOperator
         $context = null,
     ) {
         parent::__construct($config, $context);
-        $this->storeId = $config->storeId;
+        $this->storeId = (int) ($config->storeId ?? 0);
     }
 
     public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
@@ -45,18 +45,25 @@ class StorePrice extends AbstractOperator
         $result = new \stdClass();
         $result->label = $this->label;
 
-        /**
-         * @var StoreInterface $store
-         */
+        if (!$element instanceof ProductInterface) {
+            return $result;
+        }
+
         $store = $this->storeRepository->find($this->storeId);
 
-        if (!$element instanceof ProductInterface) {
+        if (!$store instanceof StoreInterface) {
+            return $result;
+        }
+
+        $currency = $store->getCurrency();
+
+        if (null === $currency) {
             return $result;
         }
 
         $price = $element->getStoreValuesOfType('price', $store) ?? 0;
 
-        $result->value = $this->moneyFormatter->format($price, $store->getCurrency()->getIsoCode());
+        $result->value = $this->moneyFormatter->format($price, $currency->getIsoCode());
 
         return $result;
     }

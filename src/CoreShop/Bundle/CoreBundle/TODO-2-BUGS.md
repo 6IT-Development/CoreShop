@@ -360,6 +360,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Grid operator / Doctrine mapping / misc
 
 ### B-48 — `StorePrice` grid operator fatals for a deleted store, a store without currency, or a string `storeId`
+- **Status:** fixed — `StorePrice` casts `storeId` to int and returns an empty value when the store or its currency is missing.
 - **Where:** `Pimcore/GridColumnConfig/Operator/StorePrice.php:31,40,51-59`.
 - **Problem:** `find()` may return `null` (store deleted after the grid config was saved) → `getStoreValuesOfType('price', null)` `TypeError`; `$store->getCurrency()` may be `null`; `private int $storeId = $config->storeId` throws under `strict_types` when the saved JSON has `"storeId": "1"`. The whole grid fails to load.
 - **(plausible)**

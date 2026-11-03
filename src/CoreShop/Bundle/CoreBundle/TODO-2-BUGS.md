@@ -406,6 +406,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use inclusive upper bounds: `<= end-of-day`, or add one day to `to` and keep `<`. Apply consistently to `from`/`to` across all reports.
 
 ### B-55 — `SalesReport` crashes (TypeError) for an unknown `groupBy` value (reproduced)
+- **Status:** fixed — an unknown `groupBy` now groups by day, the default of the parameter, in the report and the portlet. Linted only.
 - **Where:** `SalesReport.php:74-102,121`.
 - **Problem:** `$dateFormatter`/`$groupSelector` are only set in the `day|month|year` switch with no `default`. Any other `groupBy` (the value is unvalidated request input) leaves `$dateFormatter = null`; line 121 calls `$date->format(null)`, which is a `TypeError` on Carbon/PHP 8.4 (reproduced), 500-ing the sales report and the sales dashboard portlet. `GROUP BY ''` would also run an unintended aggregate.
 - **Fix:** `match($groupBy) { 'day'/'month'/'year' => …, default => throw new \InvalidArgumentException(...) }` (or clamp to `day`).

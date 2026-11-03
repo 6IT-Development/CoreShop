@@ -68,9 +68,6 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
 
         $data = [];
 
-        $dateFormatter = null;
-        $groupSelector = '';
-
         if (null === $storeId) {
             return [];
         }
@@ -80,23 +77,11 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
             return [];
         }
 
-        switch ($groupBy) {
-            case 'day':
-                $dateFormatter = 'd-m-Y';
-                $groupSelector = 'DATE(FROM_UNIXTIME(orders.orderDate))';
-
-                break;
-            case 'month':
-                $dateFormatter = 'F Y';
-                $groupSelector = 'MONTH(FROM_UNIXTIME(orders.orderDate))';
-
-                break;
-            case 'year':
-                $dateFormatter = 'Y';
-                $groupSelector = 'YEAR(FROM_UNIXTIME(orders.orderDate))';
-
-                break;
-        }
+        [$dateFormatter, $groupSelector] = match ($groupBy) {
+            'month' => ['F Y', 'MONTH(FROM_UNIXTIME(orders.orderDate))'],
+            'year' => ['Y', 'YEAR(FROM_UNIXTIME(orders.orderDate))'],
+            default => ['d-m-Y', 'DATE(FROM_UNIXTIME(orders.orderDate))'],
+        };
 
         $sqlQuery = "
               SELECT DATE(FROM_UNIXTIME(orderDate)) AS dayDate, orderDate, SUM(totalGross) AS total

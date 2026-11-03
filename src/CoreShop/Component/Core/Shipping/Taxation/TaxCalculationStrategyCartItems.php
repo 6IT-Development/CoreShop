@@ -66,6 +66,11 @@ class TaxCalculationStrategyCartItems implements TaxCalculationStrategyInterface
             return [];
         }
 
+        // Free items (gifts, 100 % discounts) give a total of 0: split the shipping evenly between the tax rules
+        if (array_sum($totalAmount) <= 0) {
+            $totalAmount = array_fill(0, count($totalAmount), 1);
+        }
+
         $distributedAmount = $this->distributor->distribute($totalAmount, $shippingAmount);
 
         return $this->collectTaxes($address, $taxRules, $distributedAmount, $store->getUseGrossPrice(), $context);

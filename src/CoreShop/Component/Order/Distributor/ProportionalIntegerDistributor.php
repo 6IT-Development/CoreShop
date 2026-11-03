@@ -29,6 +29,16 @@ final class ProportionalIntegerDistributor implements ProportionalIntegerDistrib
         $total = array_sum($integers);
         $distributedAmounts = [];
 
+        if (!$integers) {
+            return [];
+        }
+
+        // Nothing to weight by: distribute evenly instead of dividing by zero
+        if (0 === $total) {
+            $integers = array_fill(0, count($integers), 1);
+            $total = count($integers);
+        }
+
         foreach ($integers as $element) {
             $distributedAmounts[] = (int) round(($element * $amount) / $total, 0, \PHP_ROUND_HALF_DOWN);
         }

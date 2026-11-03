@@ -67,6 +67,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Shipping and taxation
 
 ### B-09 — (reproduced) The `cartItems` shipping-tax strategy throws `DivisionByZeroError` when every taxable item has a total of 0
+- **Status:** fixed — when the item totals add up to 0 or less, `TaxCalculationStrategyCartItems` splits the shipping evenly between the tax rules of the cart instead of proportionally. `Component/Order/Distributor/ProportionalIntegerDistributor` also distributes evenly when the total is 0 (and returns `[]` for an empty list) instead of dividing by zero. Checked: `distribute([0], 1000)` gives `[1000]`, `distribute([0,0,0], 1000)` gives `[334,333,333]`, and `[200,800]` is unchanged.
 - **Where:** `Shipping/Taxation/TaxCalculationStrategyCartItems.php:65-69`. **(dependent)** `Component/Order/Distributor/ProportionalIntegerDistributor.php:29-33` (`/ $total`).
 - **Problem:** the guard `!$totalAmount` checks only that the array is empty, not that the sum is 0. Free products, gift-only carts and 100 % item discounts call `distribute([0], $shippingAmount)`, which divides by zero. This happens during cart processing, so the cart and checkout pages return a 500.
 - **Fix:** when `array_sum($totalAmount) <= 0`, fall back to an even split or the carrier's own tax rule, or return `[]`. Make the distributor handle a zero total too.

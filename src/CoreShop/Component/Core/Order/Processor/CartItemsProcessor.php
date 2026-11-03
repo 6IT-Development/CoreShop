@@ -79,11 +79,6 @@ final class CartItemsProcessor implements CartProcessorInterface
 
             $itemPrice = $this->productPriceCalculator->getPrice($product, $context, true);
 
-            // respect item quantity factor
-            if ($product instanceof ProductInterface && is_numeric($product->getItemQuantityFactor()) && $product->getItemQuantityFactor() > 1) {
-                $itemPrice = (int) round($itemPrice / $product->getItemQuantityFactor());
-            }
-
             if ($product instanceof QuantityRangePriceAwareInterface) {
                 try {
                     $itemPrice = $this->quantityReferenceDetector->detectQuantityPrice(
@@ -94,6 +89,12 @@ final class CartItemsProcessor implements CartProcessorInterface
                     );
                 } catch (NoRuleFoundException|NoPriceFoundException) {
                 }
+            }
+
+            // respect item quantity factor: product and quantity range prices are per package,
+            // so divide only once, after the quantity price was detected
+            if ($product instanceof ProductInterface && is_numeric($product->getItemQuantityFactor()) && $product->getItemQuantityFactor() > 1) {
+                $itemPrice = (int) round($itemPrice / $product->getItemQuantityFactor());
             }
 
             $itemPriceWithoutDiscount = $this->productPriceCalculator->getPrice($product, $context);

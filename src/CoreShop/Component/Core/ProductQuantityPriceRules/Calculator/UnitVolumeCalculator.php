@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace CoreShop\Component\Core\ProductQuantityPriceRules\Calculator;
 
 use CoreShop\Component\Core\Model\QuantityRangeInterface as CoreQuantityRangeInterface;
-use CoreShop\Component\Product\Model\ProductInterface;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use CoreShop\Component\ProductQuantityPriceRules\Calculator\CalculatorInterface;
 use CoreShop\Component\ProductQuantityPriceRules\Calculator\VolumeCalculator;
@@ -67,10 +66,7 @@ class UnitVolumeCalculator implements CalculatorInterface
             throw new NoPriceFoundException(__CLASS__);
         }
 
-        if ($subject instanceof ProductInterface && is_numeric($subject->getItemQuantityFactor()) && $subject->getItemQuantityFactor() > 1) {
-            $price = (int) ($price / $subject->getItemQuantityFactor());
-        }
-
+        // The item quantity factor is applied by the caller (CartItemsProcessor), like for products without a unit
         return $price;
     }
 

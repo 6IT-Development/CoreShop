@@ -296,6 +296,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `setOrderKey('creationDate')`.
 
 ### B-40 — `WishlistRepository::findLatestByStoreAndCustomer()` ignores `$name`
+- **Status:** fixed — a given `$name` is added to the condition, and the query is limited to one row. Without a name it still returns the latest wishlist. Linted only, not run against a DB.
 - **Where:** `Pimcore/Repository/WishlistRepository.php:43-61`; caller `Component/StorageList/Core/Context/PimcoreListResolver.php:60` passes the requested list name.
 - **Problem:** named wishlists cannot be selected: any lookup by name returns the customer's latest wishlist in the store, so items are added to / shown from the wrong list.
 - **(plausible)**

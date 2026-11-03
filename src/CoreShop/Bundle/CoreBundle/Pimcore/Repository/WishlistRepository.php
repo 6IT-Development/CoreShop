@@ -45,10 +45,19 @@ class WishlistRepository extends BaseWishlistRepository implements WishlistRepos
         CustomerInterface $customer,
         ?string $name = null,
     ): ?WishlistInterface {
+        $condition = 'customer__id = ? AND store = ?';
+        $conditionVariables = [$customer->getId(), $store->getId()];
+
+        if (null !== $name) {
+            $condition .= ' AND name = ?';
+            $conditionVariables[] = $name;
+        }
+
         $list = $this->getList();
-        $list->setCondition('customer__id = ? AND store = ?', [$customer->getId(), $store->getId()]);
+        $list->setCondition($condition, $conditionVariables);
         $list->setOrderKey('creationDate');
         $list->setOrder('DESC');
+        $list->setLimit(1);
         $list->load();
 
         $objects = $list->getObjects();

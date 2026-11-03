@@ -586,6 +586,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Remove the swallow-all `catch`. Use `JSON_THROW_ON_ERROR`. Skip and log invalid forms (`if (!$form->isValid()) { … continue; }`). Warn when an e-mail document is missing.
 
 ### B-80 — `CountryFixture` crashes on non-ICU language codes and picks a random language as fallback
+- **Status:** fixed — the language is cut at `_` or `-` (`en-GB` threw), and a `MissingResourceException` of `getAlpha3Code()` falls back to `eng`. A missing translation now uses `$country->getName()` (English). `getTranslation()` fell back to the alphabetically first entry, for example Bavarian for AT (verified with a script against the vendored Rinvex data).
 - **Where:** `Fixtures/Data/Application/CountryFixture.php:95-99,116-120`.
 - **Problem:** `Languages::getAlpha3Code()` throws `MissingResourceException` for Pimcore languages that are not plain ICU codes (for example `en-GB` with a dash, or custom codes). The whole application fixture set aborts **(plausible)**. For languages Rinvex has no translation for, `getTranslation()` returns `current($translations)` (the first entry in the file), not English.
 - **Fix:** Wrap `getAlpha3Code()` in try/catch and fall back to `eng`. Use `$country->getName()` (English) when the requested translation is missing.

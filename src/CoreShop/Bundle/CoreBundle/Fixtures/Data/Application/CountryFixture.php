@@ -31,6 +31,7 @@ use Doctrine\Persistence\ObjectManager;
 use Pimcore\Tool;
 use Rinvex\Country\Country;
 use Rinvex\Country\CountryLoader;
+use Symfony\Component\Intl\Exception\MissingResourceException;
 use Symfony\Component\Intl\Languages;
 
 class CountryFixture extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
@@ -94,8 +95,14 @@ class CountryFixture extends Fixture implements DependentFixtureInterface, Fixtu
         $alpha3CodeMap = [];
 
         foreach ($languages as $lang) {
-            $langPart = strpos($lang, '_') ? explode('_', $lang)[0] : $lang;
-            $alpha3CodeMap[$lang] = Languages::getAlpha3Code($langPart);
+            $langPart = preg_split('/[_-]/', $lang)[0];
+
+            try {
+                $alpha3CodeMap[$lang] = Languages::getAlpha3Code($langPart);
+            } catch (MissingResourceException) {
+                // custom Pimcore languages are no ICU codes, they get the English names
+                $alpha3CodeMap[$lang] = 'eng';
+            }
         }
 
         foreach ($countries as $country) {
@@ -118,10 +125,13 @@ class CountryFixture extends Fixture implements DependentFixtureInterface, Fixtu
 
                 $newCountry = $this->countryFactory->createNew();
 
-                foreach ($languages as $lang) {
-                    $translation = $country->getTranslation($alpha3CodeMap[$lang]);
+                $translations = $country->getTranslations();
 
-                    $newCountry->setName($translation['common'], $lang);
+                foreach ($languages as $lang) {
+                    // getTranslation() would fall back to the alphabetically first translation, not to English
+                    $name = $translations[$alpha3CodeMap[$lang]]['common'] ?? $country->getName();
+
+                    $newCountry->setName($name, $lang);
                 }
 
                 $newCountry->setIsoCode($country->getIsoAlpha2());

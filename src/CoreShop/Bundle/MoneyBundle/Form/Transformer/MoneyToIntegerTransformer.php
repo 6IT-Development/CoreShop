@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\MoneyBundle\Form\Transformer;
 
 use Symfony\Component\Form\DataTransformerInterface;
+use Symfony\Component\Form\Exception\TransformationFailedException;
 
 class MoneyToIntegerTransformer implements DataTransformerInterface
 {
@@ -38,6 +39,17 @@ class MoneyToIntegerTransformer implements DataTransformerInterface
 
     public function reverseTransform(mixed $value): ?int
     {
-        return null === $value ? null : (int) (round($value * $this->decimalFactor));
+        if (null === $value) {
+            return null;
+        }
+
+        $amount = round($value * $this->decimalFactor);
+
+        // (float) PHP_INT_MAX rounds up to 2^63, the first value that no longer fits into an int
+        if (!is_finite($amount) || abs($amount) >= (float) \PHP_INT_MAX) {
+            throw new TransformationFailedException('The amount is out of range.');
+        }
+
+        return (int) $amount;
     }
 }

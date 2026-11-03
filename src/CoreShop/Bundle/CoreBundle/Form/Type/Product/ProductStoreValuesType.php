@@ -23,33 +23,18 @@ use CoreShop\Bundle\ProductBundle\Form\Type\Unit\ProductUnitDefinitionPriceColle
 use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
 use CoreShop\Bundle\StoreBundle\Form\Type\StoreChoiceType;
 use CoreShop\Bundle\TaxationBundle\Form\Type\TaxRuleGroupChoiceType;
-use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormError;
-use Symfony\Component\Form\FormEvent;
-use Symfony\Component\Form\FormEvents;
 
 final class ProductStoreValuesType extends AbstractResourceType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder->addEventListener(FormEvents::POST_SUBMIT, [$this, 'onPostSubmit']);
-
         $builder
             ->add('store', StoreChoiceType::class)
             ->add('price', MoneyType::class)
             ->add('taxRule', TaxRuleGroupChoiceType::class)
             ->add('productUnitDefinitionPrices', ProductUnitDefinitionPriceCollectionType::class)
         ;
-    }
-
-    public function onPostSubmit(FormEvent $event): void
-    {
-        /** @var ProductStoreValuesInterface $data */
-        $data = $event->getData();
-        if ($data->getPrice() >= \PHP_INT_MAX) {
-            $event->getForm()->addError(new FormError('Value exceeds PHP_INT_MAX please use an input data type instead of numeric!'));
-        }
     }
 
     public function getBlockPrefix(): string

@@ -320,6 +320,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `addcslashes($path, '%_\\')` (MySQL default escape `\`), or compare `LEFT(path, n) = :prefix`.
 
 ### B-43 — Variant id cache (`cs_rvids_*`) is never invalidated
+- **Status:** fixed — `RecursiveVariantCacheInvalidationEventListener` clears `coreshop_variant_recursive` after a product or variant is added, updated or deleted. Version-only saves do not clear it. Every real product save now empties the list for all rules, so bulk imports rebuild it more often.
 - **Where:** `Pimcore/Repository/ProductRepository.php:62-105` (`Cache::save(..., $cacheTags + 'coreshop_variant_recursive', 500, 0, true)`); nothing clears `VARIANT_RECURSIVE_QUERY_CACHE_TAG` (`grep` over `src/`).
 - **Problem:** adding a variant, moving it, or changing its `stores` does not invalidate the cached id list; price rule conditions ignore the change for up to 500 s (longer with a persistent cache). Only the tags passed by the caller can clear it.
 - **(plausible)**

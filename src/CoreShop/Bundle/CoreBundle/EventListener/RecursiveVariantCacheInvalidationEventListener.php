@@ -18,13 +18,17 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
+use CoreShop\Bundle\CoreBundle\Pimcore\Repository\ProductRepository;
 use CoreShop\Bundle\ResourceBundle\Event\ResourceControllerEvent;
+use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Payment\Rule\Condition\ProductsConditionChecker as PaymentRuleProductsConditionChecker;
 use CoreShop\Component\Core\Shipping\Rule\Condition\ProductsConditionChecker as ShippingRuleProductsConditionChecker;
 use CoreShop\Component\Payment\Model\PaymentProviderRuleInterface;
 use CoreShop\Component\Rule\Model\RuleInterface;
 use CoreShop\Component\Shipping\Model\ShippingRuleInterface;
 use Pimcore\Cache;
+use Pimcore\Event\DataObjectEvents;
+use Pimcore\Event\Model\DataObjectEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 final class RecursiveVariantCacheInvalidationEventListener implements EventSubscriberInterface
@@ -37,7 +41,23 @@ final class RecursiveVariantCacheInvalidationEventListener implements EventSubsc
             'coreshop.cart_price_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
             'coreshop.payment_provider_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
             'coreshop.shipping_rule.post_save' => ['invalidateRuleCacheAndPrePopulateCache'],
+            DataObjectEvents::POST_ADD => ['invalidateProductCache'],
+            DataObjectEvents::POST_UPDATE => ['invalidateProductCache'],
+            DataObjectEvents::POST_DELETE => ['invalidateProductCache'],
         ];
+    }
+
+    public function invalidateProductCache(DataObjectEvent $event): void
+    {
+        if (!$event->getObject() instanceof ProductInterface) {
+            return;
+        }
+
+        if ($event->hasArgument('saveVersionOnly') && $event->getArgument('saveVersionOnly')) {
+            return;
+        }
+
+        Cache::clearTag(ProductRepository::VARIANT_RECURSIVE_QUERY_CACHE_TAG);
     }
 
     public function invalidateRuleCacheAndPrePopulateCache(ResourceControllerEvent $event): void

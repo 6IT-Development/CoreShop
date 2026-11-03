@@ -430,6 +430,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** apply the same `saleState = STATE_ORDER` (and carrier/provider NOT NULL) predicate inside the denominator subquery.
 
 ### B-59 — `AbandonedCartsReport` silently overrides the user's date filter and can return an empty/odd window
+- **Status:** fixed — the selected range is only capped at now minus 48 hours, and `from` is never moved. The panel defaults (two months ago to two days ago) show that this is the intended meaning, not a fixed 48–72h window. A range that lies fully within the last 48 hours, such as "today", now returns nothing instead of the carts from 72 to 48 hours ago. Linted only, not run against a DB.
 - **Where:** `AbandonedCartsReport.php:54-78`.
 - **Problem:** The "abandoned = 48h" logic rewrites `fromTimestamp`/`toTimestamp`: `if ($from->gt($minFrom)) $fromTimestamp = $minFrom->getTimestamp();` sets the lower bound to `now-3d` whenever the user's `from` is later than 3 days ago, and `$to` is capped at `now-2d`. A user asking for "today" gets `from = now-3d`, `to = now-2d` — not what the filter shows. Also `$maxTo = now-2d+1s` and `$minFrom = now-3d` are fixed windows unrelated to the chosen range; selecting an old range returns nothing. Mutating `$to` but not re-deriving `$from` from the same base makes the window inconsistent.
 - **Fix:** define the abandoned window explicitly and clamp the user range **into** it (intersection), or document the fixed 48–72h window in the UI and ignore the pickers. Verify intended behaviour first.

@@ -49,12 +49,12 @@ final class AbandonedCartsReport implements ReportInterface, ExportReportInterfa
         $from = ReportDateFilter::from($parameterBag);
         $to = ReportDateFilter::to($parameterBag);
 
-        $maxToday = new Carbon();
-        $minToday = new Carbon();
-
         //abandoned = 48h before today.
-        $maxTo = $maxToday->subDays(2)->addSeconds(1);
-        $minFrom = $minToday->subDays(3);
+        $maxTo = (new Carbon())->subDays(2);
+
+        if ($to->gt($maxTo)) {
+            $to = $maxTo;
+        }
 
         $page = $parameterBag->get('page', 1);
         $limit = $parameterBag->get('limit', 50);
@@ -65,15 +65,6 @@ final class AbandonedCartsReport implements ReportInterface, ExportReportInterfa
 
         $fromTimestamp = $from->getTimestamp();
         $toTimestamp = $to->getTimestamp();
-
-        if ($from->gt($minFrom)) {
-            $fromTimestamp = $minFrom->getTimestamp();
-        }
-
-        if ($to->gt($maxTo)) {
-            $to = $maxTo;
-            $toTimestamp = $to->getTimestamp();
-        }
 
         if (null === $storeId) {
             return [];

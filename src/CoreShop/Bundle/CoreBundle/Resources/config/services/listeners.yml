@@ -47,6 +47,7 @@ services:
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: preUpdateListener }
             - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: postUpdateListener }
             - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: postDeleteListener }
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Bundle\CoreBundle\EventListener\RequestCartRecalculation:
         arguments:

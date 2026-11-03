@@ -27,8 +27,9 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use Doctrine\DBAL\Connection;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Model\DataObject\Concrete;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class ProductAvailabilityEventListener
+final class ProductAvailabilityEventListener implements ResetInterface
 {
     private array $productIdsToCheck = [];
 
@@ -54,12 +55,15 @@ final class ProductAvailabilityEventListener
             return;
         }
 
-        if (in_array($object->getId(), $this->productIdsToCheck, true)) {
+        // an entry can be left over from a save that failed after this listener ran
+        unset($this->productIdsToCheck[$object->getId()]);
+
+        if ($object->getPublished()) {
             return;
         }
 
         $originalPublished = (bool) $this->db->fetchOne('SELECT published FROM objects WHERE id=?', [$object->getId()]);
-        if ($object->getPublished() === $originalPublished) {
+        if (!$originalPublished) {
             return;
         }
 
@@ -74,7 +78,7 @@ final class ProductAvailabilityEventListener
             return;
         }
 
-        if (!in_array($object->getId(), $this->productIdsToCheck, true)) {
+        if (!isset($this->productIdsToCheck[$object->getId()])) {
             return;
         }
 
@@ -104,6 +108,11 @@ final class ProductAvailabilityEventListener
         }
 
         $this->informCarts($cartItems);
+    }
+
+    public function reset(): void
+    {
+        $this->productIdsToCheck = [];
     }
 
     private function informCarts(array $cartItems): void

@@ -155,6 +155,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** bump the marker only when a price-relevant field changed (check `isFieldDirty()` on price/store values). Or record the change per product and recalculate only carts that contain it. Use a dedicated DBAL update or cache key instead of `ConfigurationService::set()`. At minimum, skip saves coming from `OrderInventoryOperator`.
 
 ### B-22 — `ProductAvailabilityEventListener` removes cart items on publish as well as unpublish, and its state can go stale
+- **Status:** fixed — only a `published: true → false` change removes the product from carts. `preUpdateListener` drops any entry left by an earlier failed save before it checks again, the lookup uses `isset()`, and the service implements `ResetInterface` (tag `kernel.reset`). Linted only, not run.
 - **Where:** `EventListener/ProductAvailabilityEventListener.php:41-90,109-133`.
 - **Problem:**
   - The trigger is "published flag changed" in either direction. Publishing a product removes it from every cart that contains it.

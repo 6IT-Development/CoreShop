@@ -539,6 +539,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Delete the dead block. Make the warning list the consequence ("all CoreShop configuration and payment records are deleted; orders/products keep dangling references"). Require `--force-reset` in non-interactive mode instead of a prompt. Use `SchemaTool::getUpdateSchemaSql()` to detect partial schemas.
 
 ### B-74 — `CommandDirectoryChecker` prints empty paths and is stateful
+- **Status:** fixed — both error messages use `$directory` as given (the writable message also named the parent directory instead of the directory itself). Both `ensure*()` methods take an optional `$commandName`, which `AbstractInstallCommand` passes. `setCommandName()` is kept for BC but deprecated, and `$name` is nullable, so calling a method first no longer throws an `Error`.
 - **Where:** `Installer/Checker/CommandDirectoryChecker.php:25,39-46,60-66,78-81`.
 - **Problem:** On failure the messages use `realpath($directory)`. For a directory that does not exist (the `mkdir` failure case) this is `false`, so the message reads `Create directory "" …`. `$name` is an uninitialised typed property: calling `ensureDirectoryExists()` before `setCommandName()` gives `Error: must not be accessed before initialization`. The public shared service keeps the last command name between calls.
 - **Fix:** Use `$directory` itself in messages. Pass the command name as a parameter instead of using a setter.

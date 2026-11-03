@@ -24,14 +24,14 @@ use Symfony\Component\Filesystem\Filesystem;
 
 final class CommandDirectoryChecker
 {
-    private string $name;
+    private ?string $name = null;
 
     public function __construct(
         private Filesystem $filesystem,
     ) {
     }
 
-    public function ensureDirectoryExists(string $directory, OutputInterface $output): void
+    public function ensureDirectoryExists(string $directory, OutputInterface $output, ?string $commandName = null): void
     {
         if (is_dir($directory)) {
             return;
@@ -48,13 +48,13 @@ final class CommandDirectoryChecker
 
             throw new \RuntimeException(sprintf(
                 'Create directory "%s" and run command "<comment>%s</comment>"',
-                realpath($directory),
-                $this->name,
+                $directory,
+                $commandName ?? $this->name,
             ));
         }
     }
 
-    public function ensureDirectoryIsWritable(string $directory, OutputInterface $output): void
+    public function ensureDirectoryIsWritable(string $directory, OutputInterface $output, ?string $commandName = null): void
     {
         if (is_writable($directory)) {
             return;
@@ -71,12 +71,15 @@ final class CommandDirectoryChecker
 
             throw new \RuntimeException(sprintf(
                 'Set "%s" writable and run command "<comment>%s</comment>"',
-                realpath(dirname($directory)),
-                $this->name,
+                $directory,
+                $commandName ?? $this->name,
             ));
         }
     }
 
+    /**
+     * @deprecated pass the command name to ensureDirectoryExists() and ensureDirectoryIsWritable() instead, the service is shared
+     */
     public function setCommandName(string $name): void
     {
         $this->name = $name;

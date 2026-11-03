@@ -119,9 +119,7 @@ abstract class AbstractInstallCommand extends Command
 
     protected function ensureDirectoryExistsAndIsWritable($directory, OutputInterface $output): void
     {
-        $this->directoryChecker->setCommandName($this->getName());
-
-        $this->directoryChecker->ensureDirectoryExists($directory, $output);
-        $this->directoryChecker->ensureDirectoryIsWritable($directory, $output);
+        $this->directoryChecker->ensureDirectoryExists($directory, $output, $this->getName());
+        $this->directoryChecker->ensureDirectoryIsWritable($directory, $output, $this->getName());
     }
 }

@@ -5,6 +5,10 @@
 
     <mapped-superclass name="CoreShop\Component\Payment\Model\Payment"
                        table="coreshop_payment">
+        <indexes>
+            <index name="payment_order" columns="orderId"/>
+        </indexes>
+
         <id name="id" column="id" type="integer">
             <generator strategy="AUTO"/>
         </id>

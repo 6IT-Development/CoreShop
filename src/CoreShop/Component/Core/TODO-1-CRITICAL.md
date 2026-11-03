@@ -67,6 +67,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Shipping: money charged wrongly
 
 ### C-05 — (reproduced) The `cartItems` shipping-tax strategy taxes each share at the wrong rule when two cart items have the same tax rule
+- **Status:** fixed — `collectCartItemsTaxRules()` keys the tax rules by id like the amounts (`$taxRules[$taxRule->getId()] = $taxRule`) and returns `array_values()` of both, so share `i` and rule `i` always belong to the same tax rule. For the example above the shares `[200, 800]` now go to `[20 %, 5 %]`. The zero-total crash (TODO-2 **B-09**) is still open.
 - **Where:** `Shipping/Taxation/TaxCalculationStrategyCartItems.php:101-106` (`$totalAmount` is keyed by tax-rule id, but `$taxRules[]` gets one entry per **item**), `:69` (`array_values($totalAmount)`), `:121-126` (`$taxRuleGroup[$i]` is indexed with the position in `$distributedAmount`).
 - **Problem:** after `array_values()`, index `i` of the distributed amounts is the i-th **distinct** rule, but `$taxRuleGroup[$i]` is the rule of the i-th **item**. In any cart where two items share a rule, all later shares move onto the wrong rule.
   - Reproduced: items A (20 %, 10.00), B (20 %, 10.00) and C (5 %, 80.00), with 10.00 shipping. The distributed shares are `[200, 800]`, and the rules used are `[20 %, 20 %, …]`. The 8.00 share that belongs to the 5 % rule is taxed at 20 %, so shipping tax is 2.00 instead of 0.80.

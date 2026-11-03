@@ -66,7 +66,7 @@ class TaxCalculationStrategyCartItems implements TaxCalculationStrategyInterface
             return [];
         }
 
-        $distributedAmount = $this->distributor->distribute(\array_values($totalAmount), $shippingAmount);
+        $distributedAmount = $this->distributor->distribute($totalAmount, $shippingAmount);
 
         return $this->collectTaxes($address, $taxRules, $distributedAmount, $store->getUseGrossPrice(), $context);
     }
@@ -103,10 +103,11 @@ class TaxCalculationStrategyCartItems implements TaxCalculationStrategyInterface
             }
 
             $totalAmount[$taxRule->getId()] += $item->getTotal(true);
-            $taxRules[] = $taxRule;
+            $taxRules[$taxRule->getId()] = $taxRule;
         }
 
-        return [$totalAmount, $taxRules];
+        // Both lists are keyed by the tax rule id, so their values line up by position.
+        return [\array_values($totalAmount), \array_values($taxRules)];
     }
 
     private function collectTaxes(

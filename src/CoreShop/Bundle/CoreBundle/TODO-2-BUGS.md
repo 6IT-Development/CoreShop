@@ -513,6 +513,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Install commands / installer
 
 ### B-71 — `coreshop:install` returns 0 on failure and misclassifies sub-command errors
+- **Status:** fixed — `CommandExecutor` throws the new `Installer/Executor/CommandFailedException` (command name and exit code) for every non-zero exit code and prints its message. `InstallCommand` catches any exception of a step, prints it (other exceptions with class and message, the trace with `-v`), stops at the first failing step and returns `Command::FAILURE` without marking migrations. The `symfony/process` exception classes are no longer used, so no new dependency is needed. Code that caught `Symfony\Component\Process\Exception\RuntimeException` from `runCommand()` must catch `CommandFailedException` (or `\RuntimeException`) instead; nothing in CoreShop did. Not run against a real install.
 - **Where:** `Command/InstallCommand.php:79-106`, `Installer/Executor/CommandExecutor.php:46-59`.
 - **Problem:**
   - Exit code `1` (the generic `Command::FAILURE`) is turned into `Symfony\Component\Process\Exception\RuntimeException('…permission error.')`. `InstallCommand` catches only that, sets `$errored` and carries on: it runs the remaining steps on a broken base, marks the migrations (TODO-1 **C-10**) and returns `0`. CI and `Installer::install()` treat a failed install as success.

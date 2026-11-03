@@ -20,11 +20,12 @@ namespace CoreShop\Bundle\CoreBundle\Command;
 
 use CoreShop\Bundle\CoreBundle\Installer;
 use CoreShop\Bundle\CoreBundle\Installer\Checker\CommandDirectoryChecker;
+use CoreShop\Bundle\CoreBundle\Installer\Executor\CommandFailedException;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Process\Exception\RuntimeException;
 
 final class InstallCommand extends AbstractInstallCommand
 {
@@ -80,27 +81,41 @@ EOT
         // decide before the database step creates the tables
         $freshInstall = !$this->installer->isSchemaPresent();
 
-        $errored = false;
         foreach ($this->commands as $step => $command) {
+            $outputStyle->newLine();
+            $outputStyle->section(
+                sprintf(
+                    'Step %d of %d. <info>%s</info>',
+                    $step + 1,
+                    count($this->commands),
+                    $command['message'],
+                ),
+            );
+
             try {
-                $outputStyle->newLine();
-                $outputStyle->section(
-                    sprintf(
-                        'Step %d of %d. <info>%s</info>',
-                        $step + 1,
-                        count($this->commands),
-                        $command['message'],
-                    ),
-                );
                 $this->commandExecutor->runCommand('coreshop:install:' . $command['command'], [], $output);
-            } catch (RuntimeException) {
-                $errored = true;
+            } catch (\Exception $exception) {
+                // the executor has already printed the exit code of a failed command
+                if (!$exception instanceof CommandFailedException) {
+                    $outputStyle->error(sprintf('%s: %s', $exception::class, $exception->getMessage()));
+
+                    if ($output->isVerbose()) {
+                        $outputStyle->writeln($exception->getTraceAsString());
+                    }
+                }
+
+                // later steps depend on the earlier ones, so do not continue on a broken base
+                $outputStyle->error(sprintf(
+                    'CoreShop could not be installed, step %d (%s) failed. Migrations have not been marked as executed. Run "coreshop:install" again once the problem is solved.',
+                    $step + 1,
+                    $command['message'],
+                ));
+
+                return Command::FAILURE;
             }
         }
 
-        if ($errored) {
-            $outputStyle->warning('Migrations have not been marked as executed, as an installation step failed. Run "coreshop:migrate" once the problem is solved.');
-        } elseif ($freshInstall) {
+        if ($freshInstall) {
             // the schema and classes have just been created in their latest version
             $this->installer->markAllMigrationsInstalled();
         } else {
@@ -109,12 +124,12 @@ EOT
         }
 
         $outputStyle->newLine(2);
-        $outputStyle->success($this->getProperFinalMessage($errored));
+        $outputStyle->success('CoreShop has been successfully installed.');
         $outputStyle->writeln(
             'You can now open your store at the following path under the website root: <info>/</info>',
         );
 
-        return 0;
+        return Command::SUCCESS;
     }
 
     private function getCoreShopLogo(): string
@@ -157,14 +172,5 @@ EOT
                                     %%%%%%%%%%%%%%%%%                                
                                         %%%%%%%%%                                                                                                                                 
 </>';
-    }
-
-    private function getProperFinalMessage(bool $errored): string
-    {
-        if ($errored) {
-            return 'CoreShop has been installed, but some error occurred.';
-        }
-
-        return 'CoreShop has been successfully installed.';
     }
 }

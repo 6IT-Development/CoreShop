@@ -23,7 +23,6 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\RuntimeException;
 
 final class CommandExecutor
 {
@@ -34,6 +33,9 @@ final class CommandExecutor
     ) {
     }
 
+    /**
+     * @throws CommandFailedException when the command returns a non-zero exit code
+     */
     public function runCommand($command, $parameters = [], ?OutputInterface $output = null): self
     {
         $parameters = array_merge(
@@ -45,17 +47,11 @@ final class CommandExecutor
         $this->application->setAutoExit(false);
         $exitCode = $this->application->run(new ArrayInput($parameters), $output ?: new NullOutput());
 
-        if (1 === $exitCode) {
-            throw new RuntimeException('This command terminated with a permission error.');
-        }
-
         if (0 !== $exitCode) {
-            $this->application->setAutoExit(true);
+            $exception = new CommandFailedException((string) $command, $exitCode);
+            $this->output->writeln(sprintf('<error>%s</error>', $exception->getMessage()));
 
-            $errorMessage = sprintf('The command terminated with an error code: %u.', $exitCode);
-            $this->output->writeln("<error>$errorMessage</error>");
-
-            throw new \Exception($errorMessage, $exitCode);
+            throw $exception;
         }
 
         return $this;

@@ -82,12 +82,17 @@ class CartRuleApplier implements CartRuleApplierInterface
 
         foreach ($discountableItems as $item) {
             $totalAmount[] = $item->getTotal(false);
-            $totalDiscountPossible += $item->getTotal($withTax);
+            /*
+             * Cart rules that were applied before are only stored as neutral adjustments
+             * on the items, so the item total does not include them yet.
+             */
+            $totalDiscountPossible += $item->getTotal($withTax) +
+                $item->getNeutralAdjustmentsTotal(AdjustmentInterface::CART_PRICE_RULE, $withTax);
         }
 
         //Don't apply less than the cart is worth
         if (!$positive) {
-            $discount = min($discount, $totalDiscountPossible);
+            $discount = max(0, min($discount, $totalDiscountPossible));
         }
 
         if (0 === $discount) {

@@ -343,6 +343,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** reuse the existing row for the same store (copy values onto it), or flush the removals first (`remove()` + `flush()` before persisting new rows, inside the same transaction).
 
 ### B-46 — CSV export of a StoreValues field always produces `{"<storeId>":{}}`
+- **Status:** fixed — `getForCsvExport()` serializes each entity with the JMS `Version` group, so the export holds id, price, store, tax rule and unit prices per store. Not run against a real export.
 - **Where:** `CoreExtension/StoreValues.php:722-731`.
 - **Problem:** `json_encode()` of `ProductStoreValues` entities (protected properties, no `JsonSerializable`) yields empty objects. **(reproduced)** `csv.php` → `{"1":{}}`. Grid CSV/XLSX export of prices is useless.
 - **Fix:** serialize via JMS (`toArray($entity, SerializationContext::create()->setGroups(['Version']))`) or map to `['store' => id, 'price' => …]`.

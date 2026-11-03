@@ -774,7 +774,21 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
             return '{}';
         }
 
-        return json_encode($data);
+        $export = [];
+
+        foreach ($data as $storeId => $storeValuesEntity) {
+            if (!$storeValuesEntity instanceof ProductStoreValuesInterface) {
+                continue;
+            }
+
+            $context = SerializationContext::create();
+            $context->setSerializeNull(false);
+            $context->setGroups(['Version']);
+
+            $export[$storeId] = $this->getSerializer()->toArray($storeValuesEntity, $context);
+        }
+
+        return $export === [] ? '{}' : json_encode($export);
     }
 
     /**

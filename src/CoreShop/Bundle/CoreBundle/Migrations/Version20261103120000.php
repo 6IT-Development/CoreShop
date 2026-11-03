@@ -15,47 +15,63 @@ declare(strict_types=1);
  * @license    https://www.coreshop.org/license     GPLv3 and CCL
  *
  */
+
 namespace CoreShop\Bundle\CoreBundle\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
+/**
+ * Lets stores, carriers and tax rule groups be deleted while other records still reference them.
+ */
 final class Version20261103120000 extends AbstractMigration
 {
+    private const FOREIGN_KEYS = [
+        ['coreshop_carrier_stores', 'carrier_id', 'CASCADE'],
+        ['coreshop_carrier_stores', 'store_id', 'CASCADE'],
+        ['coreshop_product_store_values', 'taxRuleId', 'SET NULL'],
+    ];
+
     public function getDescription(): string
     {
-        return 'Align coreshop_payment_provider_rule_translation created by Version20230829163505 with its Doctrine mapping.';
+        return 'Add ON DELETE rules to coreshop_carrier_stores and coreshop_product_store_values.taxRuleId';
     }
 
     public function up(Schema $schema): void
     {
-        if (!$schema->hasTable('coreshop_payment_provider_rule_translation')) {
-            return;
+        foreach (self::FOREIGN_KEYS as [$table, $column, $onDelete]) {
+            $this->replaceForeignKey($schema, $table, $column, $onDelete);
         }
-
-        $table = $schema->getTable('coreshop_payment_provider_rule_translation');
-
-        // tables created by the schema tool already match the mapping
-        if (!$table->hasIndex('translatable_id_locale')) {
-            return;
-        }
-
-        $dropRedundantIndex = $table->hasIndex('translatable_id') ? ' DROP INDEX translatable_id,' : '';
-
-        // translations without a locale can never be loaded
-        $this->addSql('DELETE FROM coreshop_payment_provider_rule_translation WHERE locale IS NULL;');
-        $this->addSql('UPDATE coreshop_payment_provider_rule_translation SET label = LEFT(label, 255) WHERE CHAR_LENGTH(label) > 255;');
-        $this->addSql(
-            'ALTER TABLE coreshop_payment_provider_rule_translation
-            CHANGE label label VARCHAR(255) DEFAULT NULL,
-            CHANGE locale locale VARCHAR(5) NOT NULL,' . $dropRedundantIndex . '
-            DROP INDEX translatable_id_locale,
-            ADD UNIQUE INDEX coreshop_payment_provider_rule_translation_uniq_trans (translatable_id, locale);',
-        );
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
+        foreach (self::FOREIGN_KEYS as [$table, $column]) {
+            $this->replaceForeignKey($schema, $table, $column, null);
+        }
+    }
+
+    private function replaceForeignKey(Schema $schema, string $table, string $column, ?string $onDelete): void
+    {
+        if (!$schema->hasTable($table)) {
+            return;
+        }
+
+        foreach ($schema->getTable($table)->getForeignKeys() as $foreignKey) {
+            if ($foreignKey->getLocalColumns() !== [$column] || $foreignKey->onDelete() === $onDelete) {
+                continue;
+            }
+
+            $this->addSql(sprintf('ALTER TABLE %s DROP FOREIGN KEY %s', $table, $foreignKey->getName()));
+            $this->addSql(sprintf(
+                'ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)%s',
+                $table,
+                $foreignKey->getName(),
+                $column,
+                $foreignKey->getForeignTableName(),
+                implode(', ', $foreignKey->getForeignColumns()),
+                null === $onDelete ? '' : ' ON DELETE ' . $onDelete,
+            ));
+        }
     }
 }

@@ -75,7 +75,7 @@ final class AddressType extends AbstractResourceType
                         'data-address-type' => $address->hasAddressIdentifier() ? $address->getAddressIdentifier()->getName() : '',
                     ];
                 },
-                'empty_data' => $defaultShippingAddress,
+                'empty_data' => $defaultShippingAddress ? (string) $defaultShippingAddress->getId() : '',
             ])
             ->add('invoiceAddress', AddressChoiceType::class, [
                 'constraints' => [new NotBlank(groups: $this->validationGroups)],
@@ -88,7 +88,7 @@ final class AddressType extends AbstractResourceType
                         'data-address-type' => $address->hasAddressIdentifier() ? $address->getAddressIdentifier()->getName() : '',
                     ];
                 },
-                'empty_data' => $defaultInvoiceAddress,
+                'empty_data' => $defaultInvoiceAddress ? (string) $defaultInvoiceAddress->getId() : '',
             ])
             ->addEventListener(FormEvents::PRE_SET_DATA, static function (FormEvent $event) {
                 /** @var OrderInterface $cart */

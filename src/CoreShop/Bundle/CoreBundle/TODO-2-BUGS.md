@@ -113,6 +113,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** take the identifier into account (or use `AddressType`'s own defaults logic). Remove the second `process()` call.
 
 ### B-16 — (reproduced) Checkout `AddressType`: `empty_data` is an address object, so the "default address" fallback always fails with "The selected choice is invalid"
+- **Status:** fixed — `empty_data` is now the default address id as a string, or `''` when there is none. A choice field submitted empty with a string id falls back to the default address (checked with a real `ChoiceType`).
 - **Where:** `Form/Type/Checkout/AddressType.php:78` and `:91` (`'empty_data' => $defaultShippingAddress / $defaultInvoiceAddress`).
 - **Problem:** for a non-expanded `ChoiceType`, `empty_data` is **view** data (a string), and it goes through `ChoiceToValueTransformer::reverseTransform()`. An object fails the transformation. When the select is submitted empty, the field becomes unsynchronised with "The selected choice is invalid" instead of falling back to the customer's default address. Reproduced in `scratchpad/t3.php`: with the object, `synced=false` and data `NULL`; with the string id `'5'`, the default address is used.
 - **Fix:** `'empty_data' => $defaultShippingAddress ? (string) $defaultShippingAddress->getId() : ''` (same for invoice). Alternatively, pre-select the default with `data` in `PRE_SET_DATA` when the cart has no address.

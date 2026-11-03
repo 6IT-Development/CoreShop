@@ -19,6 +19,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** accumulate: `setDiscount($item->getDiscount(false) + $signedNet, false)`, and the same for gross.
 
 ### B-02 — (reproduced) `CartPriceRuleVoucherProcessor` removes price-rule items by a stale index, so it removes the wrong entry and orphans stay
+- **Status:** fixed — before the loop, `CartPriceRuleVoucherProcessor` removes all items whose rule no longer exists in one step (`setItems(array_values(array_filter(...)))`). The loop no longer removes anything by index; `unProcess()` removes items by rule and voucher code, and the loop iterates over its own copy of the items array. With `[orphan, orphan, validVoucher]`, both orphans are removed and the voucher is kept. (traced, not run against Pimcore.)
 - **Where:** `Order/Processor/CartPriceRuleVoucherProcessor.php:53-62`, plus the `unProcess()` calls at `:65`, `:75` and `:85`.
 - **Problem:** the loop iterates over a snapshot (`$priceRuleItems->getItems()`) and calls `$priceRuleItems->remove($index)`. Pimcore's `Fieldcollection::remove()` uses `array_splice()`, which re-indexes. `unProcess()` → `Order::removePriceRule()` splices the same collection inside the loop. After the first removal, every later index points at a different item.
   - With items `[orphan, orphan, validVoucher]`, the processor removes the first orphan and the **voucher**, and keeps the second orphan. Reproduced against the real `Pimcore\Model\DataObject\Fieldcollection`.

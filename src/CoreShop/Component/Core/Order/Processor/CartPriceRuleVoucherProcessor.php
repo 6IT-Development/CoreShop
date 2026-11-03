@@ -50,14 +50,21 @@ final class CartPriceRuleVoucherProcessor implements CartProcessorInterface
             return;
         }
 
-        foreach ($priceRuleItems->getItems() as $index => $item) {
+        /**
+         * Remove items whose rule no longer exists in one go: Fieldcollection::remove() re-indexes the
+         * collection, and unProcess() below removes items too, so indexes of a snapshot get stale.
+         */
+        $priceRuleItems->setItems(array_values(array_filter(
+            $priceRuleItems->getItems(),
+            static fn ($item) => !$item instanceof PriceRuleItemInterface || $item->getCartPriceRule() instanceof CartPriceRuleInterface,
+        )));
+
+        foreach ($priceRuleItems->getItems() as $item) {
             if (!$item instanceof PriceRuleItemInterface) {
                 continue;
             }
 
             if (!$item->getCartPriceRule() instanceof CartPriceRuleInterface) {
-                $priceRuleItems->remove($index);
-
                 continue;
             }
 

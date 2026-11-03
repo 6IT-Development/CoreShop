@@ -141,6 +141,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Cart / product listeners and cart validators
 
 ### B-20 — `RequestCartAvailability` answers any request with a 302 to the same URI: POST bodies are dropped and XHR/JSON clients get a redirect
+- **Status:** fixed — `RequestCartAvailability` now handles only safe, non-XHR requests with a session, and skips all `_`-prefixed routes. Other requests leave `needsRecalculation` set, so the next regular page view shows the message. The merge with `RequestCartRecalculation` stays in TODO-3 **I-24**. Tested with stubs.
 - **Where:** `EventListener/RequestCartAvailability.php:38-82`, `Resources/config/services/listeners.yml:60-66`.
 - **Problem:** when the cart needs recalculation, the listener adds a flash and redirects to `getRequestUri()`, whatever the method. A POST (add-to-cart, checkout step, payment form) becomes a GET after the 302, so the user's submission is silently lost. AJAX add-to-cart requests receive a redirect to the same JSON endpoint as GET, which then 405s or returns HTML **(plausible)**. The skip list excludes `_wdt` but not `_profiler` or `_fragment`. `getRequest()->getSession()` throws on stateless routes.
 - **Fix:** handle only safe (`GET`/`HEAD`), non-XHR main requests (`$request->isMethodSafe() && !$request->isXmlHttpRequest()`). Use `hasSession()`. Skip all `_`-prefixed debug routes. Merge with `RequestCartRecalculation` (TODO-3 **I-24**).

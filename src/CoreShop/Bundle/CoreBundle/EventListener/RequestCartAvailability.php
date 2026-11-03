@@ -45,7 +45,18 @@ final class RequestCartAvailability
             return;
         }
 
-        if ($event->getRequest()->attributes->get('_route') === '_wdt') {
+        $request = $event->getRequest();
+
+        // a redirect would drop the body of a POST and break XHR clients; the next regular page view handles the cart
+        if (!$request->isMethodSafe() || $request->isXmlHttpRequest()) {
+            return;
+        }
+
+        if (str_starts_with((string) $request->attributes->get('_route'), '_')) {
+            return;
+        }
+
+        if (!$request->hasSession()) {
             return;
         }
 
@@ -67,7 +78,7 @@ final class RequestCartAvailability
             return;
         }
 
-        $session = $event->getRequest()->getSession();
+        $session = $request->getSession();
 
         if (!$session instanceof Session) {
             return;
@@ -78,6 +89,6 @@ final class RequestCartAvailability
         $this->cartManager->persistCart($cart);
 
         // redirect to same page, otherwise flashbag will show up twice. better solution?
-        $event->setResponse(new RedirectResponse($event->getRequest()->getRequestUri()));
+        $event->setResponse(new RedirectResponse($request->getRequestUri()));
     }
 }

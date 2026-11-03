@@ -329,6 +329,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Product store values (`CoreExtension/StoreValues.php`)
 
 ### B-44 — Generated `set<Field>OfType()` hard-codes `getStoreValuesForStore()`; any field not named `storeValues` (or a second StoreValues field) reads/writes the wrong field
+- **Status:** fixed — the generated `set<Field>OfType()` calls the getter of its own field. Existing projects must regenerate their data-object classes to get it. The related per-store inheritance is unchanged: a variant with own values for store A still gets `null` for store B, because Pimcore inherits per field. That is the documented behaviour from now on.
 - **Where:** `CoreExtension/StoreValues.php:294-296`.
 - **Problem:** the generated code uses `$this->getStoreValuesForStore($store)` instead of `$this->get<Key>ForStore($store)`. A field called e.g. `prices` gets values created from scratch on every call (never finds the existing row → duplicate insert → unique-key violation, see B-45) or fatals if the class has no `storeValues` field.
 - **Fix:** `'return $this->get' . ucfirst($key) . 'ForStore($store);'`.

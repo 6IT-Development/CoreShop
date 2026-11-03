@@ -296,7 +296,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
         $code .= '*/' . "\n";
         $code .= 'public function set' . ucfirst($key) . 'OfType (string $type, $value, \CoreShop\Component\Store\Model\StoreInterface $store): self {' . "\n";
         $code .= "\t" . '$storeValue = \CoreShop\Component\Pimcore\DataObject\InheritanceHelper::useInheritedValues(function() use ($store) {' . "\n";
-        $code .= "\t\t" . 'return $this->getStoreValuesForStore($store);' . "\n";
+        $code .= "\t\t" . 'return $this->get' . ucfirst($key) . 'ForStore($store);' . "\n";
         $code .= "\t" . '}, false);' . "\n";
         $code .= "\t" . "\n";
         $code .= "\t" . 'if (!$storeValue instanceof \CoreShop\Component\Core\Model\ProductStoreValuesInterface) {' . "\n";

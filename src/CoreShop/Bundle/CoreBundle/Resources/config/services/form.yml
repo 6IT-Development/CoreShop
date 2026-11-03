@@ -92,10 +92,6 @@ services:
         tags:
             - { name: form.type_extension, extended_type: CoreShop\Bundle\AddressBundle\Form\Type\AddressType }
 
-    CoreShop\Bundle\CoreBundle\Form\Extension\CartCreationTypeExtension:
-        tags:
-            - { name: form.type }
-
     CoreShop\Bundle\CoreBundle\Form\Type\Shipping\Rule\Action\PriceActionConfigurationType:
         arguments:
             - '%coreshop.form.type.shipping_rule.action.price.validation_groups%'

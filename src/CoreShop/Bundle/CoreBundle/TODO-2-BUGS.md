@@ -242,6 +242,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** do the range check in the transformer (throw `TransformationFailedException`) as MoneyBundle B-07 proposes, then remove this listener. If you keep a guard here, validate the raw submitted string in `PRE_SUBMIT`.
 
 ### B-34 — `CartCreationTypeExtension` is defined twice with conflicting tags; it only works because of import order
+- **Status:** fixed — the `form.type` definition is removed from `form.yml`, so only the `form.type_extension` one in `form_extension.yml` is left.
 - **Where:** `Resources/config/services/form.yml:95-97` (tag `form.type`, wrong for an extension) and `Resources/config/services/form_extension.yml:49-51` (tag `form.type_extension`). Both are imported by `Resources/config/services.yml:4-5`.
 - **Problem:** the second definition replaces the first, including its tags. The compiled container shows only `form.type_extension`, so it works today. If the import order changes, or someone overrides `form.yml`, the extension is registered as a *type*. The admin cart-creation form then silently loses `shippingAddress`/`invoiceAddress`/`carrier`, and orders are created without addresses.
 - **Fix:** delete the block from `form.yml:95-97`.

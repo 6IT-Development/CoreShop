@@ -55,6 +55,7 @@ services:
         arguments:
             - '@form.factory'
             - '@router'
+            - '@request_stack'
 
     # Forms
     CoreShop\Bundle\CoreBundle\Form\Type\Checkout\AddressType:

@@ -22,19 +22,26 @@ use CoreShop\Bundle\CoreBundle\Form\Type\Checkout\SummaryType;
 use CoreShop\Component\Order\Checkout\CheckoutException;
 use CoreShop\Component\Order\Checkout\CheckoutStepInterface;
 use CoreShop\Component\Order\Checkout\RedirectCheckoutStepInterface;
+use CoreShop\Component\Order\Checkout\ValidationCheckoutStepInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Order\Model\OrderItemInterface;
 use Symfony\Component\Form\ClickableInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\RouterInterface;
 
-class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStepInterface
+class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStepInterface, ValidationCheckoutStepInterface
 {
+    private const TERMS_ACCEPTED_SESSION_KEY = 'coreshop.checkout.terms_accepted';
+
     public function __construct(
         private FormFactoryInterface $formFactory,
         private RouterInterface $router,
+        private RequestStack $requestStack,
     ) {
     }
 
@@ -52,18 +59,20 @@ class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStep
     {
         $form = $this->createForm($request, $cart);
 
-        $submitOrder = $form->get('submitOrder');
+        $submitQuote = $form->get('submitQuote');
 
-        $nextAction = $submitOrder instanceof ClickableInterface && $submitOrder->isClicked()
-            ? 'coreshop_checkout_do'
-            : 'coreshop_cart_create_quote';
+        $nextAction = $submitQuote instanceof ClickableInterface && $submitQuote->isClicked()
+            ? 'coreshop_cart_create_quote'
+            : 'coreshop_checkout_do';
 
         return new RedirectResponse($this->router->generate($nextAction));
     }
 
     public function validate(OrderInterface $cart): bool
     {
-        return true;
+        $session = $this->getSession();
+
+        return null === $session || $session->get(self::TERMS_ACCEPTED_SESSION_KEY) === $this->getCartFingerprint($cart);
     }
 
     public function commitStep(OrderInterface $cart, Request $request): bool
@@ -72,6 +81,8 @@ class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStep
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                $this->getSession()?->set(self::TERMS_ACCEPTED_SESSION_KEY, $this->getCartFingerprint($cart));
+
                 return true;
             }
 
@@ -84,6 +95,23 @@ class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStep
     public function prepareStep(OrderInterface $cart, Request $request): array
     {
         return ['form' => $this->createForm($request, $cart)->createView()];
+    }
+
+    private function getSession(): ?SessionInterface
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        return $request?->hasSession() ? $request->getSession() : null;
+    }
+
+    private function getCartFingerprint(OrderInterface $cart): string
+    {
+        $items = array_map(
+            static fn (OrderItemInterface $item): array => [$item->getId(), $item->getQuantity()],
+            $cart->getItems() ?? [],
+        );
+
+        return hash('sha256', json_encode([$cart->getId(), $cart->getTotal(), $items], \JSON_THROW_ON_ERROR));
     }
 
     private function createForm(Request $request, OrderInterface $cart): FormInterface

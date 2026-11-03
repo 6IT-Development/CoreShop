@@ -27,6 +27,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** collect the items to remove first, and remove them by identity after the loop (`$cart->removePriceRule($item)`), or rebuild the collection with `setItems(array_values(array_filter(...)))`.
 
 ### B-03 — Custom order-item attributes are never updated once they exist
+- **Status:** not a bug, no code change — `Component/Order/Model/AttributesAwareTrait::addAttribute()` already updates the value of an existing key (`findAttribute($key)?->setAttributeValue(...)`, since `54e92d254`), so a recalculated value replaces the old one. The removal loop in `processCustomAttributes()` collects the keys that are no longer returned first and removes them afterwards, so it does not iterate over a collection it changes.
 - **Where:** `Order/Processor/CartItemsProcessor.php:132-162`. **(dependent)** `Component/Order/Model/AttributesAwareTrait.php:36-75` (`hasAttributes()` matches by key, so `addAttribute()` is a no-op when the key exists).
 - **Problem:** if a `ProductCustomAttributesCalculator` returns a new value for an existing key (for example one that depends on price, quantity or context), `addAttribute()` is skipped and the removal loop keeps the old attribute. The item keeps the value from the first calculation forever, and that value is written into the order.
 - **Fix:** update the value of existing attributes (`setAttributeValue()`) or replace them, then remove the keys that are no longer returned. Iterate over a copy while removing.

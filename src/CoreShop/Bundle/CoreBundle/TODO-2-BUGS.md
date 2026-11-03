@@ -289,6 +289,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Pimcore repositories
 
 ### B-39 — `WishlistRepository::findNamedStorageLists()` orders by `o_creationDate`, a column that no longer exists in Pimcore 11 → SQL error
+- **Status:** fixed — ordered by `creationDate`, as `findLatestByStoreAndCustomer()` already does. Linted only, not run against a DB.
 - **Where:** `Pimcore/Repository/WishlistRepository.php:32-41` (line 36). Caller: `Component/StorageList/Core/Context/PimcoreListResolver.php:46`.
 - **Problem:** Pimcore 11 removed the `o_` prefixes (`objects.creationDate`; `ClassDefinition/Dao.php:210` builds the view from `objects` + `object_store_X`). `setOrderKey('o_creationDate')` quotes it as an identifier (`AbstractListing::setOrderKey()`, `isValidOrderKey()` returns `true`), and the query fails with "Unknown column 'o_creationDate'". Every page that lists the customer's named wishlists (multi-wishlist feature) returns 500. `OrderRepository::findNamedStorageLists()` uses `id` and is fine.
 - **(plausible)** (column rename verified in pimcore-source; not executed)

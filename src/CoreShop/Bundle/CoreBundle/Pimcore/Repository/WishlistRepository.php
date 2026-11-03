@@ -33,7 +33,7 @@ class WishlistRepository extends BaseWishlistRepository implements WishlistRepos
     {
         $list = $this->getList();
         $list->setCondition('customer__id = ? AND store = ? AND name IS NOT NULL', [$customer->getId(), $store->getId()]);
-        $list->setOrderKey('o_creationDate');
+        $list->setOrderKey('creationDate');
         $list->setOrder('DESC');
         $list->load();
 

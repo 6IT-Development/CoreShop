@@ -35,11 +35,14 @@
                     {{ form_row(form.invoiceAddress.country, { row_attr: { class: 'form-floating mb-1' }, attr: { class: class, placeholder: 'coreshop.form.address.country' } }) }}
                     {{ form_row(form.invoiceAddress.phoneNumber, { row_attr: { class: 'form-floating mb-1' }, attr: { class: class, placeholder: 'coreshop.form.address.phone_number' } }) }}
 
-                    {{ form_row(form.useInvoiceAsShipping, {row_attr: {class: 'form-floating'}, attr: {class: ''}}) }}
+                    {% if hasShippableItems %}
+                        {{ form_row(form.useInvoiceAsShipping, {row_attr: {class: 'form-floating'}, attr: {class: ''}}) }}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+    {% if hasShippableItems %}
     <div class="col-12 col-lg-6">
         <div class="shipping-address-selector" style="{% if form.useInvoiceAsShipping.vars.data %}display:none{% endif %}">
             <h1 class="h4">{{ 'coreshop.ui.shipping_address'|trans  }}</h1>
@@ -75,6 +78,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 {% if form._token is defined %}

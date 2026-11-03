@@ -51,13 +51,15 @@ class GuestAddressCheckoutStep implements CheckoutStepInterface
 
     public function commitStep(OrderInterface $cart, Request $request): bool
     {
+        Assert::isInstanceOf($cart, \CoreShop\Component\Core\Model\OrderInterface::class);
+
         $customer = $cart->getCustomer();
 
         if (!$customer instanceof CustomerInterface) {
             throw new CheckoutException('Customer not set', 'coreshop.ui.error.coreshop_checkout_internal_error');
         }
 
-        if ($cart->getShippingAddress() && $cart->getInvoiceAddress() &&
+        if ($cart->hasShippableItems() && $cart->getShippingAddress() && $cart->getInvoiceAddress() &&
             $cart->getInvoiceAddress()->getId() === $cart->getShippingAddress()->getId()) {
             /**
              * @var AddressInterface $shippingAddress
@@ -72,20 +74,15 @@ class GuestAddressCheckoutStep implements CheckoutStepInterface
         if ($form->isSubmitted() && $form->isValid()) {
             $cart = $form->getData();
 
-            if ($form->get('useInvoiceAsShipping')->getData()) {
-                $cart->getInvoiceAddress()->setParent(Service::createFolderByPath($cart . '/addresses'));
-                $cart->getInvoiceAddress()->setKey(uniqid());
-                $cart->getInvoiceAddress()->setPublished(true);
-                $cart->getInvoiceAddress()->save();
+            if (!$cart->hasShippableItems()) {
+                $this->saveAddress($cart, $cart->getInvoiceAddress());
+            } elseif ($form->get('useInvoiceAsShipping')->getData()) {
+                $this->saveAddress($cart, $cart->getInvoiceAddress());
 
                 $cart->setShippingAddress($cart->getInvoiceAddress());
             } else {
-                foreach ([$cart->getInvoiceAddress(), $cart->getShippingAddress()] as $address) {
-                    $address->setParent(Service::createFolderByPath($cart . '/addresses'));
-                    $address->setKey(uniqid());
-                    $address->setPublished(true);
-                    $address->save();
-                }
+                $this->saveAddress($cart, $cart->getInvoiceAddress());
+                $this->saveAddress($cart, $cart->getShippingAddress());
             }
 
             $this->cartManager->persistCart($cart);
@@ -112,11 +109,32 @@ class GuestAddressCheckoutStep implements CheckoutStepInterface
         ];
     }
 
+    private function saveAddress(OrderInterface $cart, ?AddressInterface $address): void
+    {
+        if (null === $address) {
+            return;
+        }
+
+        // an address that already exists stays where it is
+        if (!$address->getId()) {
+            $address->setParent(Service::createFolderByPath($cart->getFullPath() . '/addresses'));
+            $address->setKey(uniqid());
+        }
+
+        $address->setPublished(true);
+        $address->save();
+    }
+
     private function createForm(Request $request, OrderInterface $cart, CustomerInterface $customer): FormInterface
     {
         Assert::isInstanceOf($cart, \CoreShop\Component\Core\Model\OrderInterface::class);
 
         $form = $this->formFactory->createNamed('coreshop', GuestAddressType::class, $cart);
+
+        if ($cart->hasShippableItems() === false) {
+            $form->remove('shippingAddress');
+            $form->remove('useInvoiceAsShipping');
+        }
 
         if ($request->isMethod('post')) {
             $form = $form->handleRequest($request);

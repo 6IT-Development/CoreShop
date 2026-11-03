@@ -189,7 +189,11 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
     public function hasCustomerOrders(CustomerInterface $customer): bool
     {
         $list = $this->getList();
-        $list->setCondition('customer__id = ?', [$customer->getId()]);
+        $list->setUnpublished(true);
+        $list->setCondition(
+            'customer__id = ? AND saleState IN (?, ?)',
+            [$customer->getId(), OrderSaleStates::STATE_ORDER, OrderSaleStates::STATE_QUOTE],
+        );
 
         return $list->getTotalCount() > 0;
     }

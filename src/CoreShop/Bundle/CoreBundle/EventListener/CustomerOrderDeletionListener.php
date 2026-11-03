@@ -21,7 +21,9 @@ namespace CoreShop\Bundle\CoreBundle\EventListener;
 use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use Pimcore\Bundle\AdminBundle\Event\Model\DataObjectDeleteInfoEvent;
+use CoreShop\Component\Order\OrderSaleStates;
 use Pimcore\Event\Model\DataObjectEvent;
+use Pimcore\Model\Element\ValidationException;
 
 final class CustomerOrderDeletionListener
 {
@@ -57,7 +59,20 @@ final class CustomerOrderDeletionListener
         $hasOrders = $this->orderRepository->hasCustomerOrders($object);
 
         if ($hasOrders) {
-            throw new \InvalidArgumentException('Cannot delete a customer with orders');
+            throw new ValidationException('Cannot delete a customer with orders');
+        }
+
+        $this->deleteCarts($object);
+    }
+
+    private function deleteCarts(CustomerInterface $customer): void
+    {
+        $list = $this->orderRepository->getList();
+        $list->setUnpublished(true);
+        $list->setCondition('customer__id = ? AND saleState = ?', [$customer->getId(), OrderSaleStates::STATE_CART]);
+
+        foreach ($list->getObjects() as $cart) {
+            $cart->delete();
         }
     }
 }

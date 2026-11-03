@@ -170,6 +170,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `ShippingProductsConditionChecker::SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG`. Also subscribe to `*.post_delete`, and write the dispatch as a `match` (TODO-3 **I-26**).
 
 ### B-24 — `CustomerOrderDeletionListener` counts carts as orders and turns the block into a 500
+- **Status:** fixed — `hasCustomerOrders()` counts only `order` and `quote`, including unpublished ones. `preDelete` throws `ValidationException` and deletes the customer's carts when the deletion is allowed. Those carts are deleted before the customer itself, so they are gone if a later step of the deletion fails. Cart deletion tested with stubs; the repository query was not run against a DB.
 - **Where:** `EventListener/CustomerOrderDeletionListener.php:33-62`; `OrderBundle/Pimcore/Repository/OrderRepository.php:189-195` **(dependent)**.
 - **Problem:**
   - `hasCustomerOrders()` counts every `CoreShopOrder` with `customer__id`, whatever its `saleState`. Any customer who ever had a persisted cart therefore cannot be deleted, which blocks GDPR erasure. Old carts must be deleted first, and nothing in the UI says so.

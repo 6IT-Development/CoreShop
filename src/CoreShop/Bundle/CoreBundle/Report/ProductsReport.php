@@ -60,9 +60,8 @@ class ProductsReport implements ReportInterface, ExportReportInterface
         $from = ReportDateFilter::from($parameterBag);
         $to = ReportDateFilter::to($parameterBag);
 
-        $page = $parameterBag->get('page', 1);
-        $limit = $parameterBag->get('limit', 50);
-        $offset = $parameterBag->get('offset', $page === 1 ? 0 : ($page - 1) * $limit);
+        $limit = ReportPagination::limit($parameterBag, 50);
+        $offset = ReportPagination::offset($parameterBag, $limit);
 
         $orderClassId = $this->orderRepository->getClassId();
         $orderItemClassId = $this->orderItemRepository->getClassId();

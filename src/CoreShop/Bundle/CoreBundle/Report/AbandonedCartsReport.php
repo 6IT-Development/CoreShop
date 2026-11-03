@@ -56,9 +56,8 @@ final class AbandonedCartsReport implements ReportInterface, ExportReportInterfa
             $to = $maxTo;
         }
 
-        $page = $parameterBag->get('page', 1);
-        $limit = $parameterBag->get('limit', 50);
-        $offset = $parameterBag->get('offset', $page === 1 ? 0 : ($page - 1) * $limit);
+        $limit = ReportPagination::limit($parameterBag, 50);
+        $offset = ReportPagination::offset($parameterBag, $limit);
 
         $userClassId = $this->customerRepository->getClassId();
         $cartClassId = $this->cartRepository->getClassId();

@@ -50,9 +50,8 @@ class CustomersReport implements ReportInterface
         $from = ReportDateFilter::from($parameterBag);
         $to = ReportDateFilter::to($parameterBag);
 
-        $page = $parameterBag->get('page', 1);
-        $limit = $parameterBag->get('limit', 25);
-        $offset = $parameterBag->get('offset', $page === 1 ? 0 : ($page - 1) * $limit);
+        $limit = ReportPagination::limit($parameterBag, 25);
+        $offset = ReportPagination::offset($parameterBag, $limit);
 
         if (null === $storeId) {
             return [];

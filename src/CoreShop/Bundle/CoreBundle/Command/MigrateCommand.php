@@ -44,7 +44,7 @@ EOT
         $application->setCatchExceptions(false);
 
         $commandExecutor = new CommandExecutor($input, $output, $application);
-        $commandExecutor->runCommand('doctrine:migrations:migrate', ['--prefix' => 'CoreShop\\Bundle\\CoreBundle\\Migrations'], $output);
+        $commandExecutor->runCommand('doctrine:migrations:migrate', ['--prefix' => 'CoreShop\\Bundle'], $output);
 
         $output->writeln('');
 

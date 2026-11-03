@@ -505,6 +505,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Check `$container->has(Installer::class)` (bundle enabled) and only print a hint instead of installing. The migration should not decide which optional Pimcore bundles are installed.
 
 ### B-70 — `coreshop:migrate` skips the IndexBundle and MessengerBundle migrations
+- **Status:** fixed — the command uses the prefix `CoreShop\\Bundle`. The suggested marking in `InstallCommand` was left out on purpose: `IndexBundle` `Version20220121154623` sets its SettingsStore installation flag and the `MessengerBundle` migration creates its permission, so marking them without running would lose that. They stay pending after a fresh install until `coreshop:migrate` runs, and they are safe to run.
 - **Where:** `Command/MigrateCommand.php:45-46`. **(dependent)** `IndexBundle/Migrations/*`, `MessengerBundle/Migrations/*`, `IndexBundle/Resources/config/pimcore/config.yml:6`, `MessengerBundle/Resources/config/pimcore/config.yml:5`.
 - **Problem:** The command passes `--prefix CoreShop\Bundle\CoreBundle\Migrations`. The CoreShop migrations in other bundles (`coreshop_index.indexLastVersion`, the messenger SettingsStore flag) never run through the documented CoreShop command. `InstallCommand` also marks only the CoreBundle prefix as installed, so on a fresh install these other migrations stay pending.
 - **Fix:** Use `--prefix CoreShop\Bundle` (Pimcore's `FilteredMigrationsRepository` uses `str_starts_with`), or loop over all CoreShop bundles. Also mark them in `InstallCommand`.

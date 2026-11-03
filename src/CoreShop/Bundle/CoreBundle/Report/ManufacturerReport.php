@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\Report;
 
-use Carbon\Carbon;
 use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Core\Report\ReportInterface;
 use CoreShop\Component\Currency\Formatter\MoneyFormatterInterface;
@@ -48,11 +47,9 @@ class ManufacturerReport implements ReportInterface
 
     public function getReportData(ParameterBag $parameterBag): array
     {
-        $fromFilter = $parameterBag->get('from', strtotime(date('01-m-Y')));
-        $toFilter = $parameterBag->get('to', strtotime(date('t-m-Y')));
         $storeId = $parameterBag->get('store', null);
-        $from = Carbon::createFromTimestamp($fromFilter);
-        $to = Carbon::createFromTimestamp($toFilter);
+        $from = ReportDateFilter::from($parameterBag);
+        $to = ReportDateFilter::to($parameterBag);
 
         $page = $parameterBag->get('page', 1);
         $limit = $parameterBag->get('limit', 25);

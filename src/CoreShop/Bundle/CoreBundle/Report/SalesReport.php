@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\Report;
 
-use Carbon\Carbon;
 use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Core\Portlet\ExportPortletInterface;
 use CoreShop\Component\Core\Portlet\PortletInterface;
@@ -59,13 +58,11 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
     protected function getData(ParameterBag $parameterBag): array
     {
         $groupBy = $parameterBag->get('groupBy', 'day');
-        $fromFilter = $parameterBag->get('from', strtotime(date('01-m-Y')));
-        $toFilter = $parameterBag->get('to', strtotime(date('t-m-Y')));
         $storeId = $parameterBag->get('store', null);
         $orderCompleteState = OrderStates::STATE_COMPLETE;
 
-        $from = Carbon::createFromTimestamp($fromFilter);
-        $to = Carbon::createFromTimestamp($toFilter);
+        $from = ReportDateFilter::from($parameterBag);
+        $to = ReportDateFilter::to($parameterBag);
 
         $classId = $this->orderRepository->getClassId();
 
@@ -114,7 +111,7 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
         ]);
 
         foreach ($results as $result) {
-            $date = Carbon::createFromTimestamp($result['orderDate']);
+            $date = ReportDateFilter::fromTimestamp($result['orderDate']);
 
             $data[] = [
                 'timestamp' => $date->getTimestamp(),

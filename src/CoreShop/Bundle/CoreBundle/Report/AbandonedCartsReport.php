@@ -44,12 +44,10 @@ final class AbandonedCartsReport implements ReportInterface, ExportReportInterfa
 
     public function getReportData(ParameterBag $parameterBag): array
     {
-        $fromFilter = $parameterBag->get('from', strtotime(date('01-m-Y')));
-        $toFilter = $parameterBag->get('to', strtotime(date('t-m-Y')));
         $storeId = $parameterBag->get('store', null);
 
-        $from = Carbon::createFromTimestamp($fromFilter);
-        $to = Carbon::createFromTimestamp($toFilter);
+        $from = ReportDateFilter::from($parameterBag);
+        $to = ReportDateFilter::to($parameterBag);
 
         $maxToday = new Carbon();
         $minToday = new Carbon();

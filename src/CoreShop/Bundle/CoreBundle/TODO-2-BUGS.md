@@ -530,6 +530,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Remove the bogus element. Check the return value (`if (0 !== $code) throw new InstallationException(...)`). Pass a `BufferedOutput` and attach its content to the exception or log it.
 
 ### B-73 — Dangerous, dead "drop tables" path in `DatabaseSetupCommandsProvider`, and a misleading reset prompt
+- **Status:** fixed — the dead `drop-tables` block and the private `getRequiredCommands()` are removed. The reset prompt is a warning that lists what is deleted and that Pimcore objects keep dangling references. No `--force-reset` option was added: without interaction the question returns its default `N`, so a non-interactive install never resets. The partial-schema bullet is withdrawn: `create-tables` runs `SchemaTool::updateSchema($metadatas, true)` (save mode), which only creates the missing tables, so a half-finished install does not fail with "table exists".
 - **Where:** `Installer/Provider/DatabaseSetupCommandsProvider.php:44-53,55-73,76-79`.
 - **Problem:**
   - `getRequiredCommands()` builds `$commands['coreshop:resources:drop-tables' … '--force']` when `--no-interaction` is set, then discards it and returns `setupDatabase()`. Today this is dead code. A "fix" that returns `$commands` merged with the setup commands would drop all CoreShop tables on every non-interactive install, including `Installer::install()` (TODO-1 **C-11** path).

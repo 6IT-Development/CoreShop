@@ -36,17 +36,6 @@ final class DatabaseSetupCommandsProvider implements DatabaseSetupCommandsProvid
 
     public function getCommands(InputInterface $input, OutputInterface $output, QuestionHelper $questionHelper): array
     {
-        return $this->getRequiredCommands($input, $output, $questionHelper);
-    }
-
-    private function getRequiredCommands(InputInterface $input, OutputInterface $output, QuestionHelper $questionHelper): array
-    {
-        $commands = [];
-
-        if ($input->getOption('no-interaction')) {
-            $commands['coreshop:resources:drop-tables'] = ['application-name' => 'coreshop', '--force' => true];
-        }
-
         return $this->setupDatabase($input, $output, $questionHelper);
     }
 
@@ -63,7 +52,10 @@ final class DatabaseSetupCommandsProvider implements DatabaseSetupCommandsProvid
         }
 
         $outputStyle->writeln('Seems like your database contains schema.');
-        $outputStyle->writeln('<error>Warning! This action will erase your CoreShop Tables.</error>');
+        $outputStyle->warning([
+            'A reset drops and recreates all CoreShop tables: stores, countries, currencies, taxes, carriers, payment providers, all rules, voucher codes, payments and the other CoreShop configuration are deleted.',
+            'Pimcore objects such as orders, products and customers are kept, but their references to the deleted records will point to nothing.',
+        ]);
         $question = new ConfirmationQuestion('Do you want to reset your CoreShop scheme? (y/N) ', false);
         if ($questionHelper->ask($input, $output, $question)) {
             return [

@@ -143,3 +143,111 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Where:** `Behat/Model/Index/TestIndexFields.php:46,51` (`return new ImplementedByPimcoreException(...)`); all other call sites (`Behat/Model/Index/TestIndex.php`, `Behat/Model/Lock/OptimisticLock.php`, the component models) throw it.
 - **Effect:** the method returns an exception object where callers expect a value → misleading `TypeError` (or silent wrong value) in Behat runs.
 - **Fix (dependent):** `throw`. Component side: TODO-3 **CI-11** (`never`-returning named constructor makes the mistake impossible to type-check through).
+
+---
+
+# Scan 2 (2026-10-29): `Factory/`, `Metadata/`, `Model/`
+
+Scope and followed callers: see TODO-1, "Scope (scan 2)". "(reproduced)" items were run with PHP 8.4.27 against this component's classes (autoloaded from the reference project's vendor for `doctrine/collections` and `doctrine/inflector`).
+
+## Model – `SetValuesTrait`
+
+### CB-23 — `setValue()` calls a non-existent method for `o_*` keys; `$ignoreEmptyValues` is ignored — (reproduced)
+- **Where:** `Model/SetValuesTrait.php:32-43`. The `elseif` (`:37-39`) checks for `'set' . preg_replace('/^o_/', '', $key)` but then calls `$this->$method($value)` — the **unstripped** `set<o_key>` that was just found not to exist.
+- **Effect:** `setValue('o_foo', …)` → `Error: Call to undefined method ...::seto_foo()` (reproduced). Reachable from `ResourceBundle/Controller/ResourceController.php:193-195` (`addAction()` passes every POST key — ResourceBundle **B-07**) and `OrderBundle/Controller/{OrderInvoiceController.php:135-142,OrderShipmentController.php:138}` (every key of the decoded request payload except `items`/`id`/`state`) → HTTP 500. `$ignoreEmptyValues` (declared in `ResourceInterface::setValue()`, `Model/ResourceInterface.php:31`) has no effect, unlike Pimcore's `Concrete::setValue()` that the same interface also covers.
+- **Fix:** call the stripped method name — or, better, drop the `o_` compatibility branch (Pimcore 11 has no `o_` fields any more) and honour `$ignoreEmptyValues` (`if ($ignoreEmptyValues && ($value === null || $value === '' || $value === [])) return $this;`). Restricting **which** setters are callable is TODO-3 **CI-21**.
+
+## Metadata
+
+### CB-24 — `Metadata::getTemplatesNamespace()` throws `TypeError` when no `templates` key is configured — (reproduced)
+- **Where:** `Metadata/Metadata.php:27,37` stores `?string`, `:81-84` returns it with return type `string` (interface `Metadata/MetadataInterface.php:35` also says `string`).
+- **Effect:** `TypeError: ...::getTemplatesNamespace(): Return value must be of type string, null returned` for every resource without `templates` (= all CoreShop resources). No caller in `src/` today, but it is public API.
+- **Fix:** `?string` on interface and class (BC-relevant for implementors, see TODO-3 **CI-19**), or remove the method if templates are not a CoreShop concept.
+
+### CB-25 — `Metadata` accepts malformed input: missing `driver` → warning + `TypeError`; alias `a.b.c` silently becomes `a.b`; `a.` gives an empty name — (reproduced)
+- **Where:** `Metadata/Metadata.php:31-40` (`$parameters['driver']` without check), `:132-139` (`parseAlias()` only checks `str_contains($alias, '.')`, then `explode('.')` and the caller destructures the first two parts).
+- **Effect:** `Warning: Undefined array key "driver"` + `TypeError: Cannot assign null to property ...$driver of type string`; `fromAliasAndConfiguration('a.b.c', …)->getAlias()` returns `'a.b'` and two resources can end up with the same alias (the later one overwrites the earlier one in `Registry::add()`, CB-26) — all silently.
+- **Fix:** `explode('.', $alias, 2)` + assert both parts are non-empty `[a-z0-9_]+`; `Assert::keyExists($parameters, 'driver')` with a message naming the alias.
+
+### CB-26 — `Registry::hasClass()` / `getByClass()` compare exact class names: Doctrine proxies and subclasses are "not resources"; `hasClass()` throws instead of returning `false` — (reproduced: throw) (plausible: proxies)
+- **Where:** `Metadata/Registry.php:39-59`; `:61-64` overwrites duplicate aliases silently.
+- **Effect:**
+  - Callers pass `$object::class` (`CoreBundle/Pimcore/LinkGenerator/ResourceConfigurationLinkGenerator.php:37,41`, `ResourceBundle/Slug/ResourceConfigurationSlugGenerator.php:35`). A lazily loaded association (e.g. `$productStoreValues->getStore()`) is a `Proxies\__CG__\...` instance → `hasClass()` is `false` → no link / no slug, without error. A project subclass that is not configured as `classes.model` behaves the same.
+  - Any metadata without a `model` class makes `hasClass()` throw `InvalidArgumentException: Class "model" is not configured …` for **every** lookup (reproduced), because the loop calls `getClass('model')` unguarded. Today all resource configs require `model`, so only programmatic `add()` calls are affected.
+- **Fix:** resolve the real class (`Doctrine\Persistence\Proxy` check + `get_parent_class()`, or DoctrineBundle's proxy-class resolver) and fall back to `is_a($class, $model, true)`; guard with `$metadata->hasClass('model')`; index by class (TODO-3 **CI-20**); throw on duplicate alias in `add()`.
+
+## Model – translations
+
+### CB-27 — `TranslatableTrait::getTranslation()` creates and attaches an empty translation on a read — (reproduced) (dependent: persisted through the ORM mapping)
+- **Where:** `Model/TranslatableTrait.php:58-93` (`:85-90`); the association is mapped `cascade: [persist, merge, remove]`, `orphanRemoval: true`, `indexBy: locale` by `ResourceBundle/EventListener/ORMTranslatableListener.php:98-105`.
+- **Effect:** reading e.g. `$country->getName('it')` (`Component/Address/Model/Country.php:99`) when neither `it` nor the fallback locale has a translation adds an empty `it` translation to the collection (reproduced: count 0 → 1); the next `flush()` on the entity manager inserts it (the "has a translation" state then changes for the admin too, and `NOT NULL` translation columns can turn the flush into a DB error).
+- **Fix:** keep `getTranslation()` read-only (return a detached, non-attached empty translation, or throw), and add an explicit `getOrCreateTranslation(string $locale)` for setters (the models already call `getTranslation($locale, false)` from setters — switch those). TODO-3 **CI-22**.
+
+### CB-28 — `addTranslation()` silently drops a second translation object for an existing locale — (reproduced)
+- **Where:** `Model/TranslatableTrait.php:100-113`: `hasTranslation()` compares by **locale**, so a new object for `de` is neither added, nor replaces the old one, nor gets its `translatable` set.
+- **Effect:** code (forms, importers, serializer denormalisation) that builds new translation objects for existing locales loses the data without error (reproduced: `getTranslatable()` of the new object is `null`, `getTranslation('de')` still returns the old one).
+- **Fix:** either replace (`set()` + detach the old one) or throw `\LogicException('Translation for locale "de" already exists')`; document which semantics apply.
+
+### CB-29 — Translation cache gets out of sync with the collection — (reproduced)
+- **Where:** `Model/TranslatableTrait.php:37` (`$translationsCache`), `:65-67` and `:102` read the cache first; `getTranslations()` (`:95-98`) hands out the mutable collection.
+- **Effect:** after `$entity->getTranslations()->remove('de')` (what Symfony collection forms / `EntityMerger` / `refresh()` effectively do), the collection is empty but `getTranslation('de')` still returns the removed object and `hasTranslation()` is `true`, so a new `de` translation can **not** be added (reproduced: count 0, old object returned). Clones share the cache, see CB-31.
+- **Fix:** drop the cache (`indexBy: locale` makes `$this->translations->get($locale)` O(1) already) or only cache what is verified to still be in the collection; return a read-only view from `getTranslations()`.
+
+### CB-30 — `AbstractTranslation` can't be attached before its locale is set; `setLocale(null)` → `TypeError` — (reproduced)
+- **Where:** `Model/AbstractTranslation.php:28` (`protected string $locale;` without default), `:37-53` (`setTranslatable()` → `addTranslation()` → `hasTranslation()` → `getLocale()`), `:60-63` (untyped `setLocale($locale)` into a typed property).
+- **Effect:** `$t = new FooTranslation(); $t->setTranslatable($foo);` → `Error: Typed property ...::$locale must not be accessed before initialization` (reproduced). Form/serializer field order decides whether this happens.
+- **Fix:** `protected ?string $locale = null;` with `getLocale(): ?string`, and make `addTranslation()` reject translations without locale with a clear message; type `setLocale(string $locale): void`.
+
+### CB-31 — Cloning a translatable resource shares the translation collection and cache with the original — (reproduced) (plausible trigger)
+- **Where:** `Model/TranslatableTrait.php` has no `__clone()`; none of the nine users (`Component/{Order/Model/CartPriceRule,Shipping/Model/Carrier,Payment/Model/{PaymentProvider,PaymentProviderRule},Taxation/Model/TaxRate,Product/Model/{ProductUnit,AbstractPriceRule},Address/Model/{State,Country}}.php`) defines one.
+- **Effect:** `clone $carrier` → the clone's `getTranslation('de')` returns the original's object (reproduced: identical); editing the clone's name edits the original, and Doctrine sees the same translation entities owned by two parents. (CoreShop's admin "clone" re-creates via the form, and price-rule copies use DeepCopy, so the core paths are not affected; projects using `clone` are.)
+- **Fix:** a `__clone()` in the trait (or a `cloneTranslations()` helper the models call) that deep-clones each translation, re-points `translatable`, and resets the cache.
+
+## Model – timestamps
+
+### CB-32 — `TimestampableInterface` promises `\DateTime`, but `getModificationDate()` is `null` until the first update, and setters reject `\DateTimeImmutable` — (verified) (plausible impact)
+- **Where:** `Model/TimestampableInterface.php:23-35`, `Model/TimestampableTrait.php:23-57`; mappings use `<gedmo:timestampable on="update"/>` with `nullable="true"` (e.g. `TaxationBundle/Resources/config/doctrine/model/TaxRuleGroup.orm.xml:17-19`).
+- **Effect:** callers that trust the `@return \DateTime` (`->format()`) fail with `Error: Call to a member function format() on null` for never-updated resources; code that passes `new \DateTimeImmutable()` to the setters gets a `TypeError`. Adding native return types later without `?` would break hydration of these rows.
+- **Fix:** `getModificationDate(): ?\DateTimeInterface` (and the same for `getCreationDate()` before the first persist), setters taking `\DateTimeInterface`; see TODO-3 **CI-24** for the BC plan.
+
+---
+
+# Scan 3 (2026-10-29): `Pimcore/`, `Reflection/`, `Repository/`, `Service/`, `Storage/`, `TokenGenerator/`, `Translation/`
+
+Scope and followed callers: see TODO-1, "Scope (scan 3)". Note for **CB-27**: because of TODO-1 **CC-04** the fallback locale is always equal to the current locale in the wired setup, so CB-27 hits for *every* untranslated locale, not only when the fallback is missing too.
+
+## Service
+
+### CB-33 — `FolderCreationService`: an unknown `path` key silently creates the folder in the wrong place; path segments are not sanitised — (verified) (plausible trigger)
+- **Where:** `Service/FolderCreationService.php:35-77`.
+  - `:71`: `$resourceConfig[$options['path']]` without `isset` → `Warning: Undefined array key` and `$path = null`; `sprintf('%s%s%s', prefix, null, suffix)` then creates e.g. `/A` (just the suffix) at the **object tree root** and the customer/cart is saved there.
+  - `:66-67`: with a single configured path, a given `path` option is ignored without notice (a typo is never detected).
+  - `:46-52`: `prefix` / `suffix` are concatenated unvalidated. Callers pass user data: `mb_strtoupper(mb_substr($customer->getLastname(), 0, 1))` (`CoreBundle/Customer/CustomerManager.php:66-69`, `OrderBundle/Controller/CustomerCreationController.php:67-68`) — a last name starting with `/`, `.` or a character Pimcore keys reject produces `customers//`, `customers/.` or a key exception; a prefix already ending in `/` becomes `//`.
+  - `:42`: `getByClass($resource::class)` — exact class match, see **CB-26**.
+- **Fix:** `$resourceConfig[$options['path']] ?? throw new \InvalidArgumentException(sprintf('Unknown path "%s", configured: %s', …))`; reject a `path` option that is not configured; sanitise each segment with `Pimcore\Model\Element\Service::getValidKey($segment, 'object')` and join with `rtrim(..., '/')`; `OptionsResolver` with `setAllowedTypes('prefix', ['null','string'])` etc. TODO-3 **CI-29**.
+
+## Translation
+
+### CB-34 — `PimcoreTranslationLocaleProvider::getDefaultLocaleCode()` throws `TypeError` when Pimcore has no default language — (verified) (LocaleBundle **B-02**)
+- **Where:** `Translation/Provider/PimcoreTranslationLocaleProvider.php:30-33` returns `Tool::getDefaultLanguage()`, which is `?string` (`vendor/six-it/pimcore-source/lib/Tool.php:158`).
+- **Effect:** on fresh installs / broken `system_settings` / CLI test kernels every translatable entity load (`postLoad` → TODO-1 **CC-04** assigner) and every `TranslatableFactory::createNew()` (`Factory/TranslatableFactory.php:41-42`) fails with `TypeError` instead of a domain exception.
+- **Fix:** `?? throw new LocaleNotFoundException('No default Pimcore language configured')` (or fall back to the first of `getValidLanguages()`); same fix as LocaleBundle **B-02** — close in both files.
+
+## Pimcore
+
+### CB-35 — `ResourceSlugLinkGenerator` calls `getFullPath()` on any object; throws an exception without message — (verified)
+- **Where:** `Pimcore/ResourceSlugLinkGenerator.php:34-55`.
+- **Effect:** `generate(object $object)` accepts any object; for a non-`SluggableInterface` object without `getFullPath()` (e.g. a Doctrine resource) the error path itself throws `Error: Call to undefined method …::getFullPath()` instead of `LinkGenerationNotPossibleException`. `:50` throws `LinkGenerationNotPossibleException()` without message → empty log lines. `:46-47` uses `$object::class`, i.e. exact-class registry lookup (**CB-26**).
+- **Fix:** `$object instanceof ElementInterface ? $object->getFullPath() : get_debug_type($object)`; message "Slugs are disabled for resource %s"; lookup through the proxy/subclass-aware registry.
+
+### CB-36 — `ResourceDocumentTagFactory` spreads the editable params into the constructor: string keys become named arguments — (verified) (plausible trigger)
+- **Where:** `Pimcore/ResourceDocumentTagFactory.php:36-45`; target `ResourceBundle/CoreExtension/Document/Select.php:32-36` (`__construct(string $repositoryName, string $nameProperty, string $type)`); caller `PimcoreBundle/Loader/DependencyInjectionImplementationLoader.php:37-45` passes Pimcore's `$params` through.
+- **Effect:** with `array_unshift()` the three CoreShop values become positional args 0-2; any associative entry in `$params` becomes a **named** argument → `Error: Unknown named parameter $foo`; additional positional entries are silently dropped. Today Pimcore calls the loader with empty `$params`, so this is latent.
+- **Fix:** `return new $className($this->repositoryName, $this->nameProperty, $type);` and ignore/validate `$params` explicitly; `Assert::subclassOf($class, EditableInterface::class)` in the constructor.
+
+## Token generator
+
+### CB-37 — `UniqueTokenGenerator::generate()` returns an empty string for `$length <= 0` — (reproduced)
+- **Where:** `TokenGenerator/UniqueTokenGenerator.php:49-60`.
+- **Effect:** `generate(0)` and `generate(-5)` both return `''` (reproduced). Callers store the result as order token (`FrontendBundle/Controller/CheckoutController.php:214`), storage-list token (`Component/StorageList/Factory/StorageListFactory.php:49`) and payment number (`Component/Order/Payment/OrderPaymentProvider.php:41-42`, `OrderBundle/Controller/OrderPaymentController.php:100-101`); a length coming from configuration as `0` would silently produce empty — and therefore shared — tokens.
+- **Fix:** `if ($length < 1) throw new \InvalidArgumentException(...)`; TODO-3 **CI-31**.

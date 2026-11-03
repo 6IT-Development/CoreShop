@@ -3,7 +3,11 @@
 Target: **Symfony 7.4**, **PHP 8.4**. Scan date: 2026-10-29 (branch `s74-p84`).
 Scope (scan 1): `DataHub/**` (15 files), `Doctrine/Type/*` (5 files), `Exception/*` (4 files), `composer.json`. Dependent config and callers that were followed: `Bundle/ResourceBundle/{Resources/config/services/data_hub.yml,Resources/config/pimcore/config.yml,DependencyInjection/{Configuration,CoreShopResourceExtension}.php}`, the `services/data_hub.yml` of `CoreBundle`, `TaxationBundle`, `StoreBundle`, `OrderBundle`, `PaymentBundle` (the users of `DataHub/QueryType/Resource(List)`), the `graphql.enabled` nodes in the bundles' `DependencyInjection/Configuration.php`, the Doctrine mappings that use the custom DBAL types (`CoreBundle/.../{ProductStoreValues,QuantityRange,Payment}.orm.xml`, `PaymentBundle/.../PaymentProvider.orm.xml`, `ShippingBundle/.../Carrier.orm.xml`), `CoreBundle/Doctrine/ORM/ProductStoreValuesRepository.php`, `PaymentBundle/Doctrine/ORM/PaymentRepository.php`, every caller of the four exceptions, `vendor/six-it/pimcore-source/models/Element/ValidationException.php`, `vendor/doctrine/{dbal,orm}`.
 
-Other folders of this component (`Factory`, `Metadata`, `Model`, `Pimcore`, `Reflection`, `Repository`, `Service`, `Storage`, `TokenGenerator`, `Translation`) are **not** part of this scan; add them as "Scan 2" sections later and continue the numbering.
+Scope (scan 2): `Factory/*` (9 files), `Metadata/*` (4 files), `Model/*` (15 files). Dependent config and callers that were followed: `Bundle/ResourceBundle/{DependencyInjection/Driver/{AbstractDriver,Pimcore/PimcoreDriver,Doctrine/DoctrineORMDriver}.php,EventListener/{ORMTranslatableListener,ORMRepositoryClassSubscriber}.php,Doctrine/ResourceMappingDriverChain.php,Routing/ResourceLoader.php,Slug/ResourceConfigurationSlugGenerator.php,Controller/ResourceController.php}`, `CoreBundle/Pimcore/LinkGenerator/ResourceConfigurationLinkGenerator.php`, `OrderBundle/Controller/{OrderInvoiceController,OrderShipmentController}.php`, the nine `TranslatableTrait` users (`Component/{Order/Model/CartPriceRule,Shipping/Model/Carrier,Payment/Model/{PaymentProvider,PaymentProviderRule},Taxation/Model/TaxRate,Product/Model/{ProductUnit,AbstractPriceRule},Address/Model/{State,Country}}.php`), the Gedmo timestampable ORM mappings.
+
+Scope (scan 3): `Pimcore/**` (5 files), `Reflection/ClassReflection.php`, `Repository/*` (3 files), `Service/*` (2 files), `Storage/StorageInterface.php`, `TokenGenerator/UniqueTokenGenerator.php`, `Translation/**` (4 files), `README.md`. Dependent config and callers that were followed: `Bundle/ResourceBundle/{Resources/config/services.yml,Resources/config/services/integrations/translation.yml,Resources/config/pimcore/config.yml,DependencyInjection/{Configuration,CoreShopResourceExtension}.php,EventListener/ORMTranslatableListener.php,CoreExtension/Document/Select.php}`, `TaxationBundle/Resources/config/services/pimcore.yml`, `PimcoreBundle/Loader/DependencyInjectionImplementationLoader.php`, `Component/Core/Translation/TranslatableEntityPimcoreLocaleAssigner.php`, the `FolderCreationService` callers (`CoreBundle/Customer/CustomerManager.php`, `OrderBundle/{Manager/CartManager,Controller/CustomerCreationController}.php`, `Component/StorageList/Manager/StorageListPimcoreModelManager.php`), the `UniqueTokenGenerator` callers, `vendor/six-it/pimcore-source/{lib/Tool.php,models/DataObject/{AbstractObject,Concrete}.php}`.
+
+With scan 3 every folder of the component has been scanned once.
 
 "Critical" here means: a security hole, data loss, or an error that takes down a whole area (the DataHub endpoint, the container build) once it is triggered, or a blocker for Symfony 7.4 / PHP 8.4.
 Paths are relative to the component root unless noted otherwise. Paths starting with a bundle or component name are relative to `src/CoreShop/`. `vendor/` means `../pimcore2teszt10211524/vendor/` (Symfony 7.4.x, doctrine/dbal 3.10.6, doctrine/orm 2.20.13, doctrine/persistence 3.4.5, six-it/pimcore-source 2.x, PHP 8.4.27). Component items use the prefixes `CC-` (critical), `CB-` (bugs) and `CI-` (improvements). ResourceBundle items are referenced as ResourceBundle **C-/B-/I-nn**.
@@ -11,7 +15,7 @@ Markers: **(dependent)** = root cause or part of the fix is outside this compone
 
 **Important context for every DataHub item:** `pimcore/data-hub` and `webonyx/graphql-php` are **not installed** in the reference project, so the `DataHub/**` classes cannot even be autoloaded there and nothing in DataHub could be executed; all DataHub items are from reading the code against the webonyx 15 / data-hub APIs. `DataHub/**` is only loaded when `PimcoreDataHubBundle` is registered (`CoreShopResourceExtension.php:68-69`). The vendored copy (`vendor/six-it/core-shop/src/CoreShop/Component/Resource/{DataHub,Doctrine,Exception}`) is identical to this repo.
 
-**No Symfony 7.4 / PHP 8.4 language blocker was found.** All 24 PHP files pass `php -l` on 8.4.27 with `error_reporting=-1`; no implicitly nullable parameters, no removed functions. One PHP 8.2+ deprecation (dynamic property) is in TODO-2 **CB-14**. Doctrine ORM 3 / DBAL 4 are not blockers for Symfony 7.4 (DoctrineBundle 2.19 still runs ORM 2.20 + DBAL 3.10) — forward-compatibility work is in TODO-3 **CI-08**, **CI-09**.
+**No Symfony 7.4 / PHP 8.4 language blocker was found.** All 24 PHP files of scan 1, all 28 of scan 2 and all 17 of scan 3 pass `php -l` on 8.4.27 with `error_reporting=-1`; no implicitly nullable parameters, no removed functions. One PHP 8.2+ deprecation (dynamic property) is in TODO-2 **CB-14**. Doctrine ORM 3 / DBAL 4 are not blockers for Symfony 7.4 (DoctrineBundle 2.19 still runs ORM 2.20 + DBAL 3.10) — forward-compatibility work is in TODO-3 **CI-08**, **CI-09**.
 
 Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3-IMPROVEMENTS.md)
 
@@ -57,3 +61,40 @@ The resolver built by `DataHub/DoctrineProvider.php::getGraphQlQuery()` (`:418-5
   - `getGraphQlType()` must return `?Type` and throw a descriptive `\LogicException` (or return a placeholder `Type::id()` / `Type::int()` that exposes the raw id) when the class is not exposed; never return `null` into a field config.
   - `getGraphQlQueries()` must skip resources whose `graphql.enabled` is false (reuse the filter from `initialize()`, extracted into one method — TODO-3 **CI-16**).
 - **Fix (dependent):** register the bundle `QueryType` services only when the corresponding resource has `graphql.enabled = true` (in each extension, or via one compiler pass in ResourceBundle that removes the tagged services for disabled resources).
+
+---
+
+# Scan 2 (2026-10-29): `Factory/`, `Metadata/`, `Model/`
+
+**No critical item in this scan.** The worst findings are single-request errors or silent wrong data, all in TODO-2 (**CB-23** … **CB-32**). The closest to "critical" are:
+- TODO-2 **CB-23** — `SetValuesTrait::setValue()` calls a method that does not exist for `o_*` keys (reproduced: `Error: Call to undefined method ...::seto_foo()`). Combined with ResourceBundle **B-07** (admin `addAction()` passes every POST key to `setValue()`), any admin with create permission can trigger a 500; the mass-assignment itself (any `set*()` callable from the request) is tracked as ResourceBundle **B-07** and component-side in TODO-3 **CI-21**.
+- TODO-2 **CB-27** — `TranslatableTrait::getTranslation()` creates and attaches an empty translation as a side effect of a **read**; the association is `cascade: persist` + `orphanRemoval` (`ResourceBundle/EventListener/ORMTranslatableListener.php:98-105`), so the next `flush()` on that entity manager writes empty translation rows.
+
+All 28 PHP files are identical to the vendored copy in the reference project.
+
+---
+
+# Scan 3 (2026-10-29): `Pimcore/`, `Reflection/`, `Repository/`, `Service/`, `Storage/`, `TokenGenerator/`, `Translation/`
+
+All 17 PHP files load on PHP 8.4.27 against the reference project's vendor (the Pimcore model classes are compatible with `six-it/pimcore-source` `Concrete` / `AbstractData`). The vendored copy matches this repo except `TokenGenerator/UniqueTokenGenerator.php`, which this repo has already moved to `random_int()` (the vendored copy still uses `openssl_random_pseudo_bytes()`); reproduce token items against this repo.
+
+## Translations
+
+### CC-04 — The wired locale assigner sets the fallback locale to the *current* locale: fallback translations never apply, and reads create empty translations that get persisted — (verified) (dependent) (LocaleBundle **C-01**)
+- **Where:**
+  - `Translation/TranslatableEntityLocaleAssigner.php:36-45`: computes `$fallbackLocale` (default Pimcore language) but calls `setFallbackLocale($currentLocale)` (`:45`).
+  - Wiring: `ResourceBundle/Resources/config/services/integrations/translation.yml:16-20` aliases `TranslatableEntityLocaleAssignerInterface` to this class; `ResourceBundle/EventListener/ORMTranslatableListener.php:70-78` runs it on **every** `postLoad` of a translatable entity.
+  - The correct variant, `Component/Core/Translation/TranslatableEntityPimcoreLocaleAssigner.php:46` (`setFallbackLocale($fallbackLocale)`), is not wired anywhere.
+- **Effect:** in any request locale without its own translation (a newly added shop language, a partially translated carrier/country/tax rate/price rule/payment provider), `getTranslation()` cannot fall back to the default language. Together with TODO-2 **CB-27** it creates an empty translation **on read**; the association cascades persist, so the next `flush()` of the entity manager writes empty translation rows. Visible result: empty country, carrier, payment-provider and unit names in the storefront and in mails; "translated" rows that are empty in the admin.
+- **Fix:** `setFallbackLocale($fallbackLocale)`; then keep one assigner (alias the Core one to it, deprecate, remove — LocaleBundle **I-19**). Clean up the empty translation rows already written (one-off migration: delete translations whose translatable fields are all empty and whose locale is not the default). Close in both files when fixed.
+
+## Container build
+
+### CC-05 — `ClassReflection::getResourcesByPath()` parses class names with a regex: a docblock like "This class represents …" yields a non-existent class and the container build fails — (reproduced: parsing) (verified: failure path) (dependent)
+- **Where:**
+  - `Reflection/ClassReflection.php:48-63`: `preg_match('/namespace (.+);/')` and `preg_match('/class +([^{ ]+)/')` on the raw file content take the **first** match anywhere — comments, docblocks, strings, `Foo::class` references.
+  - Caller: `ResourceBundle/DependencyInjection/CoreShopResourceExtension.php:96-107` (`autoRegisterPimcoreModels()`) feeds each result to `ClassReflection::getClassAttributes()` → `new \ReflectionClass($className)` (`:73-79`).
+  - Default scan path: `ResourceBundle/Resources/config/pimcore/config.yml:17-19` → `%kernel.project_dir%/src/Model`, i.e. **every** project's model folder is scanned by default.
+- **Reproduced (PHP 8.4.27):** a file with the docblock `This class represents a product.` yields `App\Model\represents`; an interface with the comment `// returns Foo::class name` yields `App\Model\name`; a file with `// namespace Legacy; was removed` above the real namespace yields `Legacy\Bar`.
+- **Effect:** `ReflectionException: Class "App\Model\represents" does not exist` during container compilation → the application (and `cache:clear`) does not boot after adding an innocent docblock to any file under `src/Model`. Enums/interfaces/traits are not handled either (they are skipped only by luck when no comment contains `class `).
+- **Fix:** tokenise instead of regex — `PhpToken::tokenize()` (PHP 8.0+) and read the `T_NAMESPACE` + `T_CLASS` name tokens, skipping `T_CLASS` that follows `T_DOUBLE_COLON`/`T_NEW` — or use `composer/class-map-generator` (`ClassMapGenerator::createMap($path)`), which is what Composer itself uses. Guard with `class_exists($className)` before reflecting and skip (with a container log message) instead of failing. TODO-3 **CI-26**.

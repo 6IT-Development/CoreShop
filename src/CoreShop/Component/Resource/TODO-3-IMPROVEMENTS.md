@@ -132,3 +132,140 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
   - Schema test: build all types for the default CoreShop resources with a test EntityManager and run `$schema->assertValid()` (catches TODO-1 **CC-03**, TODO-2 **CB-02**, **CB-04**, **CB-05**).
   - Query-builder tests for the filter applier and paginator: generated DQL + parameters, injection payloads (TODO-1 **CC-01**, **CC-02**), parameter collisions (TODO-2 **CB-12**).
   - Add `webonyx/graphql-php` to the monorepo `require-dev` so DataHub code is at least autoloadable in CI.
+
+---
+
+# Scan 2 (2026-10-29): `Factory/`, `Metadata/`, `Model/`
+
+Scope and followed callers: see TODO-1, "Scope (scan 2)". Many interfaces here (`FactoryInterface`, `MetadataInterface`, `RegistryInterface`, `TimestampableInterface`, `ToggleableInterface`, `ImmutableInterface`, `TranslationInterface`) are implemented across all components and by projects: adding native return types is a **BC break** for implementors. Plan them for the next major and use `@return` PHPDoc + PHPStan in the meantime; adding native **parameter** types to classes that only implement (not define) the interface is safe.
+
+## Factory
+
+### CI-18 — Typed, generic factories; merge the identical `Factory` and `PimcoreFactory`
+- **Where:** `Factory/*.php`.
+- **Fix:**
+  - `FactoryInterface` (`:21-27`): `@template T of object` + `@return T` now; `createNew(): object` in the next major. Same for `RepositoryFactoryInterface`.
+  - `Factory` and `PimcoreFactory` (`Factory/Factory.php`, `Factory/PimcoreFactory.php`) are byte-for-byte the same apart from the marker interface → one class (`PimcoreFactory extends`/aliases it), `PimcoreFactory implements FactoryInterface, PimcoreFactoryInterface` lists `FactoryInterface` redundantly (`:21`).
+  - `private readonly string $className` + `Assert::classExists()` in the constructor (fail at container build instead of at `createNew()`); `@psalm-param class-string` → `@param class-string<T>`.
+  - `RepositoryFactory` / `PimcoreRepositoryFactory`: `final`, readonly promoted properties; `PimcoreRepositoryFactory::createNewRepository()` ignores its `ObjectManager` argument (`:38-41`) — document why (Pimcore repositories use DBAL + metadata).
+  - `PimcoreFactoryInterface` / `TranslatableFactoryInterface` are empty marker interfaces; `TranslatableFactoryInterface` is used for detection in `ResourceBundle/DependencyInjection/Driver/AbstractDriver.php:106` — keep, but add a docblock saying so (or replace with a service tag / PHP attribute).
+
+## Metadata
+
+### CI-19 — Make `Metadata` a typed, readonly value object
+- **Where:** `Metadata/Metadata.php`, `Metadata/MetadataInterface.php`.
+- **Fix:**
+  - `final readonly class` style (or PHP 8.4 `public private(set)` properties): `$driver`, `$templatesNamespace`, `$parameters` never change after construction.
+  - Interface types: `getParameter(string $name): mixed`, `getClass(string $name): string` (`@return class-string`), `getTemplatesNamespace(): ?string` (TODO-2 **CB-24**); class: `getPermissionCode(string $permissionName)` (`:124` is untyped), `parseAlias(string $alias)` (`:132`).
+  - `getPluralName()` builds a new Doctrine inflector on every call (`:69-74`) → static/lazy instance.
+  - `preg_replace()` in `getHumanizedName()` (`:66`) can return `null` → `strtolower(null)` deprecation; use `?? ''` or `u($name)->snake()->replace('_', ' ')` (symfony/string).
+  - Typed accessors for frequently read parameters instead of `getParameter('graphql')['enabled']` array digging: `isGraphQlEnabled(): bool` (TODO-2 **CB-17**), `getDriver()` as a backed `enum ResourceDriver: string` (TODO-3 **CI-02**).
+  - Document the expected `$parameters` shape with a PHPStan `array{driver: string, classes: array{model: class-string, ...}, ...}` type.
+
+### CI-20 — `Registry`: index by class, typed API
+- **Where:** `Metadata/Registry.php`, `Metadata/RegistryInterface.php`.
+- **Fix:** keep a second map `array<class-string, MetadataInterface>` filled in `add()` → `getByClass()` / `hasClass()` become O(1) instead of a linear scan on every call (they run per Doctrine `loadClassMetadata` event, per link/slug generation); native parameter types (`get(string $alias)`, `getByClass(string $className)`, `hasClass(string $className)`, `addFromAliasAndConfiguration(string $alias, array $configuration)`); `@return array<string, MetadataInterface>` on `getAll()`; reject duplicate aliases/classes in `add()`; proxy/subclass resolution from TODO-2 **CB-26** in one private `resolveClass()`.
+
+## Model
+
+### CI-21 — `SetValuesTrait`: restrict what can be set
+- **Where:** `Model/SetValuesTrait.php`; callers `ResourceBundle/Controller/ResourceController.php:193-195`, `OrderBundle/Controller/{OrderInvoiceController.php:135-142,OrderShipmentController.php:138}`.
+- **Problem:** any `set*()` method of the resource can be called with request data (mass assignment — ResourceBundle **B-07**): `setId`, `setCurrentLocale`, `setTranslatable`, `setImmutable`, …; wrong value types end as `TypeError` 500s.
+- **Fix:** the controllers should use the resource form types; component side, give `setValues()` an allow-list (`protected static function settableFields(): array` or a `#[Settable]` attribute) and use `PropertyAccessorInterface::isWritable()`; `str_starts_with()` / `ucfirst()` instead of the regex; remove the `o_` branch (TODO-2 **CB-23**). Consider splitting `setValues()/setValue()` out of `ResourceInterface` into a `ValuesAwareInterface` — a resource identity interface should not force a mass-setter on every model.
+
+### CI-22 — `TranslatableTrait`: read/write separation, clone support, typed collection
+- **Where:** `Model/TranslatableTrait.php`, `Model/TranslatableInterface.php`.
+- **Fix:**
+  - `getTranslation()` without side effects + `getOrCreateTranslation()` (TODO-2 **CB-27**); remove or harden the cache (TODO-2 **CB-29**); add `__clone()` support (TODO-2 **CB-31**).
+  - `$currentTranslation` (`:41-44`) is never used → delete (its "Doctrine 2.4+" comment is obsolete).
+  - The trait's constructor (`:48-51`, oddly formatted `__construct(\n ) {`) is aliased by its users under **two** names (`TranslatableTrait::__construct as private initializeTranslationsCollection` in `TaxRate`, `ProductUnit`, `State`, `Country`; `initializeTranslationCollection as private initializeTranslationsCollection` in `CartPriceRule`, `PaymentProviderRule`, `AbstractPriceRule`). Remove the trait constructor and keep one documented `protected function initializeTranslationsCollection(): void`.
+  - Typed property `protected Collection $translations` with `@var Collection<string, TranslationInterface>`; `@return Collection<string, TranslationInterface>` on `getTranslations()` — the current docblock says `Collection|TranslatableInterface[]` (`TranslatableInterface.php:26`), i.e. the wrong interface.
+  - The trait passes `$this` to `TranslationInterface::setTranslatable(?TranslatableInterface)`, so it only works in classes implementing `TranslatableInterface` — declare that with `@phpstan-require-implements TranslatableInterface` (PHPStan 2).
+  - `$locale ?: $this->currentLocale` (`:60`) treats `'0'`/`''` as "no locale" — use `??` and validate non-empty.
+  - Remove the `Doctrine\ORM\PersistentCollection` import (`:23`, only used in a docblock) so the trait does not reference the ORM.
+
+### CI-23 — `AbstractTranslation`: abstract, typed
+- **Where:** `Model/AbstractTranslation.php`, `Model/TranslationInterface.php`.
+- **Fix:** declare it `abstract` (the name says so, and it is only extended — e.g. `Component/Order/Model/CartPriceRuleTranslation.php:27`); `getTranslatable(): ?TranslatableInterface`, `getLocale(): ?string`, `setLocale(string): void`, `setTranslatable(...): void` (interface docblocks claim non-null returns — fix them now); remove `@psalm-suppress MissingConstructor` once `$locale` has a default (TODO-2 **CB-30**).
+
+### CI-24 — Small model interfaces/traits: native types, immutable dates, two-state booleans
+- **Where:** `Model/{Toggleable,Immutable,Timestampable}{Interface,Trait}.php`.
+- **Fix:**
+  - Traits: typed properties (`protected bool $active = false;`, `protected bool $immutable = false;`, `protected ?\DateTimeInterface $creationDate = null;`) — safe for Doctrine (it hydrates via reflection) but check every `*.orm.xml` / Pimcore class definition that maps these fields allows the declared nullability.
+  - `?bool` getters/setters on fields that default to `false` create a third "null" state nobody handles (`ToggleableTrait.php:28-36`, `ImmutableTrait.php:28-36`); `ImmutableInterface` already has `isImmutable(): bool` — add `isActive(): bool` and deprecate the nullable getters.
+  - `ToggleableInterface::activate()` / `disable()` naming is asymmetric → `enable()`/`disable()` (keep `activate()` as deprecated alias); all setters `: void` (next major).
+  - `TimestampableInterface`: `\DateTimeInterface` in parameters now (widening is safe for the trait, a BC break only for other implementors), `?\DateTimeInterface` returns in the next major (TODO-2 **CB-32**); consider `datetime_immutable` mappings.
+
+### CI-25 — Tests for scan-2 classes
+- **Where:** no unit tests for `Factory/*`, `Metadata/*`, `Model/*` in the component.
+- **Fix:** PHPUnit tests that pin the behaviour reproduced in TODO-2 **CB-23** … **CB-31** (setValue with `o_` keys, alias parsing, missing driver/templates, registry with proxy subclasses, translation read without side effect, duplicate-locale add, cache vs. collection removal, translation without locale, clone isolation). They need no kernel: `doctrine/collections` and `doctrine/inflector` are enough (add them to `composer.json` — `Model/TranslatableTrait.php` and `Metadata/Metadata.php` use them but they are not declared; extends TODO-3 **CI-01**).
+
+---
+
+# Scan 3 (2026-10-29): `Pimcore/`, `Reflection/`, `Repository/`, `Service/`, `Storage/`, `TokenGenerator/`, `Translation/`
+
+Scope and followed callers: see TODO-1, "Scope (scan 3)".
+
+## Reflection
+
+### CI-26 — Replace the regex class scanner with a tokenizer / Composer's class-map generator
+- **Where:** `Reflection/ClassReflection.php`.
+- **Fix:**
+  - `getResourcesByPath()`: `Composer\ClassMapGenerator\ClassMapGenerator::createMap($path)` (handles namespaces, enums, interfaces, traits, comments, heredocs) or a small `PhpToken::tokenize()` loop (TODO-1 **CC-05**). Only yield `class_exists($name)` (not interfaces/traits/enums) and non-abstract classes, since `#[AsPimcoreModel]` only makes sense there.
+  - Return types: `@return iterable<class-string>` / `list<class-string>`; `getClassAttributes()` → `@template T of object`, `@param class-string<T>|null`, `@return list<\ReflectionAttribute<T>>`, and pass `\ReflectionAttribute::IS_INSTANCEOF` so subclasses of the attribute are found.
+  - Register the scanned directories as container resources (`$container->addResource(new DirectoryResource($path, '/\.php$/'))` in the extension, dependent) so adding a model invalidates the cache in dev.
+  - The silent `is_dir()` skip (`:34-37`) hides typos in `coreshop_resource.mapping.paths`; log or fail for non-default paths.
+
+## Repository
+
+### CI-27 — Generic, typed repository interfaces; merge the two Pimcore interfaces
+- **Where:** `Repository/{RepositoryInterface,PimcoreRepositoryInterface,PimcoreDaoRepositoryInterface}.php`.
+- **Fix:**
+  - `@template T of ResourceInterface` + `@extends ObjectRepository<T>` on `RepositoryInterface`; `add(T)`, `remove(T)` in PHPDoc.
+  - `getList()` / `forceFind($id, bool $force = true)` are untyped in both Pimcore interfaces (`:23-25`, `:25-27`): `getList(): Listing` (resp. the DAO listing), `forceFind(int|string $id, bool $force = true): ?object` — next major for the return types (implemented by every Pimcore repository).
+  - `PimcoreDaoRepositoryInterface` is `PimcoreRepositoryInterface` minus `getClassId()`; extract the shared part into one parent and let `PimcoreRepositoryInterface` add `getClassId()`.
+  - `ORDER_ASCENDING` / `ORDER_DESCENDING` (`RepositoryInterface.php:26-28`): only two usages in `src/` — replace by a backed `enum SortDirection: string` (shared with TODO-1 **CC-02**'s `SortOrder`), keep the constants as deprecated aliases.
+
+## Pimcore
+
+### CI-28 — Pimcore model base classes: remove duplication, align with Pimcore signatures
+- **Where:** `Pimcore/Model/{AbstractPimcoreModel,PimcoreModelInterface,AbstractPimcoreFieldcollection}.php`, `Model/AbstractObject.php`.
+- **Fix:**
+  - `Model/AbstractObject` (referenced in 5 files) and `Pimcore/Model/AbstractPimcoreModel` (referenced in 22 files) both are `abstract class … extends Concrete implements ResourceInterface` — deprecate `Model\AbstractObject` in favour of `AbstractPimcoreModel` (which also carries `PimcoreModelInterface`).
+  - `PimcoreModelInterface` re-declares methods that `ElementInterface` / `Concrete` already define (`getId`, `getKey`, `setKey`, `getParent`, `setParent`, `save`, `delete`, `getPublished`, …). Keep only what CoreShop needs beyond `ElementInterface`, so Pimcore signature changes do not have to be mirrored.
+  - `getChildren(array $type = [], bool $includingUnpublished = false)` (`:50`) differs from Pimcore (`AbstractObject::getChildren(array $objectTypes = [object, variant, folder], …)`, `vendor/six-it/pimcore-source/models/DataObject/AbstractObject.php:327-333`) in parameter name and default; named-argument calls and static analysis disagree. Align or drop.
+  - `AbstractPimcoreFieldcollection` is an empty extension point — add a docblock (what generated field-collection classes use it).
+
+### CI-29 — `FolderCreationService`: strict options, sanitised segments, `final`
+- **Where:** `Service/FolderCreationService.php`, `Service/FolderCreationServiceInterface.php`.
+- **Fix:** see TODO-2 **CB-33**; additionally: configure the `OptionsResolver` once (constructor or `configureOptions()`), `setAllowedTypes()` for `prefix`/`suffix`/`path`; `final` + `private readonly` promoted properties (currently `protected`, class non-final); typed options with a PHPStan `array{prefix?: string|null, suffix?: string|null, path?: string|null}` shape on the interface; a small `Path::join(...$segments)` helper instead of the `.= '/'` string surgery (`:46-52`). `symfony/options-resolver` is used but not declared in `composer.json` (extends **CI-01**).
+
+### CI-30 — `ResourceDocumentTagFactory`, `ResourceSlugLinkGenerator`: `final`, readonly, explicit construction
+- **Where:** `Pimcore/ResourceDocumentTagFactory.php`, `Pimcore/ResourceSlugLinkGenerator.php`.
+- **Fix:** both `final` with `private readonly` promoted properties; `@param class-string<EditableInterface> $class` + assertion; explicit constructor call (TODO-2 **CB-36**); typed metadata accessor for the `slug` parameter (`isSluggable(): bool`, compare **CI-19**).
+
+## Translation
+
+### CI-31 — `UniqueTokenGenerator`: PHP 8.3 `Randomizer`, an interface, an honest name
+- **Where:** `TokenGenerator/UniqueTokenGenerator.php`.
+- **Fix:**
+  - Body → `(new \Random\Randomizer())->getBytesFromString($this->keys, $length)` (PHP 8.3+, CSPRNG-backed, no manual index loop); alphabet as class constants (`private const string ALPHANUMERIC = 'abc…XYZ0123456789'`, `DIGITS = '0123456789'`) instead of `implode(range())` in the constructor; `readonly` properties.
+  - The class guarantees *randomness*, not *uniqueness*: rename to `RandomTokenGenerator` (keep the old name as a deprecated alias) and document the collision space (`62^32` for order/storage-list tokens, `10^15` for payment numbers — `OrderPaymentProvider.php:41-42`, `OrderPaymentController.php:100-101`; callers that need uniqueness must check the DB).
+  - Add `TokenGeneratorInterface` so callers stop doing `new UniqueTokenGenerator()` inline (`CheckoutController.php:213`, `StorageListFactory.php:48`, `OrderPaymentProvider.php:41`, `OrderPaymentController.php:100`) and the generator can be replaced in tests (dependent).
+  - Length validation from TODO-2 **CB-37**. Update the vendored copy in the reference project (still `openssl_random_pseudo_bytes()`).
+
+### CI-32 — Translation services: one assigner, injectable locale source
+- **Where:** `Translation/TranslatableEntityLocaleAssigner.php`, `Translation/Provider/{PimcoreTranslationLocaleProvider,TranslationLocaleProviderInterface}.php`.
+- **Fix:**
+  - After TODO-1 **CC-04**, delete the duplicate `Component/Core/Translation/TranslatableEntityPimcoreLocaleAssigner.php` (LocaleBundle **I-19**).
+  - `PimcoreTranslationLocaleProvider` calls static `Pimcore\Tool` — inject the system-settings config (or a small `PimcoreLanguageProvider` service) so it is unit-testable and cacheable per request; `@return list<string>` on `getDefinedLocalesCodes()` (and fix the typo-ish name `LocalesCodes` → `LocaleCodes` with a deprecated alias).
+  - The assigner's `catch (LocaleNotFoundException)` is dead in practice (Locale component TODO-2 explains why); keep it, but log at debug level so a missing locale context is visible.
+
+## Storage / package
+
+### CI-33 — `StorageInterface` and README
+- **Where:** `Storage/StorageInterface.php` (implemented by `CoreBundle/Storage/{CookieStorage,SessionStorage}.php`, `Component/Core/Currency/CurrencyStorage.php`), `README.md`.
+- **Fix:** `@template TValue` generics on `get()`/`set()`/`all()` (`@return array<string, TValue>`); document whether `get()` on a missing key must return `$default` without side effects. README: describe what the component contains (resources, metadata, factories, translations, Pimcore glue, DataHub) and its optional dependencies (**CI-01**), replace the `http://www.coreshop.org` link with `https://www.coreshop.com`.
+
+### CI-34 — Tests for scan-3 classes
+- **Fix:** `ClassReflection` against a fixture directory with docblocks/enums/interfaces (TODO-1 **CC-05**), `TranslatableEntityLocaleAssigner` with stub providers (TODO-1 **CC-04**), `FolderCreationService` with a stub `ObjectServiceInterface` (TODO-2 **CB-33**), `UniqueTokenGenerator` length/alphabet (TODO-2 **CB-37**), `ResourceDocumentTagFactory` constructor arguments (TODO-2 **CB-36**).

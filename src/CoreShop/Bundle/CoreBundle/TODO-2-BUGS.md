@@ -373,6 +373,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `->andWhere('s.id = :storeId')`.
 
 ### B-50 — Deleting a store fails while carriers are assigned; deleting a tax rule group fails while store values reference it
+- **Status:** fixed — both join columns of `coreshop_carrier_stores` use `ON DELETE CASCADE` and `taxRuleId` uses `ON DELETE SET NULL`. `Version20261103120000` replaces the existing foreign keys. Deleting a tax rule group now silently leaves store values without a tax rule. Not run against a DB.
 - **Where:** `Resources/config/doctrine/model/Carrier.orm.xml:5-14` (`coreshop_carrier_stores` without `on-delete`, unidirectional, so Doctrine never clears it when a **Store** is removed; compare `PaymentProvider.orm.xml` with `on-delete="CASCADE"`), `ProductStoreValues.orm.xml:18-20` (`taxRuleId` without `on-delete`).
 - **Problem:** the admin delete ends in a foreign-key exception (500) instead of unlinking or a clear message.
 - **(plausible)**

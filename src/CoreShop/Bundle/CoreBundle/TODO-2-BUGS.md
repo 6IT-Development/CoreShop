@@ -349,6 +349,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** serialize via JMS (`toArray($entity, SerializationContext::create()->setGroups(['Version']))`) or map to `['store' => id, 'price' => …]`.
 
 ### B-47 — Smaller defects in the data type
+- **Status:** fixed — validation errors use the already interpolated `getMessage()`. `getVersionPreview()` always returns a string. `unmarshalVersion()` restores `product` and `fieldName`, so cached and restored entities know their owner. `inherited` now comes from the row owner, and the admin listener handles every StoreValues field, not only `storeValues`. Filled-in stores still have no `inherited` key on purpose: the JS would otherwise offer "restore inheritance" for a row without an id. The button stays on a child's own rows, where it is correct.
 - **Where / Problem:**
   - `:688-697`: building the error message with `str_replace($key, $value, …)` throws `TypeError` when a message parameter is not a string (**(reproduced)** with an array: "Argument #2 ($replace) must be of type string"), hiding the validation error behind a 500. Use `strtr($template, array_map('strval', …))` or `$e->getMessage()` (already translated/interpolated).
   - `:704-720` `getVersionPreview()`: `return $data` for a non-array, non-null value violates the `string` return type → `TypeError`.

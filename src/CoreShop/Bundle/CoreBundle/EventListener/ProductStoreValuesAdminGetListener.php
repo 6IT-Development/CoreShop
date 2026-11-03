@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
+use CoreShop\Bundle\CoreBundle\CoreExtension\StoreValues;
 use CoreShop\Component\Core\Model\ProductInterface;
 use Pimcore\Bundle\AdminBundle\Event\AdminEvents;
 use Pimcore\Model\DataObject\ClassDefinition;
@@ -58,23 +59,31 @@ final class ProductStoreValuesAdminGetListener implements EventSubscriberInterfa
 
         $data = $event->getArgument('data');
 
-        if (!is_array($data['data']['storeValues'] ?? null)) {
-            return;
-        }
-
-        foreach ($data['data']['storeValues'] as &$storeValues) {
-            $values = $storeValues['values'] ?? [];
-
-            if (!isset($values['product'])) {
+        foreach ($classDefinition->getFieldDefinitions() as $fieldDefinition) {
+            if (!$fieldDefinition instanceof StoreValues) {
                 continue;
             }
 
-            if ($values['product'] !== $object->getId()) {
-                $storeValues['inherited'] = true;
-            }
-        }
+            $fieldName = $fieldDefinition->getName();
 
-        unset($storeValues);
+            if (!is_array($data['data'][$fieldName] ?? null)) {
+                continue;
+            }
+
+            foreach ($data['data'][$fieldName] as &$storeValues) {
+                $values = $storeValues['values'] ?? [];
+
+                if (!isset($values['product'])) {
+                    continue;
+                }
+
+                if ($values['product'] !== $object->getId()) {
+                    $storeValues['inherited'] = true;
+                }
+            }
+
+            unset($storeValues);
+        }
 
         $event->setArgument('data', $data);
     }

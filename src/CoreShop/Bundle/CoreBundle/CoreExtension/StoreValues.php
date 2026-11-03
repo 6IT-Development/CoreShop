@@ -576,6 +576,9 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
             $data = $this->getSerializer()->fromArray($storeData, $this->getProductStoreValuesRepository()->getClassName(), $context);
 
             if ($data instanceof ProductStoreValuesInterface) {
+                $data->setProduct($object);
+                $data->setFieldName($this->getName());
+
                 foreach ($data->getProductUnitDefinitionPrices() as $price) {
                     $price->setProductStoreValues($data);
                 }
@@ -655,7 +658,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
                 'name' => $store->getName(),
                 'currencySymbol' => $currency?->getSymbol(),
                 'values' => $values,
-                'inherited' => false,
+                'inherited' => $storeValuesEntity->getProduct()?->getId() !== $object->getId(),
                 'inheritable' => $inheritable,
             ];
         }
@@ -733,12 +736,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
                 $storeValues[] = $form->getData();
             } else {
                 foreach ($form->getErrors(true, true) as $e) {
-                    $errorMessageTemplate = $e->getMessageTemplate();
-                    foreach ($e->getMessageParameters() as $key => $value) {
-                        $errorMessageTemplate = str_replace($key, $value, $errorMessageTemplate);
-                    }
-
-                    $errors[] = sprintf('%s: %s', $e->getOrigin()->getConfig()->getName(), $errorMessageTemplate);
+                    $errors[] = sprintf('%s: %s', $e->getOrigin()->getConfig()->getName(), $e->getMessage());
                 }
 
                 throw new \Exception(implode(\PHP_EOL, $errors));
@@ -755,7 +753,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
         }
 
         if (!is_array($data)) {
-            return $data;
+            return is_scalar($data) ? (string) $data : '';
         }
 
         $preview = [];

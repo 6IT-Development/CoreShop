@@ -23,6 +23,7 @@ use CoreShop\Component\Order\Calculator\PurchasableCalculatorInterface;
 use CoreShop\Component\Order\Cart\CartContextResolverInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderItemAttributeInterface;
+use CoreShop\Component\Order\Model\PurchasableInterface;
 use CoreShop\Component\Order\Processor\CartItemProcessorInterface;
 use CoreShop\Component\Order\Processor\CartProcessorInterface;
 use CoreShop\Component\Product\Model\ProductInterface;
@@ -91,16 +92,17 @@ final class CartItemsProcessor implements CartProcessorInterface
                 }
             }
 
-            // respect item quantity factor: product and quantity range prices are per package,
-            // so divide only once, after the quantity price was detected
-            if ($product instanceof ProductInterface && is_numeric($product->getItemQuantityFactor()) && $product->getItemQuantityFactor() > 1) {
-                $itemPrice = (int) round($itemPrice / $product->getItemQuantityFactor());
-            }
-
             $itemPriceWithoutDiscount = $this->productPriceCalculator->getPrice($product, $context);
             $itemRetailPrice = $this->productPriceCalculator->getRetailPrice($product, $context);
             $itemDiscountPrice = $this->productPriceCalculator->getDiscountPrice($product, $context);
             $itemDiscount = $this->productPriceCalculator->getDiscount($product, $context, $itemPriceWithoutDiscount);
+
+            // respect item quantity factor: product and quantity range prices are per package,
+            // so divide only once, after the quantity price was detected, and the same way for every price
+            $itemPrice = $this->applyItemQuantityFactor($product, $itemPrice);
+            $itemRetailPrice = $this->applyItemQuantityFactor($product, $itemRetailPrice);
+            $itemDiscountPrice = $this->applyItemQuantityFactor($product, $itemDiscountPrice);
+            $itemDiscount = $this->applyItemQuantityFactor($product, $itemDiscount);
             $customAttributes = $this->productPriceCalculator->getCustomAttributes($product, $context);
 
             $this->processCustomAttributes($item, $customAttributes);
@@ -128,6 +130,15 @@ final class CartItemsProcessor implements CartProcessorInterface
                 $context,
             );
         }
+    }
+
+    private function applyItemQuantityFactor(?PurchasableInterface $product, int $price): int
+    {
+        if ($product instanceof ProductInterface && is_numeric($product->getItemQuantityFactor()) && $product->getItemQuantityFactor() > 1) {
+            return (int) round($price / $product->getItemQuantityFactor());
+        }
+
+        return $price;
     }
 
     private function processCustomAttributes(OrderItemInterface $item, array $customAttributes): void

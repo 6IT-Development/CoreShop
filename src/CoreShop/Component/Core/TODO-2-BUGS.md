@@ -33,6 +33,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** update the value of existing attributes (`setAttributeValue()`) or replace them, then remove the keys that are no longer returned. Iterate over a copy while removing.
 
 ### B-04 — `itemQuantityFactor` is applied to the item price only, not to the retail price, the discount price or the discount
+- **Status:** fixed — `CartItemsProcessor` divides the item price, the retail price, the discount price and the discount by `itemQuantityFactor` in one helper (`applyItemQuantityFactor()`, with `round()`), after the quantity price was detected (TODO-1 **C-07**). All four values stored on the item are now per piece.
 - **Where:** `Order/Processor/CartItemsProcessor.php:83-85` vs. `:99-102`.
 - **Problem:** `itemPrice` is per single item, but `itemRetailPrice`, `itemDiscountPrice` and `itemDiscount` are still per pack, and `getDiscount()` is computed from the undivided `$itemPriceWithoutDiscount`. The stored retail price is `factor` × the selling price, and the discount does not match. Strike-through prices, "you save" amounts, invoices and reports are wrong for these products.
 - **Fix:** apply the same division to all four values (in one helper), or compute them from the divided base price. Do this together with TODO-1 **C-07**.

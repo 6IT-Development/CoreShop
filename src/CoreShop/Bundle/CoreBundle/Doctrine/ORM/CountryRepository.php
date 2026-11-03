@@ -29,7 +29,7 @@ class CountryRepository extends BaseCountryRepository implements CountryReposito
         return $this->createQueryBuilder('o')
             ->innerJoin('o.stores', 's')
             ->andWhere('o.active = true')
-            ->andWhere('o.id = :storeId')
+            ->andWhere('s.id = :storeId')
             ->setParameter('storeId', $store->getId())
             ->getQuery()
             ->getResult()

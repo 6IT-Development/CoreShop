@@ -367,6 +367,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** cast `(int) ($config->storeId ?? 0)`, return an empty value when the store/currency is missing, and do the lookup after the `ProductInterface` check.
 
 ### B-49 — `CountryRepository::findForStore()` filters by `o.id` instead of `s.id`
+- **Status:** fixed — `findForStore()` filters on the joined store.
 - **Where:** `Doctrine/ORM/CountryRepository.php:27-37` (line 32).
 - **Problem:** returns the country whose **id** equals the store id. No caller in `src/` today, but it is public API (`CountryRepositoryInterface`).
 - **Fix:** `->andWhere('s.id = :storeId')`.

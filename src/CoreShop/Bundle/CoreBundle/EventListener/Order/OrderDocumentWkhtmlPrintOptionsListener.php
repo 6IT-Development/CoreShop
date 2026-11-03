@@ -32,6 +32,8 @@ final class OrderDocumentWkhtmlPrintOptionsListener
     {
         $orderDocument = $event->getOrderDocument();
 
-        $event->setOptions($this->configurationHelper->getForStore(sprintf('system.%s.wkhtml', $orderDocument::getDocumentType()), $orderDocument->getOrder()->getStore()));
+        $options = $this->configurationHelper->getForStore(sprintf('system.%s.wkhtml', $orderDocument::getDocumentType()), $orderDocument->getOrder()->getStore());
+
+        $event->setOptions((string) ($options ?? ''));
     }
 }

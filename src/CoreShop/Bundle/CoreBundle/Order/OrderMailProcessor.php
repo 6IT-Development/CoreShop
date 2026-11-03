@@ -89,7 +89,7 @@ class OrderMailProcessor implements OrderMailProcessorInterface
                             'name' => sprintf('invoice-%s.pdf', $invoice->getInvoiceNumber()),
                             'content-type' => 'application/pdf',
                         ];
-                    } catch (\Exception $e) {
+                    } catch (\Throwable $e) {
                         $this->logger->error('Error while attaching invoice to order mail. Messages was: ' . $e->getMessage(), [$e]);
                     }
                 }
@@ -108,7 +108,7 @@ class OrderMailProcessor implements OrderMailProcessorInterface
                             'name' => sprintf('shipment-%s.pdf', $shipment->getShipmentNumber()),
                             'content-type' => 'application/pdf',
                         ];
-                    } catch (\Exception $e) {
+                    } catch (\Throwable $e) {
                         $this->logger->error('Error while attaching packing slip to order mail. Messages was: ' . $e->getMessage(), [$e]);
                     }
                 }

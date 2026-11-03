@@ -23,7 +23,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 final class WkhtmlOptionsEvent extends Event
 {
-    protected string $options;
+    protected string $options = '';
 
     public function __construct(
         protected OrderDocumentInterface $orderDocument,

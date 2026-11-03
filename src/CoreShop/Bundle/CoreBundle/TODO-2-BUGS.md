@@ -195,6 +195,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Order mails / documents
 
 ### B-27 — (plausible) `OrderDocumentWkhtmlPrintOptionsListener` passes `null` into `setOptions(string)` for stores without PDF settings, and the resulting `TypeError` is not caught by `OrderMailProcessor`
+- **Status:** fixed — a missing store setting becomes `''`, which `WkHtmlToPdf` accepts. `WkhtmlOptionsEvent::$options` defaults to `''`, and `OrderMailProcessor` catches `\Throwable` around each attachment. Event default tested; the listener was linted only.
 - **Where:** `EventListener/Order/OrderDocumentWkhtmlPrintOptionsListener.php:31-36`; `OrderBundle/Event/WkhtmlOptionsEvent.php:26,43` (`protected string $options`, `setOptions(string)`); `Component/Core/Configuration/ConfigurationService.php:44-61` (`getForStore()` returns `null`); `Order/OrderMailProcessor.php:85-95,104-114` (`catch (\Exception)`).
 - **Problem:** `system.invoice.wkhtml` / `system.shipment.wkhtml` are only seeded by `Fixtures/Data/Application/ConfigurationFixture.php:54,57`. A store created later, with no global fallback row, gets `null` → `TypeError`. `OrderMailProcessor` catches `\Exception` only, so the `TypeError` (an `\Error`) aborts the whole mail instead of just skipping the attachment.
 - **Fix:** `$event->setOptions((string) ($this->configurationHelper->getForStore(...) ?? ''))`, or skip the call when the value is `null`. Initialise `WkhtmlOptionsEvent::$options = ''`. Catch `\Throwable` in `OrderMailProcessor`.

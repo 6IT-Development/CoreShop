@@ -76,6 +76,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** wrap the whole method in `Db::get()->transactional()` (Pimcore objects use the default DBAL connection) or do compensating deletes. Map the unique-constraint violation to `CustomerAlreadyExistsException` (the class exists in `Customer/CustomerAlreadyExistsException.php` but is never thrown).
 
 ### B-11 — `CustomerNewsletterConfirmListener` sends a new confirmation mail and invalidates the old token on every profile save
+- **Status:** fixed — `CustomerNewsletterConfirmListener` sends the mail only when no token is pending, so a profile save keeps the link from the earlier mail valid. Unsubscribing while unconfirmed clears the token (the old link stops working), and subscribing again sends a new mail. Tested with stubs, not run against a DB.
 - **Where:** `EventListener/CustomerNewsletterConfirmListener.php:39-69` (`coreshop.customer.update_post`, `Resources/config/services/customer.yml:28`), `EventListener/NotificationRules/CustomerListener.php:79-115`; dispatched by `FrontendBundle/Controller/CustomerController.php:264`.
 - **Problem:** while `newsletterActive && !newsletterConfirmed`, every save of the profile settings (name change, etc.) regenerates `newsletterToken` and sends another double-opt-in mail. Links in earlier mails stop working.
 - **Fix:** send only when `newsletterActive` changed from `false` to `true` (compare with the stored value, or carry a flag in the event). Keep an existing unconfirmed token.

@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\CoreBundle\EventListener;
 
 use CoreShop\Bundle\CoreBundle\Event\RequestNewsletterConfirmationEvent;
 use CoreShop\Component\Core\Model\CustomerInterface;
+use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -53,7 +54,25 @@ final class CustomerNewsletterConfirmListener
             return;
         }
 
-        if (!$user->getNewsletterActive() || $user->getNewsletterConfirmed()) {
+        if ($user->getNewsletterConfirmed()) {
+            return;
+        }
+
+        if (!$user->getNewsletterActive()) {
+            // unsubscribing invalidates a pending link, subscribing again requests a new one
+            if ($user->getNewsletterToken()) {
+                $user->setNewsletterToken(null);
+
+                VersionHelper::useVersioning(function () use ($user) {
+                    $user->save();
+                }, false);
+            }
+
+            return;
+        }
+
+        // the confirmation mail was already sent, keep its link valid
+        if ($user->getNewsletterToken()) {
             return;
         }
 

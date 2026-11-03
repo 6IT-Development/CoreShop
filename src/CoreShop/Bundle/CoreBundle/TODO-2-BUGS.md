@@ -484,6 +484,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Catch `ClassDefinitionFieldNotFoundException` and fall back to `$classUpdater->insertField($definition)` (append to the first panel). Implement `down()` the same way as in `Version20260616120000` (`hasField` → `removeField` → `save`).
 
 ### B-67 — Non-idempotent or unguarded schema and data migrations
+- **Status:** fixed — the notes migration only copies titles that were not converted yet. `Version20230711143927` and `Version20231201091924` check for the column and table. `Version20230711144054` returns when the product table has no `taxRule` column and uses one joined `UPDATE` that skips deleted tax rule groups. Not run against a DB.
 - **Where:** `Migrations/Version20230705174306.php:33-38`, `Version20230711143927.php:33-38`, `Version20231201091924.php:33-38`, `Version20230711144054.php:33-43`.
 - **Problem:**
   - `Version20230705174306` runs `UPDATE notes SET description = title WHERE type='history_state_change'` and then sets `title = 'coreshop_history_change'`. If it runs a second time (re-run after `migrations:version --delete`, or restored metadata table), every description is overwritten with `coreshop_history_change`. The original state-change text is lost (data loss).

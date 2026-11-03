@@ -33,6 +33,10 @@ final class Version20230711143927 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        if ($schema->getTable('coreshop_product_store_values')->hasColumn('taxRuleId')) {
+            return;
+        }
+
         $this->addSql('            
             ALTER TABLE coreshop_product_store_values ADD taxRuleId INT DEFAULT NULL;
             ALTER TABLE coreshop_product_store_values ADD CONSTRAINT FK_9EED0E97AC7C6E20 FOREIGN KEY (taxRuleId) REFERENCES coreshop_tax_rule_group (id);

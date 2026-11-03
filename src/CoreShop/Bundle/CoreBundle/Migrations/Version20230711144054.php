@@ -34,11 +34,20 @@ final class Version20230711144054 extends AbstractMigration
         $tmpProduct = new $productClass();
         $productClassId = $tmpProduct->getClassId();
 
-        $productIds = $this->connection->fetchAllAssociative('SELECT oo_id, taxRule FROM object_query_' . $productClassId);
+        $productTable = 'object_query_' . $productClassId;
 
-        foreach ($productIds as $id) {
-            $this->addSql('UPDATE coreshop_product_store_values SET taxRuleId = :taxRuleId WHERE product = :product', ['product' => $id['oo_id'], 'taxRuleId' => $id['taxRule']]);
+        // the current product class has no taxRule field anymore, there is nothing to take over in that case
+        if (!$this->connection->createSchemaManager()->introspectTable($productTable)->hasColumn('taxRule')) {
+            return;
         }
+
+        // the join skips products that reference a tax rule group that no longer exists
+        $this->addSql(
+            'UPDATE coreshop_product_store_values AS storeValues
+            INNER JOIN ' . $productTable . ' AS products ON products.oo_id = storeValues.product
+            INNER JOIN coreshop_tax_rule_group AS taxRuleGroup ON taxRuleGroup.id = products.taxRule
+            SET storeValues.taxRuleId = products.taxRule',
+        );
     }
 
     public function down(Schema $schema): void

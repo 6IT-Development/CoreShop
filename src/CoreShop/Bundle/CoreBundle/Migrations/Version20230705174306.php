@@ -32,7 +32,7 @@ final class Version20230705174306 extends AbstractMigration
     {
         $this->addSql(
             "
-            UPDATE notes SET `description`=`title` WHERE `type`='history_state_change';
+            UPDATE notes SET `description`=`title` WHERE `type`='history_state_change' AND `title`<>'coreshop_history_change';
             UPDATE notes SET `title`='coreshop_history_change' WHERE `type`='history_state_change';
         ",
         );

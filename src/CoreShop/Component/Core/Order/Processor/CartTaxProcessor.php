@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Order\Processor;
 
-use CoreShop\Component\Core\Model\Carrier;
 use CoreShop\Component\Core\Model\OrderItemInterface;
 use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Core\Provider\AddressProviderInterface;
@@ -26,6 +25,7 @@ use CoreShop\Component\Order\Cart\CartContextResolverInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Processor\CartProcessorInterface;
 use CoreShop\Component\Registry\ServiceRegistry;
+use CoreShop\Component\Shipping\Model\CarrierInterface;
 use CoreShop\Component\Shipping\Taxation\TaxCalculationStrategyInterface;
 use CoreShop\Component\Taxation\Collector\TaxCollectorInterface;
 use Pimcore\Model\DataObject\Fieldcollection;
@@ -92,29 +92,36 @@ final class CartTaxProcessor implements CartProcessorInterface
 
         $carrier = $cart->getCarrier();
 
-        if (!$carrier instanceof Carrier) {
+        if (!$carrier instanceof CarrierInterface) {
             return $usedTaxes;
         }
 
         $shippingTaxCalculationStrategy = $carrier->getTaxCalculationStrategy() ?? 'taxRule';
 
-        if ($this->registry->has($shippingTaxCalculationStrategy)) {
-            /**
-             * @var TaxCalculationStrategyInterface $taxCalculationService
-             */
-            $taxCalculationService = $this->registry->get($shippingTaxCalculationStrategy);
-            $cartTax = $taxCalculationService->calculateShippingTax($cart, $carrier, $address, $cart->getShipping($store->getUseGrossPrice()), $context);
-
-            if (1 === count($cartTax)) {
-                $cart->setShippingTaxRate(reset($cartTax)->getRate());
-            } elseif (0 === $cart->getShipping(false)) {
-                $cart->setShippingTaxRate(0);
-            } else {
-                $cart->setShippingTaxRate(round(100 * $cart->getShippingTax() / $cart->getShipping(false), 2));
-            }
-
-            $usedTaxes = $this->taxCollector->mergeTaxes($cartTax, $usedTaxes);
+        // Skipping an unknown strategy would charge shipping without any tax
+        if (!$this->registry->has($shippingTaxCalculationStrategy)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Shipping tax calculation strategy "%s" of carrier "%s" is not registered.',
+                $shippingTaxCalculationStrategy,
+                (string) $carrier->getId(),
+            ));
         }
+
+        /**
+         * @var TaxCalculationStrategyInterface $taxCalculationService
+         */
+        $taxCalculationService = $this->registry->get($shippingTaxCalculationStrategy);
+        $cartTax = $taxCalculationService->calculateShippingTax($cart, $carrier, $address, $cart->getShipping($store->getUseGrossPrice()), $context);
+
+        if (1 === count($cartTax)) {
+            $cart->setShippingTaxRate(reset($cartTax)->getRate());
+        } elseif (0 === $cart->getShipping(false)) {
+            $cart->setShippingTaxRate(0);
+        } else {
+            $cart->setShippingTaxRate(round(100 * $cart->getShippingTax() / $cart->getShipping(false), 2));
+        }
+
+        $usedTaxes = $this->taxCollector->mergeTaxes($cartTax, $usedTaxes);
 
         return $usedTaxes;
     }

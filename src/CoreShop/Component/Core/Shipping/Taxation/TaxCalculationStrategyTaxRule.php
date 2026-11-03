@@ -27,7 +27,7 @@ use CoreShop\Component\Shipping\Model\ShippableInterface;
 use CoreShop\Component\Shipping\Taxation\TaxCalculationStrategyInterface;
 use CoreShop\Component\Store\Model\StoreAwareInterface;
 use CoreShop\Component\Taxation\Collector\TaxCollectorInterface;
-use CoreShop\Component\Taxation\Model\TaxRuleGroup;
+use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
 use Webmozart\Assert\Assert;
 
 class TaxCalculationStrategyTaxRule implements TaxCalculationStrategyInterface
@@ -63,7 +63,7 @@ class TaxCalculationStrategyTaxRule implements TaxCalculationStrategyInterface
 
         $taxRule = $carrier->getTaxRule();
 
-        if (!$taxRule instanceof TaxRuleGroup) {
+        if (!$taxRule instanceof TaxRuleGroupInterface) {
             return [];
         }
 

@@ -33,6 +33,12 @@ services:
         tags:
             - { name: form.type }
 
+    CoreShop\Bundle\CoreBundle\Form\Type\CurrencyIdChoiceType:
+        arguments:
+            - '@coreshop.repository.currency'
+        tags:
+            - { name: form.type }
+
     CoreShop\Bundle\CoreBundle\Form\Type\UserRegistrationType:
         arguments:
             - '%coreshop.model.user.class%'

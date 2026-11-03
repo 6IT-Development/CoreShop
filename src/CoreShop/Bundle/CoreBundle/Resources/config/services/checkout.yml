@@ -68,9 +68,6 @@ services:
             - { name: form.type }
 
     CoreShop\Bundle\CoreBundle\Form\Type\Checkout\GuestAddressType:
-        arguments:
-            - '%coreshop.model.order.class%'
-            - '%coreshop.form.type.checkout.address.validation_groups%'
         tags:
             - { name: form.type }
 
@@ -81,7 +78,6 @@ services:
             - '@coreshop.form_registry.payment.settings'
             - '@coreshop.repository.payment_provider'
             - '%coreshop.gateway_factories%'
-            - '@CoreShop\Component\Payment\Resolver\PaymentProviderResolverInterface'
         tags:
             - { name: form.type }
 

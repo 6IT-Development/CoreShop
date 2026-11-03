@@ -65,7 +65,6 @@ services:
             - '@coreshop.repository.cart_price_rule_voucher_code'
             - '@CoreShop\Component\Order\Cart\Rule\CartPriceRuleValidationProcessorInterface'
             - '@CoreShop\Component\Order\Cart\Rule\CartPriceRuleUnProcessorInterface'
-            - '@coreshop.factory.adjustment'
         tags:
             - { name: coreshop.cart_processor, priority: 400 }
 

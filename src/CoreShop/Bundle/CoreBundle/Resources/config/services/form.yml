@@ -37,7 +37,6 @@ services:
         arguments:
             - '%coreshop.model.user.class%'
             - '%coreshop.form.type.customer_registration_type.validation_groups%'
-            - '%coreshop.customer.security.login_identifier%'
         tags:
             - { name: form.type }
 

@@ -174,8 +174,9 @@ class CartRuleApplier implements CartRuleApplierInterface
             ));
         }
 
-        $cartPriceRuleItem->setDiscount($positive ? $totalDiscountNet : (-1 * $totalDiscountNet), false);
-        $cartPriceRuleItem->setDiscount($positive ? $totalDiscountGross : (-1 * $totalDiscountGross), true);
+        // A rule can have several actions, each of them adds its own discount to the same price rule item
+        $cartPriceRuleItem->setDiscount($cartPriceRuleItem->getDiscount(false) + ($positive ? $totalDiscountNet : (-1 * $totalDiscountNet)), false);
+        $cartPriceRuleItem->setDiscount($cartPriceRuleItem->getDiscount(true) + ($positive ? $totalDiscountGross : (-1 * $totalDiscountGross)), true);
 
         $cart->addAdjustment(
             $this->adjustmentFactory->createWithData(

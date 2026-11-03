@@ -13,6 +13,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Cart price rules and cart processors
 
 ### B-01 — A rule with several actions keeps only the last action's discount on its `PriceRuleItem`
+- **Status:** fixed — `CartRuleApplier::apply()` and `CartItemRuleApplier::apply()` add their net and gross discount to the `PriceRuleItem` instead of overwriting it. The callers (`ProposalCartPriceRuleCalculator`, `CartItemActionProcessor`) reset the discount to 0 before running the actions, so a rule with several actions now shows the sum of all of them.
 - **Where:** `Cart/Rule/Applier/CartRuleApplier.php:228-229`, `CartItem/Rule/Applier/CartItemRuleApplier.php:174-175`. Caller: `Component/Order/Cart/Rule/ProposalCartPriceRuleCalculator.php:59-75`.
 - **Problem:** the proposal calculator resets the item's discount to 0 and then runs **every** action of the rule against the same `PriceRuleItem`. Each `apply()` calls `setDiscount()` with only its own amount, so it overwrites the previous one. The cart has one adjustment per action, but the price rule item only shows the last action. That item is shown in cart and order summaries and used by `VoucherModifier` for credit and in refunds.
 - **Fix:** accumulate: `setDiscount($item->getDiscount(false) + $signedNet, false)`, and the same for gross.

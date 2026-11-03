@@ -31,15 +31,19 @@ final class Version20240718133201 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        if (!class_exists(Installer::class)) {
+        $container = \Pimcore::getContainer();
+
+        if (!class_exists(Installer::class) || !$container->has(Installer::class)) {
             return;
         }
 
-        $installer = \Pimcore::getContainer()->get(Installer::class);
-
-        if ($installer && $installer->canBeInstalled()) {
-            $installer->install();
-        }
+        /**
+         * Which optional Pimcore bundles are installed is the decision of the project.
+         */
+        $this->warnIf(
+            $container->get(Installer::class)->canBeInstalled(),
+            'Pimcore WebToPrintBundle is enabled but not installed. If you need it, run: bin/console pimcore:bundle:install PimcoreWebToPrintBundle',
+        );
     }
 
     public function down(Schema $schema): void

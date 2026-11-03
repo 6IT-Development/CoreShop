@@ -495,6 +495,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Add a follow-up migration that aligns the column definitions and renames the index to what `SchemaTool` generates (or generate the SQL with `doctrine:migrations:diff` filtered to this table).
 
 ### B-69 — `Version20240718133201` force-installs the Pimcore Web2Print bundle
+- **Status:** fixed — the migration checks `$container->has()` and only warns when the enabled bundle is not installed. Shops upgrading from before this migration must now install the bundle themselves if they need it. Not run against a DB.
 - **Where:** `Migrations/Version20240718133201.php:31-42`.
 - **Problem:** Every shop that has `pimcore/web-to-print-bundle` in `vendor/` gets it installed, including shops that uninstalled it on purpose. `class_exists()` checks only the package. If the bundle class exists but is not enabled in the kernel, `\Pimcore::getContainer()->get(Installer::class)` throws `ServiceNotFoundException` and the migration run aborts **(plausible)**. `$installer &&` is dead code because `get()` never returns null.
 - **Fix:** Check `$container->has(Installer::class)` (bundle enabled) and only print a hint instead of installing. The migration should not decide which optional Pimcore bundles are installed.

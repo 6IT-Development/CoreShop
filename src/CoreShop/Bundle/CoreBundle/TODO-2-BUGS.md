@@ -336,6 +336,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - Related: the generated `get<Key>ForStore()` (`:179-198`) falls back to the parent only when the **whole** field is empty; a variant with own values for store A returns `null` for store B instead of inheriting. Decide and document per-store inheritance.
 
 ### B-45 — Replacing a store's row (new entity for a store that already has one) fails with a unique-key violation
+- **Status:** fixed — `save()` removes and flushes the replaced rows before it merges the submitted ones, because `EntityMerger` already persists new entities. Pimcore's `AbstractObject::save()` runs inside a transaction, so a later failure rolls the removal back. Not run against a DB.
 - **Where:** `Resources/config/doctrine/model/ProductStoreValues.orm.xml:6-8` (`UNIQUE(product, store, fieldName)`), `CoreExtension/StoreValues.php:476-486` (old rows `remove()`d, new rows `persist()`ed, one `flush()`).
 - **Problem:** Doctrine's commit order is inserts → updates → deletes. Any save that contains a **new** entity for a store that still has a DB row (version restore after the row was re-created, `setStoreValuesForStore(new …)`, B-44) inserts the new row before deleting the old one → `UniqueConstraintViolationException`, the object save fails.
 - **(plausible)**

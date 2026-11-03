@@ -442,9 +442,30 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
             return;
         }
 
-        $validStoreValues = [];
         $allStoreValues = [];
         $availableStoreValues = $this->load($object, ['force' => true]);
+
+        $submittedIds = [];
+
+        foreach ($productStoreValues as $productStoreValue) {
+            if ($productStoreValue->getStore() && $productStoreValue->getId()) {
+                $submittedIds[] = $productStoreValue->getId();
+            }
+        }
+
+        $removedStoreValues = false;
+
+        foreach ($availableStoreValues as $availableStoreValuesEntity) {
+            if (!in_array($availableStoreValuesEntity->getId(), $submittedIds, true)) {
+                $this->getEntityManager()->remove($availableStoreValuesEntity);
+                $removedStoreValues = true;
+            }
+        }
+
+        //Doctrine inserts before it deletes, a new record for the same store would violate the unique key
+        if ($removedStoreValues) {
+            $this->getEntityManager()->flush();
+        }
 
         /**
          * @var ProductStoreValuesInterface $productStoreValue
@@ -494,17 +515,7 @@ class StoreValues extends Model\DataObject\ClassDefinition\Data implements
 
             $this->getEntityManager()->persist($productStoreValue);
 
-            if ($productStoreValue->getId()) {
-                $validStoreValues[] = $productStoreValue->getId();
-            }
-
             $allStoreValues[] = $productStoreValue;
-        }
-
-        foreach ($availableStoreValues as $availableStoreValuesEntity) {
-            if (!in_array($availableStoreValuesEntity->getId(), $validStoreValues, true)) {
-                $this->getEntityManager()->remove($availableStoreValuesEntity);
-            }
         }
 
         foreach ($allStoreValues as $storeEntity) {

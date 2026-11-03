@@ -274,6 +274,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
   - **Fix:** remove the extra arguments, or switch these services to autowiring. `GuestAddressType::buildForm()` also lacks `: void` (Symfony 8 adds it to `FormTypeInterface`; DebugClassLoader reports it) — Form slice, (dependent).
 
 ### B-37 — `core_shop_order` is missing from `$bundlesWithAttributeConfiguration`; `core_shop_core.autoconfigure_with_attributes: true` does not reach OrderBundle
+- **Status:** fixed — `core_shop_order` is added to the list, which now covers every bundle whose `Configuration` has the option. The hard-coded list stays, because `prepend()` would fail on an extension without that node.
 - **Where:** `DependencyInjection/CoreShopCoreExtension.php:45-62`, `:124-136`; `OrderBundle/DependencyInjection/Configuration.php:78`, `OrderBundle/DependencyInjection/CoreShopOrderExtension.php:118-181` (8 registries use the flag).
 - **Problem:** the documented global switch enables attribute-based autoconfiguration for 16 bundles, but not for OrderBundle (cart price rule conditions/actions, cart processors, …). With the switch on, `#[As…]`-attributed order services stay untagged unless OrderBundle is configured separately; services that rely only on interface autoconfiguration keep working in Order but not in the other bundles → inconsistent behaviour.
 - **Fix:** add `'core_shop_order'`; better, iterate over all extensions whose configuration tree has an `autoconfigure_with_attributes` node instead of a hard-coded list.

@@ -50,6 +50,7 @@ final class CoreShopCoreExtension extends AbstractModelExtension implements Prep
         'core_shop_index',
         'core_shop_locale',
         'core_shop_menu',
+        'core_shop_order',
         'core_shop_payment',
         'core_shop_pimcore',
         'core_shop_product',

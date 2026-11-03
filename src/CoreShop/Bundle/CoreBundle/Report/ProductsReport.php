@@ -110,7 +110,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
         } else {
             $productTypeCondition = '1=1';
             if ($objectTypeFilter === 'object') {
-                $productTypeCondition = 'orderItems.mainObjectId = NULL';
+                $productTypeCondition = 'orderItems.mainObjectId IS NULL';
             } elseif ($objectTypeFilter === 'variant') {
                 $productTypeCondition = 'orderItems.mainObjectId IS NOT NULL';
             }

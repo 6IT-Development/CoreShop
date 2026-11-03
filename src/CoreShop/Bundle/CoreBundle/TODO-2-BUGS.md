@@ -442,6 +442,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** read `start`/`limit` to match the Ext paging proxy, cast to int, clamp `limit` to a sane max, drop the `offset` passthrough, and remove the `=== 1` micro-optimisation.
 
 ### B-61 — `ProductsReport` "object" (non-variant) filter uses `= NULL`, which matches nothing
+- **Status:** fixed — the `object` filter uses `IS NULL`. Not run against a DB.
 - **Where:** `ProductsReport.php:128-133`.
 - **Problem:** `$productTypeCondition = 'orderItems.mainObjectId = NULL';` — `= NULL` is never true in SQL. Selecting objectType `object` returns zero rows. Should be `IS NULL`.
 - **Fix:** `'orderItems.mainObjectId IS NULL'`.

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CoreBundle\Form\Type\Checkout;
 
 use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
+use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Core\Model\CarrierInterface;
 use CoreShop\Component\Core\Model\OrderInterface;
 use CoreShop\Component\Core\Repository\CarrierRepositoryInterface;
@@ -53,7 +54,9 @@ final class CarrierChoiceType extends AbstractResourceType
                 'choices' => function (Options $options) {
                     $cart = $options['cart'];
                     if ($cart instanceof OrderInterface) {
-                        return $this->carriersResolver->resolveCarriers($cart, $cart->getShippingAddress());
+                        $address = $cart->getShippingAddress();
+
+                        return $address instanceof AddressInterface ? $this->carriersResolver->resolveCarriers($cart, $address) : [];
                     }
 
                     return $this->repository->findAll();
@@ -61,22 +64,31 @@ final class CarrierChoiceType extends AbstractResourceType
                 'choice_value' => 'id',
                 'choice_label' => 'title',
                 'choice_translation_domain' => false,
-            ])
-            ->setDefined([
-                'cart',
+                'cart' => null,
             ])
             ->setDefault('show_carrier_price', true)
-            ->setAllowedTypes('cart', OrderInterface::class)
+            ->setAllowedTypes('cart', ['null', OrderInterface::class])
         ;
     }
 
     public function buildView(FormView $view, FormInterface $form, array $options): void
     {
-        $prices = [];
+        $view->vars['prices'] = [];
+        $view->vars['show_carrier_price'] = $options['show_carrier_price'];
+
         /**
-         * @var OrderInterface $cart
+         * @var OrderInterface|null $cart
          */
         $cart = $options['cart'];
+        $address = $cart?->getShippingAddress();
+
+        if (!$address instanceof AddressInterface) {
+            return;
+        }
+
+        $prices = [];
+        $context = $this->cartContextResolver->resolveCartContext($cart);
+        $withTax = $this->taxationDisplayProvider->displayWithTax($context);
 
         foreach ($view->vars['choices'] as $choice) {
             $carrier = $choice->data;
@@ -85,21 +97,16 @@ final class CarrierChoiceType extends AbstractResourceType
                 continue;
             }
 
-            $context = $this->cartContextResolver->resolveCartContext($cart);
-
-            $price = $this->taxedShippingCalculator->getPrice(
+            $prices[$choice->value] = $this->taxedShippingCalculator->getPrice(
                 $carrier,
                 $cart,
-                $cart->getShippingAddress(),
-                $this->taxationDisplayProvider->displayWithTax($context),
+                $address,
+                $withTax,
                 $context,
             );
-
-            $prices[$choice->value] = $price;
         }
 
         $view->vars['prices'] = $prices;
-        $view->vars['show_carrier_price'] = $options['show_carrier_price'];
     }
 
     public function getParent(): string

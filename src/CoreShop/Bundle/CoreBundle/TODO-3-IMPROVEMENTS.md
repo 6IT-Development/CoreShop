@@ -182,6 +182,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-2-BUGS.md](TODO-2
   - `Form/Type/Checkout/PaymentType.php:91-105`: creates a prototype sub-form for **every** gateway factory on every build, including during submit. Build the prototypes lazily in `buildView()` only. `:81` dereferences `getGatewayConfig()` without a null check (a provider without a gateway config gives a 500).
 
 ### I-19 — `CarrierChoiceType::buildView()` recomputes the cart context for every carrier
+- **Status:** fixed with TODO-2 **B-17**.
 - **Where:** `Form/Type/Checkout/CarrierChoiceType.php:81-99`.
 - **Fix:** resolve `$context` and `displayWithTax($context)` once before the loop. Each call can trigger store, currency and country resolution.
 

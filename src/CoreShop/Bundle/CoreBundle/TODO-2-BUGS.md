@@ -306,6 +306,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `if (null !== $name) { $list->addConditionParam('name = ?', $name); }` (and `setLimit(1)`).
 
 ### B-41 — `CategoryRepository::findRecursiveChildCategoryIdsForStoreByCategories()` ignores the store
+- **Status:** fixed — the recursive child lookup only returns children assigned to the given store. The passed categories themselves are always kept, as before. Not run against a DB.
 - **Where:** `Pimcore/Repository/CategoryRepository.php:59-92`; compare `ProductRepository.php:62-105` (`WHERE variants.stores LIKE :store`). Callers: `Component/Core/Rule/Condition/CategoriesConditionCheckerTrait.php:39` (product price, cart and cart-item price rules).
 - **Problem:** child categories that are not assigned to the current store are treated as matching, so a category condition matches products through categories that are invisible in that store (multi-store shops).
 - **(plausible)**

@@ -66,11 +66,13 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
             SELECT oo_id as id FROM (
                 SELECT CONCAT(path, `key`) as realFullPath FROM objects WHERE id IN (:categories)
             ) as categories
-            INNER JOIN ' . $dao->getTableName() . " variants ON variants.path LIKE CONCAT(categories.realFullPath, '/%')
+            INNER JOIN ' . $dao->getTableName() . " children ON children.path LIKE CONCAT(categories.realFullPath, '/%')
+            WHERE children.stores LIKE :store
         ";
 
         $params = [
             'categories' => $categories,
+            'store' => '%,' . $store->getId() . ',%',
         ];
         $paramTypes = [
             'categories' => ArrayParameterType::STRING,

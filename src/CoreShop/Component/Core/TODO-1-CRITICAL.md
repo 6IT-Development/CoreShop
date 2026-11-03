@@ -27,6 +27,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Cart price rules: money discounted wrongly
 
 ### C-01 — Credit vouchers can be spent again and again: `creditUsed` is overwritten instead of added to, and it is stored in the wrong currency
+- **Status:** fixed — `VoucherModifier::increment()` adds the order's discount to `creditUsed` and `decrement()` subtracts it (clamped at 0). The discount is converted from the order's base currency into the voucher's `creditCurrency` (new optional `CurrencyConverterInterface` argument, wired in `OrderBundle/Resources/config/services/cart-price-rules.yml`). Both run in one transaction and reload the voucher code with `PESSIMISTIC_WRITE`, so concurrent orders cannot overwrite each other. No regression test: the component has no test suite.
 - **Where:** `Cart/Rule/Action/VoucherCreditActionProcessor.php:57-62`, `:81-84`. **(dependent)** `Component/Order/Modifier/VoucherModifier.php:61-63` (`increment()`), `:123-125` (`decrement()`).
 - **Problem:**
   - The processor computes the remaining credit as `creditAvailable - creditUsed`. When an order is committed, `VoucherModifier::increment()` runs `setCreditUsed(-1 * $item->getDiscount(true))`. That **replaces** the used amount with this order's discount.

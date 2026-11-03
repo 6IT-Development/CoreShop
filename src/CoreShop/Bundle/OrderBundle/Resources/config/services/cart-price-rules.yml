@@ -225,4 +225,5 @@ services:
             - '@coreshop.repository.cart_price_rule_voucher_code'
             - '@coreshop.repository.cart_price_rule_voucher_code_customer'
             - '@coreshop.factory.cart_price_rule_voucher_code_customer'
+            - '@CoreShop\Component\Currency\Converter\CurrencyConverterInterface'
 

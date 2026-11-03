@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Order\Modifier;
 
+use CoreShop\Component\Currency\Converter\CurrencyConverterInterface;
+use CoreShop\Component\Currency\Model\CurrencyAwareInterface;
 use CoreShop\Component\Order\Factory\CartPriceRuleVoucherCodeCustomerFactoryInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeCustomerInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
@@ -25,6 +27,7 @@ use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\PriceRuleItemInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherCodeCustomerRepositoryInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherRepositoryInterface;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Pimcore\Model\DataObject\Fieldcollection;
 
@@ -35,10 +38,25 @@ class VoucherModifier implements VoucherModifierInterface
         protected CartPriceRuleVoucherRepositoryInterface $voucherCodeRepository,
         protected CartPriceRuleVoucherCodeCustomerRepositoryInterface $codePerUserRepository,
         protected CartPriceRuleVoucherCodeCustomerFactoryInterface $voucherCodeCustomerFactory,
+        protected ?CurrencyConverterInterface $currencyConverter = null,
     ) {
     }
 
     public function increment(OrderInterface $order): void
+    {
+        $this->entityManager->wrapInTransaction(function () use ($order): void {
+            $this->doIncrement($order);
+        });
+    }
+
+    public function decrement(OrderInterface $order): void
+    {
+        $this->entityManager->wrapInTransaction(function () use ($order): void {
+            $this->doDecrement($order);
+        });
+    }
+
+    protected function doIncrement(OrderInterface $order): void
     {
         $priceRuleItems = $order->getPriceRuleItems();
         if (!$priceRuleItems instanceof Fieldcollection) {
@@ -54,13 +72,15 @@ class VoucherModifier implements VoucherModifierInterface
                 continue;
             }
 
-            $voucherCode = $this->voucherCodeRepository->findByCode($item->getVoucherCode());
+            $voucherCode = $this->findAndLockVoucherCode($item->getVoucherCode());
             if ($voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
                 $voucherCode->setUsed(true);
                 $voucherCode->setUses($voucherCode->getUses() + 1);
 
                 if ($voucherCode->isCreditCode()) {
-                    $voucherCode->setCreditUsed(-1 * $item->getDiscount(true));
+                    $voucherCode->setCreditUsed(
+                        (int) $voucherCode->getCreditUsed() + $this->getUsedCredit($order, $item, $voucherCode),
+                    );
                 }
 
                 $this->entityManager->persist($voucherCode);
@@ -98,7 +118,7 @@ class VoucherModifier implements VoucherModifierInterface
         $this->entityManager->flush();
     }
 
-    public function decrement(OrderInterface $order): void
+    protected function doDecrement(OrderInterface $order): void
     {
         $priceRuleItems = $order->getPriceRuleItems();
         if (!$priceRuleItems instanceof Fieldcollection) {
@@ -114,14 +134,16 @@ class VoucherModifier implements VoucherModifierInterface
                 continue;
             }
 
-            $voucherCode = $this->voucherCodeRepository->findByCode($item->getVoucherCode());
+            $voucherCode = $this->findAndLockVoucherCode($item->getVoucherCode());
             if ($voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
                 if ($voucherCode->getUses() !== 0) {
                     $voucherCode->setUses($voucherCode->getUses() - 1);
                     $voucherCode->setUsed($voucherCode->getUses() !== 0);
 
                     if ($voucherCode->isCreditCode()) {
-                        $voucherCode->setCreditUsed(max(0, $voucherCode->getCreditUsed() - (-1 * $item->getDiscount(true))));
+                        $voucherCode->setCreditUsed(
+                            max(0, (int) $voucherCode->getCreditUsed() - $this->getUsedCredit($order, $item, $voucherCode)),
+                        );
                     }
 
                     $this->entityManager->persist($voucherCode);
@@ -156,5 +178,47 @@ class VoucherModifier implements VoucherModifierInterface
         }
 
         $this->entityManager->flush();
+    }
+
+    /**
+     * Loads the voucher code again with a row lock, so that concurrent orders
+     * do not overwrite each other's uses and used credit.
+     */
+    protected function findAndLockVoucherCode(string $code): ?CartPriceRuleVoucherCodeInterface
+    {
+        $voucherCode = $this->voucherCodeRepository->findByCode($code);
+
+        if ($voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
+            $this->entityManager->refresh($voucherCode, LockMode::PESSIMISTIC_WRITE);
+        }
+
+        return $voucherCode;
+    }
+
+    /**
+     * The discount is stored in the order's base currency, the used credit in
+     * the credit currency of the voucher code.
+     */
+    protected function getUsedCredit(
+        OrderInterface $order,
+        PriceRuleItemInterface $item,
+        CartPriceRuleVoucherCodeInterface $voucherCode,
+    ): int {
+        $usedCredit = -1 * $item->getDiscount(true);
+
+        $fromCurrency = $order->getBaseCurrency();
+        $store = $order->getStore();
+
+        if (null === $fromCurrency && $store instanceof CurrencyAwareInterface) {
+            $fromCurrency = $store->getCurrency();
+        }
+
+        $toCurrency = $voucherCode->getCreditCurrency();
+
+        if (null === $this->currencyConverter || null === $fromCurrency || null === $toCurrency) {
+            return $usedCredit;
+        }
+
+        return $this->currencyConverter->convert($usedCredit, $fromCurrency->getIsoCode(), $toCurrency->getIsoCode());
     }
 }

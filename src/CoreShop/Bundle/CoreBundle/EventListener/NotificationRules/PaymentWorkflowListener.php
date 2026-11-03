@@ -46,7 +46,7 @@ final class PaymentWorkflowListener extends AbstractNotificationRuleListener
             'paymentState' => $event->getSubject()->getState(),
             'transition' => $event->getTransition()?->getName(),
             'workflow' => $event->getWorkflowName(),
-            'fromState' => $event->getMarking()->getPlaces(),
+            'fromState' => $event->getTransition()?->getFroms(),
             'toState' => $event->getTransition()?->getTos(),
         ]);
     }

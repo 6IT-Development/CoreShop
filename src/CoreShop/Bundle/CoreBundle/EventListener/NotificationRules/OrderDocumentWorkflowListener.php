@@ -42,7 +42,7 @@ final class OrderDocumentWorkflowListener extends AbstractNotificationRuleListen
 
         $this->rulesProcessor->applyRules($this->type, $subject, [
             'order_id' => $subject->getOrder()->getId(),
-            'fromState' => $event->getMarking()->getPlaces(),
+            'fromState' => $event->getTransition()->getFroms(),
             'toState' => $event->getTransition()->getTos(),
             'transition' => $event->getTransition()->getName(),
         ]);

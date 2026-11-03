@@ -45,7 +45,7 @@ final class OrderWorkflowListener extends AbstractNotificationRuleListener
 
         $this->rulesProcessor->applyRules($order->getSaleState(), $order, [
             'workflow' => $event->getWorkflowName(),
-            'fromState' => $event->getMarking()->getPlaces(),
+            'fromState' => $event->getTransition()->getFroms(),
             'toState' => $event->getTransition()->getTos(),
             '_locale' => $order->getLocaleCode(),
             'recipient' => $customer->getEmail(),

@@ -210,6 +210,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** always merge `$params`. Return early or log when there is no customer. Pass `customer` as an object plus an explicit allow-list of scalar fields (`firstname`, `lastname`, `email`, `gender`, …) instead of `getObjectVars()`.
 
 ### B-29 — Workflow notification params: `fromState` is the marking after the transition
+- **Status:** fixed — all three listeners read `fromState` from `$event->getTransition()->getFroms()`. It stays an array of places, like `toState`. Checked against the real `Transition` class; the listeners were linted only.
 - **Where:** `EventListener/NotificationRules/OrderWorkflowListener.php:48`, `PaymentWorkflowListener.php:49`, `OrderDocumentWorkflowListener.php:45`; vendor `symfony/workflow/Workflow.php` (`completed()` receives the updated marking).
 - **Problem:** the listeners run on `workflow.*.completed`. At that point `$event->getMarking()` already holds the new places, so `fromState` equals `toState` (as an array of places). Mail templates that show "changed from X to Y" print the new state twice.
 - **Fix:** take the from-places from the transition (`$event->getTransition()->getFroms()`), or capture them in a `workflow.*.transition` listener.

@@ -78,11 +78,15 @@ class DiscountAmountActionProcessor implements CartPriceRuleActionProcessorInter
 
         Assert::isInstanceOf($currency, CurrencyInterface::class);
 
-        return $this->moneyConverter->convert(
-            $this->getApplicableAmount($cartAmount, $amount),
+        // Cart amounts are in the store's base currency, so the rule amount has to be
+        // converted before it can be compared with them.
+        $amount = $this->moneyConverter->convert(
+            $amount,
             $currency->getIsoCode(),
-            $cart->getCurrency()->getIsoCode(),
+            $cart->getStore()->getCurrency()->getIsoCode(),
         );
+
+        return $this->getApplicableAmount($cartAmount, $amount);
     }
 
     protected function getApplicableAmount(int $cartAmount, int $ruleAmount): int

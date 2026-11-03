@@ -55,11 +55,6 @@ class VoucherCreditActionProcessor implements CartPriceRuleActionProcessorInterf
         }
 
         $discount = $this->getDiscount($cart, $voucherCode);
-        $discount = $this->moneyConverter->convert(
-            $discount,
-            $voucherCode->getCreditCurrency()->getIsoCode(),
-            $cart->getCurrency()->getIsoCode(),
-        );
 
         if ($discount <= 0) {
             return false;
@@ -80,6 +75,14 @@ class VoucherCreditActionProcessor implements CartPriceRuleActionProcessorInterf
 
     protected function getDiscount(OrderInterface $cart, CartPriceRuleVoucherCodeInterface $voucherCode): int
     {
-        return min($cart->getTotal(), $voucherCode->getCreditAvailable() - $voucherCode->getCreditUsed());
+        // The credit is in the voucher's credit currency, the cart total in the store's
+        // base currency. Convert the remaining credit before comparing the two.
+        $creditLeft = $this->moneyConverter->convert(
+            $voucherCode->getCreditAvailable() - $voucherCode->getCreditUsed(),
+            $voucherCode->getCreditCurrency()->getIsoCode(),
+            $cart->getStore()->getCurrency()->getIsoCode(),
+        );
+
+        return min($cart->getTotal(), $creditLeft);
     }
 }

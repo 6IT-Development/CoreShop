@@ -73,7 +73,7 @@ class SurchargeAmountActionProcessor implements CartPriceRuleActionProcessorInte
         return $this->moneyConverter->convert(
             $amount,
             $currency->getIsoCode(),
-            $cart->getCurrency()->getIsoCode(),
+            $cart->getStore()->getCurrency()->getIsoCode(),
         );
     }
 }

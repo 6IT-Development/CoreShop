@@ -218,6 +218,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Storage / admin listeners
 
 ### B-30 — `CookieStorage` cookies never get `Secure` on HTTPS and are session cookies
+- **Status:** fixed — cookies get `Secure` from the current request and expire after one year. Removals use an expiry in the past. Tested with real `Request`, `Response` and `ResponseEvent` objects.
 - **Where:** `Storage/CookieStorage.php:41-72`; vendor `http-kernel/EventListener/ResponseListener.php:56` (priority 0 → `Response::prepare()` → `setSecureDefault(true)`), `http-foundation/Response.php:300-303`.
 - **Problem:** `onKernelResponse` runs at priority `-1024`, after `ResponseListener::prepare()` has set the secure default on the existing cookies. The currency cookie added later is sent without `Secure` even over HTTPS: `_currency_1=5; path=/; httponly; samesite=lax` **(reproduced, `scratchpad/core/b/cookie.php`)**. `expire = 0` also makes the currency choice disappear when the browser closes.
 - **Fix:** `Cookie::create($name, (string) $value)->withSecure($event->getRequest()->isSecure())->withExpires(strtotime('+1 year'))`. Or run the listener above priority 0. Use `->withExpires(1)` for removals so the intent is explicit.

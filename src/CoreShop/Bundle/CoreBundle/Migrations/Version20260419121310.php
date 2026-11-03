@@ -19,6 +19,7 @@ namespace CoreShop\Bundle\CoreBundle\Migrations;
 
 use Carbon\Carbon;
 use CoreShop\Component\Pimcore\DataObject\ClassUpdate;
+use CoreShop\Component\Pimcore\Exception\ClassDefinitionFieldNotFoundException;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 use Pimcore;
@@ -65,12 +66,27 @@ final class Version20260419121310 extends AbstractMigration
             'visibleSearch' => false,
         ];
 
-        $classUpdater->insertFieldAfter('passwordResetHash', $passwordResetHashCreatedAtField);
+        try {
+            $classUpdater->insertFieldAfter('passwordResetHash', $passwordResetHashCreatedAtField);
+        } catch (ClassDefinitionFieldNotFoundException) {
+            // customised class without the anchor field
+            $classUpdater->insertField($passwordResetHashCreatedAtField);
+        }
+
         $classUpdater->save();
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
+        $classUpdater = new ClassUpdate(
+            Pimcore::getContainer()->getParameter('coreshop.model.user.pimcore_class_name'),
+        );
+
+        if (!$classUpdater->hasField('passwordResetHashCreatedAt')) {
+            return;
+        }
+
+        $classUpdater->removeField('passwordResetHashCreatedAt');
+        $classUpdater->save();
     }
 }

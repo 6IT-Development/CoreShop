@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CoreBundle\Migrations;
 
 use CoreShop\Component\Pimcore\DataObject\ClassUpdate;
+use CoreShop\Component\Pimcore\Exception\ClassDefinitionFieldNotFoundException;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
@@ -45,7 +46,7 @@ final class Version20260616120000 extends AbstractMigration
             return;
         }
 
-        $classUpdater->insertFieldAfter('orderDate', [
+        $lastActivatedAtField = [
             'name' => 'lastActivatedAt',
             'title' => 'Last Activated At',
             'tooltip' => 'Timestamp the cart was last selected/activated by its customer; used to restore the last-opened cart across sessions.',
@@ -66,7 +67,14 @@ final class Version20260616120000 extends AbstractMigration
             'columnType' => 'bigint(20)',
             'phpdocType' => '\\Carbon\\Carbon',
             'datatype' => 'data',
-        ]);
+        ];
+
+        try {
+            $classUpdater->insertFieldAfter('orderDate', $lastActivatedAtField);
+        } catch (ClassDefinitionFieldNotFoundException) {
+            // customised class without the anchor field
+            $classUpdater->insertField($lastActivatedAtField);
+        }
 
         $classUpdater->save();
     }

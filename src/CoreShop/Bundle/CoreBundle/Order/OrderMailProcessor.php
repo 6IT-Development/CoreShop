@@ -31,7 +31,6 @@ use CoreShop\Component\Order\Repository\OrderShipmentRepositoryInterface;
 use CoreShop\Component\Order\ShipmentStates;
 use CoreShop\Component\Pimcore\Mail\MailProcessorInterface;
 use Monolog\Logger;
-use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document\Email;
 
 class OrderMailProcessor implements OrderMailProcessorInterface
@@ -49,12 +48,27 @@ class OrderMailProcessor implements OrderMailProcessorInterface
 
     public function sendOrderMail(Email $emailDocument, OrderInterface $order, bool $sendInvoices = false, bool $sendShipments = false, array $params = []): bool
     {
-        $emailParameters = [];
         $attachments = [];
         $customer = $order->getCustomer();
+        $sendToCustomer = !isset($params['doNotSendToDesignatedRecipient']) || !$params['doNotSendToDesignatedRecipient'];
 
-        if ($customer instanceof Concrete) {
-            $emailParameters = array_merge($customer->getObjectVars(), $params);
+        if ($customer === null && $sendToCustomer) {
+            $this->logger->error(sprintf('Cannot send order mail for order %s, it has no customer.', (string) $order->getId()));
+
+            return false;
+        }
+
+        $emailParameters = $params;
+
+        if ($customer !== null) {
+            $emailParameters = array_merge([
+                'customer' => $customer,
+                'salutation' => $customer->getSalutation(),
+                'gender' => $customer->getGender(),
+                'firstname' => $customer->getFirstname(),
+                'lastname' => $customer->getLastname(),
+                'email' => $customer->getEmail(),
+            ], $params);
         }
 
         $emailParameters['orderTotal'] = $this->priceFormatter->format($order->getTotal(), $order->getBaseCurrency()->getIsoCode());
@@ -64,11 +78,9 @@ class OrderMailProcessor implements OrderMailProcessorInterface
         $emailParameters['object'] = $order;
         $emailParameters['storeNote'] = true;
 
-        unset($emailParameters['____pimcore_cache_item__'], $emailParameters['__dataVersionTimestamp']);
-
         $recipient = [];
 
-        if (!isset($params['doNotSendToDesignatedRecipient']) || !$params['doNotSendToDesignatedRecipient']) {
+        if ($sendToCustomer) {
             $recipient = [
                 [
                     $customer->getEmail(),

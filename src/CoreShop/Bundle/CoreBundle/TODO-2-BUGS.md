@@ -201,6 +201,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `$event->setOptions((string) ($this->configurationHelper->getForStore(...) ?? ''))`, or skip the call when the value is `null`. Initialise `WkhtmlOptionsEvent::$options = ''`. Catch `\Throwable` in `OrderMailProcessor`.
 
 ### B-28 — `OrderMailProcessor`: caller params are dropped for non-Concrete customers, a `null` customer crashes, and the whole customer object goes into mail params and order notes
+- **Status:** fixed — caller params are always merged. Instead of `getObjectVars()`, the mail gets `customer` (object) plus `salutation`, `gender`, `firstname`, `lastname` and `email`, so `newsletterToken` no longer reaches the params, the mail log or the order notes. An order without a customer logs an error and returns `false`, unless `doNotSendToDesignatedRecipient` is set; then the mail is sent without a customer recipient. **BC:** mail templates that use other customer fields directly must switch to `customer.<field>`. Tested with stubs.
 - **Where:** `Order/OrderMailProcessor.php:50-78`; `EventListener/Order/OrderMailNoteEventListener.php:81-87`.
 - **Problem:**
   - `$params` is merged only inside `if ($customer instanceof Concrete)`. Otherwise caller params (including `doNotSendToDesignatedRecipient`) are lost from `$emailParameters`.

@@ -80,23 +80,22 @@ final class CartBlamerListener
 
         $cart->setCustomer($user);
 
-        if (null === $cart->getShippingAddress()) {
-            $cart->setShippingAddress($user->getDefaultAddress());
+        $defaultAddress = $user->getDefaultAddress();
+        $addressIdentifier = $defaultAddress?->getAddressIdentifier()?->getName();
+
+        if (null === $cart->getShippingAddress() && \in_array($addressIdentifier, [null, 'shipping'], true)) {
+            $cart->setShippingAddress($defaultAddress);
         }
 
-        if (null === $cart->getInvoiceAddress()) {
-            $cart->setInvoiceAddress($user->getDefaultAddress());
+        if (null === $cart->getInvoiceAddress() && \in_array($addressIdentifier, [null, 'invoice'], true)) {
+            $cart->setInvoiceAddress($defaultAddress);
         }
 
         $this->cartProcessor->process($cart);
 
         if ($cart->getId()) {
             $this->cartManager->persistCart($cart);
-
-            return;
         }
-
-        $this->cartProcessor->process($cart);
     }
 
     private function getCart(): ?OrderInterface

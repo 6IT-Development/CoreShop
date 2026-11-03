@@ -107,6 +107,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** mirror the customer step: remove the shipping fields when `!$cart->hasShippableItems()`, null-check before saving, keep the key once one is set, and use `$cart->getFullPath()` explicitly.
 
 ### B-15 — `CartBlamerListener` copies the default address into both invoice and shipping, ignoring the address identifier; the cart is processed twice when it has no id
+- **Status:** fixed — the default address fills only the slots its identifier allows: shipping, invoice, or both when it has no identifier. The second `process()` call for carts without an id is removed. Tested with stubs.
 - **Where:** `EventListener/CartBlamerListener.php:63-90`; compare `Form/Type/Checkout/AddressType.php:51-79` (`allowed_address_identifier: [null,'shipping']` / `[null,'invoice']`).
 - **Problem:** a default address of type `shipping` becomes the cart's invoice address (and the reverse). The address form would never allow this. Because both addresses are now set, `AddressCheckoutStep::validate()` passes and the customer can skip the address step. When the cart has no id, `process()` runs twice (`:81` and `:89`) and nothing is persisted.
 - **Fix:** take the identifier into account (or use `AddressType`'s own defaults logic). Remove the second `process()` call.

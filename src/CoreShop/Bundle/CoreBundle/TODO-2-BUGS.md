@@ -424,6 +424,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add a `store` filter like the other reports and format with the store's currency ISO code.
 
 ### B-58 — `PaymentProvidersReport` percentage denominator ignores sale state, so percentages understate / don't sum to 100
+- **Status:** fixed — the denominator now uses the same conditions as the numerator (`saleState`, and `carrier IS NOT NULL` for carriers), so the percentages add up to 100. Linted only, not run against a DB.
 - **Where:** `PaymentProvidersReport.php:71-80`; same pattern `CarriersReport.php:71-79`.
 - **Problem:** The CROSS JOIN denominator `t.cnt` counts rows filtered only by store + date (no `saleState`), while the numerator counts `saleState = STATE_ORDER` only. So the percentages are of all carts+orders, not of orders, and won't total 100% across providers/carriers. `CarriersReport` additionally filters `carrier IS NOT NULL` in the numerator but not the denominator.
 - **Fix:** apply the same `saleState = STATE_ORDER` (and carrier/provider NOT NULL) predicate inside the denominator subquery.

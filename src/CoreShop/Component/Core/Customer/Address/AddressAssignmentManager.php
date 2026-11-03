@@ -96,9 +96,12 @@ final class AddressAssignmentManager implements AddressAssignmentManagerInterfac
     public function allocateAddressByAffiliation(CustomerInterface $customer, AddressInterface $address, ?string $affiliation): AddressInterface
     {
         $company = $customer->getCompany();
+        $currentAffiliation = $this->findCurrentAffiliation($customer, $address);
 
-        if (!$company instanceof CompanyInterface || $affiliation === null) {
+        if (!$company instanceof CompanyInterface) {
             $affiliation = CustomerAddressAllocatorInterface::ADDRESS_AFFILIATION_TYPE_OWN;
+        } else {
+            $affiliation = $this->resolveAffiliationForAccessType($customer, $affiliation, $currentAffiliation);
         }
 
         $relationEntity = null;
@@ -120,6 +123,58 @@ final class AddressAssignmentManager implements AddressAssignmentManagerInterfac
             $customer->setDefaultAddress($address);
         }
 
-        return $this->customerTransformHelper->moveAddressToNewAddressStack($address, $relationEntity);
+        // An address that stays where it is must keep its relations to other customers of the company
+        return $this->customerTransformHelper->moveAddressToNewAddressStack(
+            $address,
+            $relationEntity,
+            $currentAffiliation !== $affiliation,
+        );
+    }
+
+    /**
+     * Only allows the affiliations the customer's address access type permits. Without an explicit
+     * choice, an existing address keeps its affiliation.
+     */
+    private function resolveAffiliationForAccessType(
+        CustomerInterface $customer,
+        ?string $affiliation,
+        ?string $currentAffiliation,
+    ): string {
+        switch ($customer->getAddressAccessType()) {
+            case CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_COMPANY_ONLY:
+                $allowed = [CustomerAddressAllocatorInterface::ADDRESS_AFFILIATION_TYPE_COMPANY];
+
+                break;
+            case CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_AND_COMPANY:
+                $allowed = [
+                    CustomerAddressAllocatorInterface::ADDRESS_AFFILIATION_TYPE_OWN,
+                    CustomerAddressAllocatorInterface::ADDRESS_AFFILIATION_TYPE_COMPANY,
+                ];
+
+                break;
+            default:
+                $allowed = [CustomerAddressAllocatorInterface::ADDRESS_AFFILIATION_TYPE_OWN];
+        }
+
+        if (null === $affiliation) {
+            $affiliation = $currentAffiliation !== null && in_array($currentAffiliation, $allowed, true) ? $currentAffiliation : $allowed[0];
+        }
+
+        if (!in_array($affiliation, $allowed, true)) {
+            throw new \InvalidArgumentException(
+                sprintf('Address affiliation "%s" is not allowed for customer with id %d', $affiliation, $customer->getId()),
+            );
+        }
+
+        return $affiliation;
+    }
+
+    private function findCurrentAffiliation(CustomerInterface $customer, AddressInterface $address): ?string
+    {
+        try {
+            return $this->detectAddressAffiliationForCustomer($customer, $address);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
     }
 }

@@ -100,6 +100,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Data written wrongly / data loss
 
 ### C-08 — (reproduced) A `company_only` customer who edits a shared company address moves it out of the company's address book
+- **Status:** fixed — `allocateAddressByAffiliation()` derives the affiliation from the access type when the customer has a company: `company_only` allows only `company`, `own_and_company` allows both, every other type only `own`. Without an explicit choice an existing address keeps its detected affiliation (when allowed), otherwise the first allowed one is used, so a `company_only` customer edits and adds addresses in the company's address book. An affiliation the access type does not allow throws `InvalidArgumentException`. When the affiliation does not change, `moveAddressToNewAddressStack()` is called with `removeOldRelations = false`, so the other customers keep the address. Not run end to end (needs Pimcore objects).
 - **Where:** `Customer/Address/AddressAssignmentManager.php:100-101`, `:123`; `Customer/CustomerTransformHelper.php:124-150` (`removeOldRelations = true`). **(dependent)** `FrontendBundle/Controller/CustomerController.php:171-192`, `CoreBundle/Form/Extension/AddressTypeExtension.php:33-35`.
 - **Problem:**
   - For access type `company_only`, `getAddressAffiliationTypesForCustomer()` returns `null`. The form therefore has no `addressAffiliation` field, and the controller passes `$affiliation = null`.

@@ -574,6 +574,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Rename the inner key (`$position`).
 
 ### B-78 — `ProductWithUnitFixture` casts before multiplying, so prices are whole currency units
+- **Status:** fixed — the price is multiplied by the decimal factor before the cast, as in `AbstractProductFixture`.
 - **Where:** `Fixtures/Data/Demo/ProductWithUnitFixture.php:99`.
 - **Problem:** `(int) $faker->randomFloat(2, 200, 400) * $decimalFactor` truncates the float first. `AbstractProductFixture.php:646` correctly writes `(int) ($faker->randomFloat(...) * $decimalFactor)`.
 - **Fix:** Add the parentheses.

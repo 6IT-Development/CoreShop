@@ -109,7 +109,7 @@ class ProductWithUnitFixture extends AbstractProductFixture implements FixtureGr
                     $storeValues->setStore($store);
                 }
 
-                $storeValues->setPrice((int) $faker->randomFloat(2, 200, 400) * $decimalFactor);
+                $storeValues->setPrice((int) ($faker->randomFloat(2, 200, 400) * $decimalFactor));
 
                 /**
                  * @var ProductUnitDefinitionPriceInterface $cartonPrice

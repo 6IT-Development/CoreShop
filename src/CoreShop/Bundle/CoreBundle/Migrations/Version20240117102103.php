@@ -25,6 +25,8 @@ use Symfony\Component\Console\Output\NullOutput;
 
 final class Version20240117102103 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return 'Update configuration of static routes by adding a new `coreshop_payment_token` route';

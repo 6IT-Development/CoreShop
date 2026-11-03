@@ -28,6 +28,8 @@ use Doctrine\Migrations\AbstractMigration;
  */
 final class Version20260616120000 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return 'Add CoreShopOrder.lastActivatedAt for last-opened cart persistence';

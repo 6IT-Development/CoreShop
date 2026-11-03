@@ -27,6 +27,8 @@ use Pimcore\Bundle\StaticRoutesBundle\Model\Staticroute;
  */
 final class Version20240211090209 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return '';

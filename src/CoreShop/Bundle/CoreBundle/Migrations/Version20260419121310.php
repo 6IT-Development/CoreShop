@@ -25,6 +25,8 @@ use Pimcore;
 
 final class Version20260419121310 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return 'Add passwordResetHashCreatedAt datetime field to the User class (required by UserInterface::getPasswordResetHashCreatedAt introduced in bb2de14712).';

@@ -24,6 +24,8 @@ use Doctrine\Migrations\AbstractMigration;
 
 final class Version20240211095804 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return '';

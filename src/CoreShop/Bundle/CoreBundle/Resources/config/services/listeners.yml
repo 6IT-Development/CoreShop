@@ -100,3 +100,7 @@ services:
     CoreShop\Bundle\CoreBundle\EventListener\RecursiveVariantCacheInvalidationEventListener:
         tags:
             - { name: kernel.event_subscriber }
+
+    CoreShop\Bundle\CoreBundle\EventListener\MigrationDryRunListener:
+        tags:
+            - { name: doctrine.event_listener, event: onMigrationsMigrating }

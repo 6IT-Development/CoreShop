@@ -24,6 +24,8 @@ use Pimcore\Model\User\Permission\Definition;
 
 final class Version20240421093551 extends AbstractMigration
 {
+    use PimcoreApiMigrationTrait;
+
     public function getDescription(): string
     {
         return '';

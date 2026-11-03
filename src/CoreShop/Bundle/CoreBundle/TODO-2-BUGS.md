@@ -448,6 +448,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `'orderItems.mainObjectId IS NULL'`.
 
 ### B-62 — `ProductsReport` container branch has no `ORDER BY` and groups by a possibly-ambiguous column
+- **Status:** fixed — the container query filters on `products.type`, groups by `products.id` (both selected by the derived table; `o_type`/`o_id` were not) and orders by `orderCount DESC`. Not run against a DB.
 - **Where:** `ProductsReport.php:110-126`.
 - **Problem:** The `container` query ends at `GROUP BY products.o_id` with no `ORDER BY` (the other branch orders by `orderCount DESC`), so container results come back unordered. Also the derived `products` subquery selects `id,name,type` but groups by `products.o_id` and filters `products.o_type='object'` — those `o_`-prefixed columns are not in the subquery's select list; this relies on the underlying `object_localized_*` view exposing `o_id`/`o_type`, which is fragile.
 - **Fix:** add `ORDER BY orderCount DESC`; group/select consistent column names.

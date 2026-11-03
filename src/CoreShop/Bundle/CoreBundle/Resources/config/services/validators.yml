@@ -6,6 +6,14 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: coreshop_add_to_cart_availability }
 
+    CoreShop\Bundle\CoreBundle\Validator\Constraints\CartItemPriceValidator:
+        arguments:
+            - '@CoreShop\Component\Order\Calculator\PurchasablePriceCalculatorInterface'
+            - '@CoreShop\Component\ProductQuantityPriceRules\Detector\QuantityReferenceDetector'
+            - '@CoreShop\Component\Order\Cart\CartContextResolverInterface'
+        tags:
+            - { name: validator.constraint_validator, alias: coreshop_cart_item_price }
+
     CoreShop\Bundle\CoreBundle\Validator\Constraints\CartStockAvailabilityValidator:
         arguments:
             - '@CoreShop\Component\Inventory\Checker\AvailabilityCheckerInterface'

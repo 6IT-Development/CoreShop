@@ -1,4 +1,6 @@
 coreshop:
+    cart_item:
+        no_price: '%product% kann nicht bestellt werden, da kein Preis hinterlegt ist.'
     form:
         user:
             email:

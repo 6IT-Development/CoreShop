@@ -1,4 +1,6 @@
 coreshop:
+    cart_item:
+        no_price: '%product% non può essere ordinato perché non ha un prezzo.'
     form:
         user:
             username:

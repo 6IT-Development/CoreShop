@@ -58,7 +58,8 @@ class CarrierShippingRulePriceCalculator implements CarrierPriceCalculatorInterf
                 $context,
             );
 
-            return $price + $modifications;
+            // Combined modifications (several discounts, percentages over 100 %) must not make shipping negative
+            return max(0, $price + $modifications);
         }
 
         return 0;

@@ -50,6 +50,9 @@ class DiscountAmountActionProcessor implements CarrierPriceModificationActionPro
 
         Assert::isInstanceOf($currency, CurrencyInterface::class);
 
-        return -1 * $this->moneyConverter->convert($amount, $currency->getIsoCode(), $contextCurrency->getIsoCode());
+        $discount = $this->moneyConverter->convert($amount, $currency->getIsoCode(), $contextCurrency->getIsoCode());
+
+        // Never discount more than the shipping price
+        return -1 * min($discount, max(0, $price));
     }
 }

@@ -35,6 +35,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Money charged wrongly
 
 ### C-02 — The shipping price can become **negative**, and the shop then pays the customer for shipping — (reproduced) (dependent)
+- **Status:** fixed together with `Component/Core/TODO-1-CRITICAL.md` **C-06** — `CarrierShippingRulePriceCalculator` clamps the result at 0 and the Core `discountAmount` action is capped at the shipping price. Not done: the warning log and the save-time validation of the percent sum.
 - **Where:** `Calculator/CarrierShippingRulePriceCalculator.php:61` (`return $price + $modifications;`, no lower bound), `Processor/ShippingRuleActionProcessor.php:71-88` (every modification is computed from the **base** `$price` and summed), `Rule/Action/DiscountPercentActionProcessor.php:29`. **(dependent)** `Component/Core/Shipping/Rule/Action/DiscountAmountActionProcessor.php` (`-1 * amount`, no cap), `Component/Core/Shipping/Calculator/TaxedCarrierPriceRuleCalculator.php:63-93` and `Component/Core/Order/Processor/CartShippingProcessor.php:105-127` (adds the result as `AdjustmentInterface::SHIPPING` without a check).
 - **Problem:**
   - The form limits one `discountPercent` action to 0–100 %, but nothing limits the **sum**. Two discount actions of 60 % on a base price of 1000 give `1000 − 600 − 600 = −200`. This was reproduced with the component classes.

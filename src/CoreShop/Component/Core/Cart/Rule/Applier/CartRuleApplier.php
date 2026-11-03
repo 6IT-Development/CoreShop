@@ -81,7 +81,7 @@ class CartRuleApplier implements CartRuleApplierInterface
         }
 
         foreach ($discountableItems as $item) {
-            $totalAmount[] = $item->getTotal(false);
+            $totalAmount[] = $item->getTotal($withTax);
             /*
              * Cart rules that were applied before are only stored as neutral adjustments
              * on the items, so the item total does not include them yet.
@@ -99,9 +99,13 @@ class CartRuleApplier implements CartRuleApplierInterface
             return;
         }
 
+        /*
+         * Split the discount once, by the amount it is given in (gross or net). The other
+         * amount and the taxes of each share come from the item's own tax calculator, so
+         * net, gross and taxes of each item, and of the whole rule, always match.
+         */
         $distributedAmount = $this->distributor->distribute($totalAmount, $discount);
 
-        $totalDiscountFloat = 0;
         $totalDiscountNet = 0;
         $totalDiscountGross = 0;
         $i = 0;
@@ -109,90 +113,25 @@ class CartRuleApplier implements CartRuleApplierInterface
         foreach ($discountableItems as $item) {
             $applicableAmount = $distributedAmount[$i++];
 
-            $itemDiscountGross = 0;
-            $itemDiscountNet = 0;
-
             if (0 === $applicableAmount) {
                 continue;
             }
 
-            if ($withTax) {
-                $itemDiscountGross = $applicableAmount;
-            } else {
-                $itemDiscountNet = $applicableAmount;
-            }
-
             $taxCalculator = $this->taxCalculatorFactory->getTaxCalculator(
                 $item->getProduct(),
                 $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart),
                 $context,
             );
 
-            if ($taxCalculator instanceof TaxCalculatorInterface) {
-                if ($withTax) {
-                    $discountFloat = $applicableAmount / (1 + $taxCalculator->getTotalRate() / 100);
-                    $itemDiscountNet = $discountFloat;
-                } else {
-                    $discountFloat = $applicableAmount * (1 + ($taxCalculator->getTotalRate() / 100));
-                    $itemDiscountGross = $discountFloat;
-                }
-            } else {
-                if ($withTax) {
-                    $itemDiscountNet = $applicableAmount;
-                    $discountFloat = $applicableAmount;
-                } else {
-                    $itemDiscountGross = $applicableAmount;
-                    $discountFloat = $applicableAmount;
-                }
-            }
-
-            $totalDiscountFloat += $discountFloat;
-            $totalDiscountNet += $itemDiscountNet;
-            $totalDiscountGross += $itemDiscountGross;
-        }
-
-        $totalDiscountNet = (int) round($totalDiscountNet);
-        $totalDiscountGross = (int) round($totalDiscountGross);
-        $totalDiscountFloat = (int) round($totalDiscountFloat);
-
-        //Add missing cents caused by rounding issues
-        if ($totalDiscountFloat > ($withTax ? $totalDiscountNet : $totalDiscountGross)) {
-            if ($withTax) {
-                $totalDiscountNet += $totalDiscountFloat - $totalDiscountNet;
-            } else {
-                $totalDiscountGross += $totalDiscountFloat - $totalDiscountGross;
-            }
-        }
-
-        $totalAmountNet = [];
-        $totalAmountGross = [];
-
-        foreach ($discountableItems as $item) {
-            $totalAmountNet[] = $item->getTotal(false);
-            $totalAmountGross[] = $item->getTotal(true);
-        }
-
-        $distributedAmountNet = $this->distributor->distribute($totalAmountNet, $totalDiscountNet);
-        $distributedAmountGross = $this->distributor->distribute($totalAmountGross, $totalDiscountGross);
-
-        foreach ($discountableItems as $index => $item) {
-            $amountNet = $distributedAmountNet[$index];
-            $amountGross = $distributedAmountGross[$index];
-
-            if ($amountNet === 0) {
-                continue;
-            }
-
-            $taxCalculator = $this->taxCalculatorFactory->getTaxCalculator(
-                $item->getProduct(),
-                $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart),
-                $context,
-            );
+            $amountNet = $applicableAmount;
+            $amountGross = $applicableAmount;
 
             if ($taxCalculator instanceof TaxCalculatorInterface) {
                 $taxItems = $item->getTaxes() ?? new Fieldcollection();
 
                 if ($withTax) {
+                    $amountNet = $amountGross - $taxCalculator->getTaxesAmountFromGross($amountGross);
+
                     /** @psalm-suppress InvalidArgument */
                     $taxItems->setItems(
                         $this->taxCollector->collectTaxesFromGross(
@@ -202,6 +141,8 @@ class CartRuleApplier implements CartRuleApplierInterface
                         ),
                     );
                 } else {
+                    $amountGross = $amountNet + $taxCalculator->getTaxesAmount($amountNet);
+
                     /** @psalm-suppress InvalidArgument */
                     $taxItems->setItems(
                         $this->taxCollector->collectTaxes(
@@ -212,6 +153,9 @@ class CartRuleApplier implements CartRuleApplierInterface
                     );
                 }
             }
+
+            $totalDiscountNet += $amountNet;
+            $totalDiscountGross += $amountGross;
 
             /*
              * https://github.com/coreshop/CoreShop/issues/2572

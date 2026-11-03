@@ -85,18 +85,14 @@ final class CartStockAvailabilityValidator extends ConstraintValidator
     private function getExistingCartItemQuantityFromCart(OrderInterface $cart, OrderItemInterface $cartItem): float
     {
         $product = $cartItem->getProduct();
-        $quantity = $cartItem->getDefaultUnitQuantity() ?? 0;
+        $quantity = 0;
 
         /**
          * @var OrderItemInterface $item
          */
         foreach ($cart->getItems() as $item) {
-            if ($item->getId() === $cartItem->getId()) {
-                continue;
-            }
-
             if ($item->getProduct() instanceof $product && $item->getProduct()->getId() === $product->getId()) {
-                $quantity += $item->getDefaultUnitQuantity();
+                $quantity += $item->getDefaultUnitQuantity() ?? 0;
             }
         }
 

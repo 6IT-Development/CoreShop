@@ -179,6 +179,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** count only `saleState IN (order, quote)` with `setUnpublished(true)`. Delete or anonymise the customer's carts on deletion. Throw `Pimcore\Model\Element\ValidationException` in `preDelete`.
 
 ### B-25 — (plausible) Cart-level min/max/stock validators do not sum lines of unsaved carts, because they compare ids that are all `null`
+- **Status:** fixed — the three validators sum the quantity of every line of the product, without comparing line ids, so unsaved lines count too. The shared aggregation stays in TODO-3 **I-16**. Tested with stubs.
 - **Where:** `Validator/Constraints/CartStockAvailabilityValidator.php:93-96`, `CartMinimumQuantityValidator.php:113-116`, `CartMaximumQuantityValidator.php:111-114` (`if ($item->getId() === $cartItem->getId()) continue;`).
 - **Problem:** for items that are not persisted yet (`getId() === null`), every other unsaved line is treated as "the same line" and skipped. Only the current line's quantity is checked, so two lines of the same product (for example different unit definitions, or separate admin cart-creation rows) bypass the min/max/stock limits. In the storefront, cart items are normally saved before the `coreshop` group validation runs, so the main exposure is admin order creation and custom flows.
 - **Fix:** compare identity (`$item === $cartItem`), or better, aggregate once per product in one loop (`$totals[$productId] += qty`) and validate the totals. That is also O(n) instead of O(n²). See TODO-3 **I-16**.

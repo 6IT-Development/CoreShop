@@ -57,6 +57,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** sum over all lines of the product, using `getDefaultUnitQuantity()` (or `getQuantity()`; choose one and document it), then compare against min and max.
 
 ### B-08 — Quantity rounding can set a quantity of 0 although zero quantities are not allowed
+- **Status:** fixed — `CartItemQuantityModifier::modify()` rounds the target quantity first and applies the zero/negative check and the "unchanged" comparison to the rounded value. A target of `0.004` with precision 2 is now ignored like 0, and a target that rounds to the current quantity no longer fires the PRE/POST update events.
 - **Where:** `Order/Modifier/CartItemQuantityModifier.php:47` (checks the raw target) vs. `:51`, `:92-97` (rounds afterwards).
 - **Problem:** with `allowZeroQuantity = false` and a unit precision of 2, a target of `0.004` passes the `0 >= $targetQuantity` check, is rounded to `0.0`, and is set on the item. The "unchanged" early return also compares the unrounded value, so a target that rounds to the current quantity still fires the PRE/POST update events.
 - **Fix:** round first, then apply the zero/negative check and the "unchanged" comparison to the rounded value.

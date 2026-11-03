@@ -43,12 +43,13 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
          */
         Assert::isInstanceOf($item, OrderItemInterface::class);
 
+        // round first, so the zero check and the "unchanged" check see the quantity that is actually set
+        $cleanTargetQuantity = $this->roundQuantity($item, $targetQuantity);
+
         $currentQuantity = $item->getQuantity();
-        if ((!$this->allowZeroQuantity && 0 >= $targetQuantity) || $currentQuantity === $targetQuantity) {
+        if ((!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity) || $currentQuantity === $cleanTargetQuantity) {
             return;
         }
-
-        $cleanTargetQuantity = $this->roundQuantity($item, $targetQuantity);
 
         $this->eventDispatcher?->dispatch(
             new GenericEvent($item, ['targetQuantity' => $cleanTargetQuantity]),

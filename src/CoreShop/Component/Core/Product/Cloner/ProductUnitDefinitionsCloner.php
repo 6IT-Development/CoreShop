@@ -20,6 +20,7 @@ namespace CoreShop\Component\Core\Product\Cloner;
 
 use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
+use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
 use Pimcore\Model\DataObject\ClassDefinition\Data\CustomDataCopyInterface;
 use Pimcore\Model\DataObject\Concrete;
 
@@ -67,7 +68,7 @@ class ProductUnitDefinitionsCloner implements ProductClonerInterface
         );
 
         $product->setUnitDefinitions($unitDefinitions);
-        $product->setStoreValues($storeValues);
+        $product->setStoreValues($this->mergeStoreValues($product, $storeValues, $resetExistingData));
 
         /**
          * @var ProductStoreValuesInterface $storeValue
@@ -99,5 +100,44 @@ class ProductUnitDefinitionsCloner implements ProductClonerInterface
                 $newStoreValue->addProductUnitDefinitionPrice($newDefinitionPrice);
             }
         }
+    }
+
+    /**
+     * Keeps the product's own store values (price, tax rule, ...) unless existing data should be reset,
+     * and only adds the copies for stores the product has no own store values for.
+     */
+    protected function mergeStoreValues(ProductInterface $product, array $copiedStoreValues, bool $resetExistingData): array
+    {
+        if ($resetExistingData === true) {
+            return $copiedStoreValues;
+        }
+
+        /**
+         * @var ProductStoreValuesInterface[] $ownStoreValues
+         */
+        $ownStoreValues = InheritanceHelper::useInheritedValues(
+            static fn () => $product->getStoreValues(),
+            false,
+        ) ?: [];
+
+        if (count($ownStoreValues) === 0) {
+            return $copiedStoreValues;
+        }
+
+        $ownStoreIds = array_map(
+            static fn (ProductStoreValuesInterface $storeValues) => $storeValues->getStore()?->getId(),
+            $ownStoreValues,
+        );
+
+        /**
+         * @var ProductStoreValuesInterface $copiedStoreValue
+         */
+        foreach ($copiedStoreValues as $copiedStoreValue) {
+            if (!in_array($copiedStoreValue->getStore()?->getId(), $ownStoreIds, true)) {
+                $ownStoreValues[] = $copiedStoreValue;
+            }
+        }
+
+        return $ownStoreValues;
     }
 }

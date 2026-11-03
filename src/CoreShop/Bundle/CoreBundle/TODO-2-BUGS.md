@@ -386,6 +386,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add `<indexes><index name="payment_order" columns="orderId"/></indexes>` (and/or on `` `order` ``) plus a migration; long term drop one of the two duplicate columns.
 
 ### B-52 — `Application\Version` reports `1.0.1` for a 4.1 codebase
+- **Status:** fixed — `Version::getVersion()` returns the installed Composer version of `six-it/core-shop`, `coreshop/core-shop` or `coreshop/core-bundle`, whichever has one first. Without Composer data it falls back to the constants, now `4.1.0`. Checked against the vendor tree, which reports `v2.0.0`. The bundle manager now shows the same version twice, for example `v2.0.0 (v2.0.0)`, because the bundles append their own Composer version.
 - **Where:** `Application/Version.php:23-29`; used by `ResourceBundle/AbstractResourceBundle.php` `getVersion()` for every CoreShop bundle and `Controller/SettingsController.php:32` (admin "about").
 - **Problem:** every CoreShop bundle shows "1.0.1 (4.1.x)" in Pimcore's bundle manager and the settings panel; support/upgrade checks read a wrong version.
 - **Fix:** derive it from `Composer\InstalledVersions::getPrettyVersion('coreshop/core-shop')` (fallback `coreshop/core-bundle`), or bump the constants in the release process.

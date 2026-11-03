@@ -61,7 +61,7 @@ class CustomersReport implements ReportInterface
               COUNT(customer.oo_id) as `orderCount`
             FROM object_query_$orderClassId AS orders
             INNER JOIN object_query_$customerClassId AS customer ON orders.customer__id = customer.oo_id
-            WHERE  orders.orderState = '$orderCompleteState' AND orders.orderDate > :fromTimestamp AND orders.orderDate < :toTimestamp AND customer.oo_id IS NOT NULL AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+            WHERE  orders.orderState = '$orderCompleteState' AND orders.orderDate >= :fromTimestamp AND orders.orderDate < :toTimestamp AND customer.oo_id IS NOT NULL AND saleState='" . OrderSaleStates::STATE_ORDER . "'
             GROUP BY customer.oo_id
             ORDER BY COUNT(customer.oo_id) DESC
             LIMIT " . (int) $offset . ', ' . (int) $limit;

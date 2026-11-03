@@ -31,9 +31,13 @@ final class ReportDateFilter
         return self::fromTimestamp($parameterBag->get('from', strtotime(date('01-m-Y'))));
     }
 
+    /**
+     * The filter holds the start of the last selected day. The result is the exclusive
+     * upper bound after that day, so the whole day is part of the report.
+     */
     public static function to(ParameterBag $parameterBag): Carbon
     {
-        return self::fromTimestamp($parameterBag->get('to', strtotime(date('t-m-Y'))));
+        return self::fromTimestamp($parameterBag->get('to', strtotime(date('t-m-Y'))))->addDay();
     }
 
     /**

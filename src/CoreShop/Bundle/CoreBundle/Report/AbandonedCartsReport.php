@@ -96,7 +96,7 @@ final class AbandonedCartsReport implements ReportInterface, ExportReportInterfa
                         LEFT JOIN coreshop_payment_provider AS `pg` ON `pg`.id = cart.paymentProvider
                         WHERE cart.items <> ''
                           AND cart.store = :storeId
-                          AND cart.creationDate > :fromTimestamp
+                          AND cart.creationDate >= :fromTimestamp
                           AND cart.creationDate < :toTimestamp
                           AND cart.saleState = '" . OrderSaleStates::STATE_CART . "'
                      GROUP BY cart.oo_id

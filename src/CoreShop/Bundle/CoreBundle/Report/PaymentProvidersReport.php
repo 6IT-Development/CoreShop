@@ -71,9 +71,9 @@ class PaymentProvidersReport implements ReportInterface
               FROM $tableName as `order`
               INNER JOIN objects as o
                 ON o.id = `order`.oo_id
-              WHERE store = :storeId AND creationDate > :fromTimestamp AND creationDate < :toTimestamp
+              WHERE store = :storeId AND creationDate >= :fromTimestamp AND creationDate < :toTimestamp
             ) t
-          WHERE store = :storeId AND creationDate > :fromTimestamp AND creationDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+          WHERE store = :storeId AND creationDate >= :fromTimestamp AND creationDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
           GROUP BY paymentProvider";
 
         $results = $this->db->fetchAllAssociative($sql, [

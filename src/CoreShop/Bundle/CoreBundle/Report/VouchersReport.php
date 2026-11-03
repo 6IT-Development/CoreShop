@@ -77,7 +77,7 @@ class VouchersReport implements ReportInterface, ExportReportInterface
               FROM object_collection_CoreShopProposalCartPriceRuleItem_$classId as orderVouchers
               INNER JOIN object_query_$classId as orders ON orders.oo_id = orderVouchers.id
               LEFT JOIN coreshop_cart_price_rule AS priceRule ON orderVouchers.cartPriceRule = priceRule.id
-              WHERE orderVouchers.voucherCode <> '' AND orders.store = :storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate > :fromTimestamp AND orders.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+              WHERE orderVouchers.voucherCode <> '' AND orders.store = :storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate >= :fromTimestamp AND orders.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
               ORDER BY orders.orderDate DESC
               LIMIT " . (int) $offset . ', ' . (int) $limit;
 

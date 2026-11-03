@@ -104,7 +104,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
                 INNER JOIN object_query_$orderItemClassId AS orderItems ON products.id = orderItems.mainObjectId
                 INNER JOIN object_relations_$orderClassId AS orderRelations ON orderRelations.dest_id = orderItems.oo_id AND orderRelations.fieldname = \"items\"
                 INNER JOIN object_query_$orderClassId AS `order` ON `order`.oo_id = orderRelations.src_id
-                WHERE products.o_type = 'object' AND `order`.store = :storeId" . $orderStateInClause . " AND `order`.orderDate > :fromTimestamp AND `order`.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+                WHERE products.o_type = 'object' AND `order`.store = :storeId" . $orderStateInClause . " AND `order`.orderDate >= :fromTimestamp AND `order`.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
                 GROUP BY products.o_id
 
             LIMIT " . (int) $offset . ', ' . (int) $limit;
@@ -136,7 +136,7 @@ class ProductsReport implements ReportInterface, ExportReportInterface
                 INNER JOIN object_relations_$orderClassId AS orderRelations ON orderRelations.src_id = orders.oo_id AND orderRelations.fieldname = \"items\"
                 INNER JOIN object_query_$orderItemClassId AS orderItems ON orderRelations.dest_id = orderItems.oo_id
                 INNER JOIN object_localized_query_" . $orderItemClassId . '_' . $locale . " AS orderItemsTranslated ON orderItems.oo_id = orderItemsTranslated.ooo_id
-                WHERE `orders`.store = :storeId AND $productTypeCondition" . $orderStateInClauseOrders . " AND `orders`.orderDate > :fromTimestamp AND `orders`.orderDate < :toTimestamp
+                WHERE `orders`.store = :storeId AND $productTypeCondition" . $orderStateInClauseOrders . " AND `orders`.orderDate >= :fromTimestamp AND `orders`.orderDate < :toTimestamp
                 GROUP BY orderItems.objectId
                 ORDER BY orderCount DESC
                 LIMIT " . (int) $offset . ', ' . (int) $limit;

@@ -400,6 +400,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** construct Carbon with the app timezone, e.g. `Carbon::createFromTimestamp($ts, date_default_timezone_get())`, or avoid Carbon for pure epoch math. For the `DATE()`-string labels use `Carbon::parse($day, $tz)` / `new \DateTimeImmutable($day)` rather than `strtotime`.
 
 ### B-54 — Default date range excludes the whole last day of the month (reproduced)
+- **Status:** fixed — `ReportDateFilter::to()` returns the start of the day after the selected one, and the queries keep `<`, so the whole last day counts (also across a DST change). The lower bound of all reports is now `>=`, so an order at exactly midnight is included. A caller passing `to` as an exact time now gets up to one more day. Bounds tested, queries not run against a DB.
 - **Where:** all reports, default `to` = `strtotime(date('t-m-Y'))` (e.g. `SalesReport.php:63`, `CategoriesReport.php:50`, etc.); SQL uses `orderDate < :toTimestamp`.
 - **Problem:** `date('t-m-Y')` is the last day at **00:00:00** (reproduced: `2026-10-31 00:00:00`), and the filter is strictly `<`. So orders on the last day of the month (and, with `from = 01-m-Y` 00:00 plus `>`, this is consistent only at the lower bound) are dropped. The same `<` applies to the user-chosen `to`, which the JS sets to the picked day at local-midnight — the entire selected end day is excluded.
 - **Fix:** use inclusive upper bounds: `<= end-of-day`, or add one day to `to` and keep `<`. Apply consistently to `from`/`to` across all reports.

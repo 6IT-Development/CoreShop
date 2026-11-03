@@ -102,7 +102,7 @@ class ManufacturerReport implements ReportInterface
             INNER JOIN object_query_$orderItemClassId AS orderItems ON orderItems.product__id = manProductDependencies.sourceid
             INNER JOIN object_relations_$orderClassId AS orderRelations ON orderRelations.dest_id = orderItems.oo_id AND orderRelations.fieldname = \"items\"
             INNER JOIN object_query_$orderClassId AS `orders` ON `orders`.oo_id = orderRelations.src_id
-            WHERE orders.store = :storeId" . $orderStateInClause . " AND orders.orderDate > :fromTimestamp AND orders.orderDate < :toTimestamp AND orderItems.product__id IS NOT NULL AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+            WHERE orders.store = :storeId" . $orderStateInClause . " AND orders.orderDate >= :fromTimestamp AND orders.orderDate < :toTimestamp AND orderItems.product__id IS NOT NULL AND saleState='" . OrderSaleStates::STATE_ORDER . "'
             GROUP BY manufacturers.oo_id
             ORDER BY quantityCount DESC
             LIMIT " . (int) $offset . ', ' . (int) $limit;

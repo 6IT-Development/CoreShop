@@ -101,7 +101,7 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
         $sqlQuery = "
               SELECT DATE(FROM_UNIXTIME(orderDate)) AS dayDate, orderDate, SUM(totalGross) AS total
               FROM object_query_$classId as orders
-              WHERE orders.store = :storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate > :fromTimestamp AND orders.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
+              WHERE orders.store = :storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate >= :fromTimestamp AND orders.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
               GROUP BY " . $groupSelector;
 
         $results = $this->db->fetchAllAssociative($sqlQuery, [

@@ -42,10 +42,12 @@ final class AddressChoiceType extends AbstractType
             ->setDefaults(
                 [
                     'choices' => function (Options $options) {
-                        /**
-                         * @var CustomerInterface $customer
-                         */
-                        $customer = $this->customerRepository->find($options['customer']);
+                        $customer = is_numeric($options['customer']) ? $this->customerRepository->find((int) $options['customer']) : null;
+
+                        if (!$customer instanceof CustomerInterface) {
+                            return [];
+                        }
+
                         $allowedAddressIdentifier = $options['allowed_address_identifier'];
 
                         $addresses = $this->customerAddressAllocator->allocateForCustomer($customer);

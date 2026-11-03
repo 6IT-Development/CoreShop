@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\Report;
 
+use Carbon\Carbon;
 use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Core\Portlet\ExportPortletInterface;
 use CoreShop\Component\Core\Portlet\PortletInterface;
@@ -77,17 +78,18 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
             return [];
         }
 
-        [$dateFormatter, $groupSelector] = match ($groupBy) {
-            'month' => ['F Y', 'MONTH(FROM_UNIXTIME(orders.orderDate))'],
-            'year' => ['Y', 'YEAR(FROM_UNIXTIME(orders.orderDate))'],
-            default => ['d-m-Y', 'DATE(FROM_UNIXTIME(orders.orderDate))'],
+        [$dateFormatter, $periodFormat] = match ($groupBy) {
+            'month' => ['F Y', '%Y-%m-01'],
+            'year' => ['Y', '%Y-01-01'],
+            default => ['d-m-Y', '%Y-%m-%d'],
         };
 
         $sqlQuery = "
-              SELECT DATE(FROM_UNIXTIME(orderDate)) AS dayDate, orderDate, SUM(totalGross) AS total
+              SELECT DATE_FORMAT(FROM_UNIXTIME(orders.orderDate), '$periodFormat') AS period, SUM(totalGross) AS total
               FROM object_query_$classId as orders
               WHERE orders.store = :storeId AND orders.orderState = '$orderCompleteState' AND orders.orderDate >= :fromTimestamp AND orders.orderDate < :toTimestamp AND saleState='" . OrderSaleStates::STATE_ORDER . "'
-              GROUP BY " . $groupSelector;
+              GROUP BY period
+              ORDER BY period ASC";
 
         $results = $this->db->fetchAllAssociative($sqlQuery, [
             'storeId' => $storeId,
@@ -96,7 +98,7 @@ class SalesReport implements ReportInterface, ExportReportInterface, PortletInte
         ]);
 
         foreach ($results as $result) {
-            $date = ReportDateFilter::fromTimestamp($result['orderDate']);
+            $date = Carbon::parse($result['period'], date_default_timezone_get());
 
             $data[] = [
                 'timestamp' => $date->getTimestamp(),

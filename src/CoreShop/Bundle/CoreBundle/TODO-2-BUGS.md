@@ -412,6 +412,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `match($groupBy) { 'day'/'month'/'year' => …, default => throw new \InvalidArgumentException(...) }` (or clamp to `day`).
 
 ### B-56 — `SalesReport` month/year grouping labels an arbitrary day's row and breaks across years
+- **Status:** fixed — the query groups by a formatted period (`%Y-%m-01`, `%Y-01-01` or the day), so months of different years stay apart. Label and `timestamp` come from that period, which is now the start of the day, month or year instead of the time of some order. Rows are sorted by period. Label formatting tested, query not run against a DB.
 - **Where:** `SalesReport.php:92-100,116-121`.
 - **Problem:** The SELECT returns `orderDate` (an arbitrary member row of each group because of `sql_mode=''`, which Pimcore sets — `pimcore-source/bundles/CoreBundle/config/pimcore/default.yaml:148`), while grouping is by `MONTH(...)`/`YEAR(...)`. For `month`, `GROUP BY MONTH()` merges the same month across different years into one bucket, and `datetext` ('F Y') is taken from a random row. Results are wrong for multi-year ranges.
 - **Fix:** group by `YEAR(),MONTH()` (or `DATE_FORMAT(FROM_UNIXTIME(orderDate),'%Y-%m')`) and derive the label from the grouped key, not a stray `orderDate`.

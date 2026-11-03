@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Core\Product\Rule\Condition;
 
 use CoreShop\Component\Order\Model\OrderInterface;
-use CoreShop\Component\Order\Model\OrderItemInterface;
+use CoreShop\Component\Core\Model\OrderItemInterface;
 use CoreShop\Component\Product\Model\ProductInterface;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Rule\Condition\ConditionCheckerInterface;
@@ -38,17 +38,27 @@ final class QuantityConditionChecker implements ConditionCheckerInterface
         }
 
         $cart = $params['cart'];
+        $found = false;
+        $quantity = 0.0;
 
+        // Sum all lines of the product (each line can have another unit), in the product's default unit
         foreach ($cart->getItems() as $item) {
-            if ($item instanceof OrderItemInterface) {
-                if ($item->getProduct() instanceof ProductInterface) {
-                    if ($item->getProduct()->getId() === $subject->getId()) {
-                        return $item->getQuantity() >= $configuration['minQuantity'] && $item->getQuantity() <= $configuration['maxQuantity'];
-                    }
-                }
+            if (!$item instanceof OrderItemInterface || $item->getIsGiftItem()) {
+                continue;
             }
+
+            if (!$item->getProduct() instanceof ProductInterface || $item->getProduct()->getId() !== $subject->getId()) {
+                continue;
+            }
+
+            $found = true;
+            $quantity += (float) ($item->getDefaultUnitQuantity() ?? $item->getQuantity());
         }
 
-        return false;
+        if (!$found) {
+            return false;
+        }
+
+        return $quantity >= $configuration['minQuantity'] && $quantity <= $configuration['maxQuantity'];
     }
 }

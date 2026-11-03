@@ -51,6 +51,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** decide whether 0 is allowed, then handle it the same way in both paths and document it.
 
 ### B-07 — The product `QuantityConditionChecker` looks only at the first cart line of the product and compares quantities in the line's own unit
+- **Status:** fixed — `QuantityConditionChecker` sums `getDefaultUnitQuantity()` over all non-gift lines of the product and compares the sum against min and max, so quantities are always in the product's default unit (1 box of 12 counts as 12). Without any line of the product the condition is false, as before. It now type-checks the Core `OrderItemInterface`, which has `getDefaultUnitQuantity()`.
 - **Where:** `Product/Rule/Condition/QuantityConditionChecker.php:42-50`.
 - **Problem:** it returns the result for the first line whose product matches. Other lines with the same product (another unit definition, or a separate line added by an extension) are ignored. It compares `getQuantity()` (in the line's unit) rather than `getDefaultUnitQuantity()`, so "min 10" is met by 1 box of 12 only if the rule author thinks in boxes.
 - **Fix:** sum over all lines of the product, using `getDefaultUnitQuantity()` (or `getQuantity()`; choose one and document it), then compare against min and max.

@@ -50,9 +50,13 @@ final class NotificationRuleListener implements NotificationRuleListenerInterfac
         $finder = new Finder();
         $finder->files()->name('*.notification')->in($this->cacheDir);
 
+        $files = [];
         foreach ($finder as $file) {
-            $fs->remove($file->getPath());
+            // the file itself, getPath() is its directory
+            $files[] = $file->getPathname();
         }
+
+        $fs->remove($files);
     }
 
     public function applyNewFired(GenericEvent $type): void

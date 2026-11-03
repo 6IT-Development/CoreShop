@@ -592,6 +592,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** Wrap `getAlpha3Code()` in try/catch and fall back to `eng`. Use `$country->getName()` (English) when the requested translation is missing.
 
 ### B-81 — `NotificationRuleListener::clear()` deletes the whole directory instead of the notification files
+- **Status:** fixed — `clear()` collects the pathnames of the `*.notification` files and removes only them, after the Finder iteration. Checked with a script: the notification files are gone, the directory and an unrelated file stay.
 - **Where:** `Test/Service/NotificationRuleListener.php:43-56`.
 - **Problem:** `$fs->remove($file->getPath())` passes the **directory** of the file. The first match removes `%kernel.cache_dir%/notifications` with everything in it **(reproduced: `nrl.php` → directory and an unrelated `keep.txt` are gone)**. It works for the Behat suite only by accident.
 - **Fix:** `$fs->remove($file->getPathname())`, or `$fs->remove(iterator_to_array($finder))`.

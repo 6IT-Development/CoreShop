@@ -68,8 +68,6 @@ final class CoreShopCoreExtension extends AbstractModelExtension implements Prep
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
 
-        $container->setParameter('coreshop.all.dependant.bundles', []);
-
         $this->registerResources('coreshop', CoreShopResourceBundle::DRIVER_DOCTRINE_ORM, $configs['resources'], $container);
         $this->registerDependantBundles('coreshop', [PimcoreSimpleBackendSearchBundle::class, PimcoreCustomReportsBundle::class], $container);
 

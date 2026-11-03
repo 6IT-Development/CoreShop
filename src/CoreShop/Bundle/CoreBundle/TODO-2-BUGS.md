@@ -280,6 +280,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add `'core_shop_order'`; better, iterate over all extensions whose configuration tree has an `autoconfigure_with_attributes` node instead of a hard-coded list.
 
 ### B-38 — `load()` resets `coreshop.all.dependant.bundles`, wiping entries registered by extensions loaded before CoreBundle
+- **Status:** fixed — the reset is removed. `registerDependantBundles()` already handles a missing parameter, and no bundle is registered twice. `coreshop:resources:install` without `--application-name` now also installs Newsletter and WebToPrint. Not run against a booted kernel.
 - **Where:** `DependencyInjection/CoreShopCoreExtension.php:69-72`; `CustomerBundle/DependencyInjection/CoreShopCustomerExtension.php:45` (Newsletter), `OrderBundle/DependencyInjection/CoreShopOrderExtension.php:74` (WebToPrint); consumer `ResourceBundle/Installer/PimcoreDependantBundleInstaller.php:36-40`.
 - **Problem:** each extension's `load()` gets a temporary container that already contains the parameters of the extensions processed before it (`MergeExtensionConfigurationPass`, Symfony 7.4). Order (3200) and Customer (3100) are registered with a higher priority than CoreBundle, so their entries are lost when CoreBundle sets the parameter to `[]`. `coreshop:resources:install` **without** `--application-name` therefore does not install the Newsletter/WebToPrint bundles. (`coreshop:install` passes `coreshop` and reads `coreshop.dependant.bundles`, which is not reset.)
 - **(plausible)**

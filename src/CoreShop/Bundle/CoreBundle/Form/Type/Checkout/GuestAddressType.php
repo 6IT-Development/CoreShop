@@ -28,7 +28,7 @@ use Symfony\Component\Form\FormEvents;
 
 final class GuestAddressType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('shippingAddress', AddressType::class)
@@ -51,6 +51,15 @@ final class GuestAddressType extends AbstractType
                     $event->getForm()->get('useInvoiceAsShipping')->setData(false);
                 } else {
                     $event->getForm()->get('useInvoiceAsShipping')->setData(true);
+                }
+            })
+            ->addEventListener(FormEvents::PRE_SUBMIT, static function (FormEvent $event) {
+                $data = $event->getData();
+
+                // the shipping address is replaced by the invoice address after a valid submit, it must not fail on its own
+                if ($event->getForm()->has('shippingAddress') && isset($data['useInvoiceAsShipping'], $data['invoiceAddress'])) {
+                    $data['shippingAddress'] = $data['invoiceAddress'];
+                    $event->setData($data);
                 }
             })
         ;

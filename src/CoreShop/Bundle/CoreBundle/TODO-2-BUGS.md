@@ -133,6 +133,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** return `[]` when the customer cannot be resolved (`if (!$customer instanceof CustomerInterface) return [];`). Optionally also accept a `CustomerInterface` in the option, so callers that already hold the object (checkout `AddressType.php:69,82`, profile) do not re-query it.
 
 ### B-19 — (plausible) `GuestAddressType` validates the shipping address even when "use invoice as shipping" is checked
+- **Status:** fixed — a `PRE_SUBMIT` listener in `GuestAddressType` copies `invoiceAddress` into `shippingAddress` when `useInvoiceAsShipping` is set, the same approach as the logged-in form. `buildForm()` now declares `: void`. Tested with stubs.
 - **Where:** `Form/Type/Checkout/GuestAddressType.php:31-57`. Compare the logged-in variant `Form/Type/Checkout/AddressType.php:125-152`, which copies the invoice into the shipping field in `PRE_SUBMIT`. Consumer: `Checkout/Step/GuestAddressCheckoutStep.php:72-86`, which only switches after `isValid()`.
 - **Problem:** `shippingAddress` is a full `AddressType` with its own validation. If the theme hides or disables the shipping block when the checkbox is ticked, the shipping fields arrive empty and the form is invalid. The flag is only evaluated after a successful validation.
 - **Fix:** in `PRE_SUBMIT`, when `useInvoiceAsShipping` is set, either copy `invoiceAddress` into `shippingAddress` or remove the `shippingAddress` child. Also declare `buildForm(): void` (see TODO-3 **I-02**).

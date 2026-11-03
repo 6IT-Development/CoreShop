@@ -58,6 +58,10 @@ final class ProductStoreValuesAdminGetListener implements EventSubscriberInterfa
 
         $data = $event->getArgument('data');
 
+        if (!is_array($data['data']['storeValues'] ?? null)) {
+            return;
+        }
+
         foreach ($data['data']['storeValues'] as &$storeValues) {
             $values = $storeValues['values'] ?? [];
 

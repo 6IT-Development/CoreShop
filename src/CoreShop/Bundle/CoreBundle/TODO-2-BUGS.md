@@ -224,6 +224,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `Cookie::create($name, (string) $value)->withSecure($event->getRequest()->isSecure())->withExpires(strtotime('+1 year'))`. Or run the listener above priority 0. Use `->withExpires(1)` for removals so the intent is explicit.
 
 ### B-31 — (plausible) `ProductStoreValuesAdminGetListener` warns on product classes without a `storeValues` field
+- **Status:** fixed — the listener returns early when the object data has no `storeValues` array. `ClassDefinition::getById()` stays, because `getClass()` throws for a missing class where the listener should just return. Linted only.
 - **Where:** `EventListener/ProductStoreValuesAdminGetListener.php:59-75`.
 - **Problem:** `foreach ($data['data']['storeValues'] as &$storeValues)` assumes the key exists. A `ProductInterface` class without that field (custom product class, or a field renamed or localised) triggers "Undefined array key" plus "foreach() argument must be of type array". In debug mode Symfony's error handler turns that into an exception, and the admin cannot open the object. `ClassDefinition::getById()` runs for every object open.
 - **Fix:** `if (!is_array($data['data']['storeValues'] ?? null)) return;`. Read `allowInherit` via `$object->getClass()`.

@@ -44,6 +44,7 @@ services:
 
     CoreShop\Bundle\CoreBundle\Report\CustomersReport:
         arguments:
+            - '@coreshop.repository.store'
             - '@doctrine.dbal.default_connection'
             - '@CoreShop\Component\Currency\Formatter\MoneyFormatterInterface'
             - '@CoreShop\Component\Locale\Context\LocaleContextInterface'

@@ -418,6 +418,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** group by `YEAR(),MONTH()` (or `DATE_FORMAT(FROM_UNIXTIME(orderDate),'%Y-%m')`) and derive the label from the grouped key, not a stray `orderDate`.
 
 ### B-57 — `CustomersReport` hard-codes EUR instead of the store currency
+- **Status:** fixed — the report requires a `store` like the other reports, filters orders by it and formats with its currency. `customers.js` extends `abstractStore`, so the panel gets the store selector. The constructor has a new first argument, `$storeRepository`, which affects projects that decorate or extend this service. Linted only, not run against a DB or in the admin.
 - **Where:** `CustomersReport.php:78-83`.
 - **Problem:** `salesFormatted` is formatted with the literal `'EUR'`. Every other report uses `$store->getCurrency()->getIsoCode()`. This report also takes no `store` filter at all (`:66-70` joins across all stores and sums `totalNet`), so in a multi-store or non-EUR shop the figures are mislabeled and mix currencies/stores.
 - **Fix:** add a `store` filter like the other reports and format with the store's currency ISO code.

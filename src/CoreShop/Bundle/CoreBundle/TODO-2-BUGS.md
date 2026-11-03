@@ -185,6 +185,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** compare identity (`$item === $cartItem`), or better, aggregate once per product in one loop (`$totals[$productId] += qty`) and validate the totals. That is also O(n) instead of O(n²). See TODO-3 **I-16**.
 
 ### B-26 — (reproduced, dependent) `ProductQuantityRangeTypeExtension::roundQuantity()` rounds with the **previous** unit's precision and throws a `TypeError` on an empty value
+- **Status:** fixed — rounding now runs in a `PRE_SUBMIT` listener on the range form. It reads the unit id and the quantity from the submitted array and resolves the unit through the injected `coreshop.repository.product_unit_definition`. Empty and non-numeric values are left to the form. Tested with a real Symfony form and a stub repository.
 - **Where:** `Form/Extension/ProductQuantityRangeTypeExtension.php:45-47,50-66,71-89`. `rangeStartingFrom` is added by `ProductQuantityPriceRulesBundle/Form/Type/ProductQuantityRangeType.php:46` **before** this extension adds `unitDefinition` (`:42`).
 - **Problem:**
   1. Children are submitted in insertion order. When the `PRE_SUBMIT` listener of `rangeStartingFrom` runs, `$parent->get('unitDefinition')->getData()` still holds the **old**, pre-set unit. Changing a range's unit together with its quantity rounds with the old precision. For a new range the unit is `null`, so no rounding happens at all.

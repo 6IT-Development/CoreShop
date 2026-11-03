@@ -27,6 +27,8 @@ services:
             - { name: form.type_extension, extended_type: CoreShop\Bundle\OrderBundle\Form\Type\OrderShipmentCreationType }
 
     CoreShop\Bundle\CoreBundle\Form\Extension\ProductQuantityRangeTypeExtension:
+        arguments:
+            - '@coreshop.repository.product_unit_definition'
         tags:
             - { name: form.type_extension, extended_type: CoreShop\Bundle\ProductQuantityPriceRulesBundle\Form\Type\ProductQuantityRangeType }
 

@@ -23,15 +23,20 @@ use CoreShop\Bundle\MoneyBundle\Form\Type\MoneyType;
 use CoreShop\Bundle\ProductBundle\Form\Type\Unit\ProductUnitDefinitionSelectionType;
 use CoreShop\Bundle\ProductQuantityPriceRulesBundle\Form\Type\ProductQuantityRangeType;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
+use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
-use Symfony\Component\Form\FormInterface;
 
 final class ProductQuantityRangeTypeExtension extends AbstractTypeExtension
 {
+    public function __construct(
+        private RepositoryInterface $productUnitDefinitionRepository,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -42,50 +47,54 @@ final class ProductQuantityRangeTypeExtension extends AbstractTypeExtension
             ->add('unitDefinition', ProductUnitDefinitionSelectionType::class, [])
         ;
 
-        if ($builder->has('rangeStartingFrom')) {
-            $builder->get('rangeStartingFrom')->addEventListener(FormEvents::PRE_SUBMIT, [$this, 'roundQuantity'], -2048);
-        }
+        // on the range form, as the submitted unit is not available yet when rangeStartingFrom is submitted
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, [$this, 'roundQuantity'], -2048);
     }
 
-    public function roundQuantity(FormEvent $event)
+    public function roundQuantity(FormEvent $event): void
     {
-        $form = $event->getForm();
-        $parentForm = $form->getParent();
+        $data = $event->getData();
 
-        $scale = $this->getScale($parentForm);
+        if (!is_array($data) || !is_scalar($data['rangeStartingFrom'] ?? null)) {
+            return;
+        }
+
+        $quantity = str_replace(',', '.', (string) $data['rangeStartingFrom']);
+
+        if (!is_numeric($quantity)) {
+            return;
+        }
+
+        $scale = $this->getScale($data['unitDefinition'] ?? null);
+
         if ($scale === null) {
             return;
         }
 
-        $quantity = (float) str_replace(',', '.', $event->getData());
+        $quantity = (float) $quantity;
         $formattedQuantity = round($quantity, $scale, \PHP_ROUND_HALF_UP);
 
         if ($quantity !== $formattedQuantity) {
-            $event->setData((string) $formattedQuantity);
+            $data['rangeStartingFrom'] = (string) $formattedQuantity;
+            $event->setData($data);
         }
     }
 
-    /**
-     * @return int|null
-     */
-    protected function getScale(FormInterface $form)
+    private function getScale(mixed $unitDefinitionId): ?int
     {
-        if (!$form->has('unitDefinition')) {
+        if (!is_numeric($unitDefinitionId)) {
             return null;
         }
 
-        $productUnitDefinition = $form->get('unitDefinition')->getData();
+        $productUnitDefinition = $this->productUnitDefinitionRepository->find($unitDefinitionId);
+
         if (!$productUnitDefinition instanceof ProductUnitDefinitionInterface) {
             return null;
         }
 
         $precision = $productUnitDefinition->getPrecision();
 
-        if (is_int($precision)) {
-            return $precision;
-        }
-
-        return null;
+        return is_int($precision) ? $precision : null;
     }
 
     public static function getExtendedTypes(): iterable

@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\FrontendBundle\Controller;
 
 use CoreShop\Bundle\CoreBundle\Form\Type\Order\PaymentType;
 use CoreShop\Component\Core\Model\OrderInterface;
+use CoreShop\Component\Core\Model\PaymentInterface as CorePaymentInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Payment\Model\PaymentInterface;
 use CoreShop\Component\Payment\Repository\PaymentRepositoryInterface;
@@ -39,14 +40,18 @@ class OrderController extends FrontendController
         $order = $this->getOrderRepository()->findOneBy(['token' => $token]);
 
         if ($request->query->has('paymentId')) {
-            $paymentObject = $this->getPaymentRepository()->find($request->query->get('paymentId'));
-            if ($paymentObject instanceof PaymentInterface) {
+            $paymentObject = $this->getPaymentRepository()->find($request->query->getInt('paymentId'));
+
+            // only show a payment of this very order, payment ids are sequential
+            if ($paymentObject instanceof CorePaymentInterface &&
+                $paymentObject->getOrder()?->getId() === $order->getId()
+            ) {
                 $payment = $paymentObject;
             }
         }
 
-        foreach ($this->getPaymentRepository()->findForPayable($order) as $payment) {
-            if ($payment->getState() === PaymentInterface::STATE_COMPLETED) {
+        foreach ($this->getPaymentRepository()->findForPayable($order) as $orderPayment) {
+            if ($orderPayment->getState() === PaymentInterface::STATE_COMPLETED) {
                 $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.order_already_paid'));
 
                 return $this->redirectToRoute('coreshop_index');

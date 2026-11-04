@@ -274,6 +274,7 @@ Scope and method: see the "Third scan" paragraph in [TODO-1-CRITICAL.md](TODO-1-
 ## Price rule forms
 
 ### B-32 — `PriceConfigurationType` accepts negative prices
+- **Status:** fixed — `price` has `new GreaterThanOrEqual(value: 0, groups: $this->validationGroups)` after `NotBlank` and `Type(numeric)`; zero stays allowed for free items. The type serves the `price` and `discountPrice` actions of product and specific price rules. Checked with a form factory and the validator (Symfony 7.4.21, real `MoneyType` with factor 100, `CurrencyChoiceType` on a stub repository, group `coreshop`): before, `-10` was valid and stored as `-1000`; after, it fails with `This value should be greater than or equal to 0.`, while `0` and `10.5` (stored `1050`) stay valid. No Behat feature uses a negative price. **Behaviour change:** a stored rule with a negative price can no longer be saved unchanged in the admin.
 - **Where:** `Form/Type/Rule/Action/PriceConfigurationType.php:43-48` (`NotBlank` + `Type(numeric)` only). Compare `DiscountAmountConfigurationType.php:48` (`GreaterThan(0)`). Used for the `price` and `discountPrice` actions of both product price rules and specific price rules (`Resources/config/services.yml:85-99`).
 - **Problem:** a typo (`-10` instead of `10`) in a price or discount-price action is saved, and the product is offered at a negative price in the storefront and cart. Nothing downstream clamps it.
 - **Fix:** add `new GreaterThanOrEqual(value: 0, groups: $this->validationGroups)` (zero stays possible for free items).

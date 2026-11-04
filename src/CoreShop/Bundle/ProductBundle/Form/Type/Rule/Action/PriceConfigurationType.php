@@ -24,6 +24,7 @@ use CoreShop\Component\Currency\Model\CurrencyInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Type;
 
@@ -44,6 +45,7 @@ final class PriceConfigurationType extends AbstractType
                 'constraints' => [
                     new NotBlank(groups: $this->validationGroups),
                     new Type(type: 'numeric', groups: $this->validationGroups),
+                    new GreaterThanOrEqual(value: 0, groups: $this->validationGroups),
                 ],
             ])
             ->add('currency', CurrencyChoiceType::class, [

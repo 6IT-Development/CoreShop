@@ -42,6 +42,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** add `CustomerContextInterface::class` to the subscribed services (or use the parent's `ShopperContextInterface::hasCustomer()` / `getCustomer()` like `CustomerController` does). Narrow the catch to `CustomerNotFoundException`. Add a functional test.
 
 ### B-05 — `OrderController::reviseAction()`: `?paymentId=` loads any payment (IDOR), and the loop variable then overwrites it
+- **Status:** fixed — `paymentId` is read with `getInt()`, and the payment is used only if it is a Core payment whose `getOrder()?->getId()` matches the revised order, so another customer's payment note or state can no longer be shown. The "already paid" loop uses its own `$orderPayment` variable, so the requested payment is no longer overwritten by the order's last payment.
 - **Where:** `Controller/OrderController.php:41-54`; template `Resources/views/Order/revise.html.twig:13-20`; the redirect source is (dependent) `PayumBundle/Action/ResolveNextRouteAction.php:57`, which adds `paymentId`.
 - **Problem:**
   - `$this->getPaymentRepository()->find($request->query->get('paymentId'))` accepts any payment id. Nothing checks that it belongs to `$order`. The template then shows `payment.details.coreshop_payment_note` and the state of **another customer's** payment (payment ids are sequential).

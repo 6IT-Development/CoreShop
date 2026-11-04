@@ -321,6 +321,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** treat "has a unit" and "has no unit" as different lines, and compare unsaved unit definitions by identity.
 
 ### B-44 — `Order::hasShippableItems()` iterates a value the interface allows to be `null`
+- **Status:** fixed — `Order::hasShippableItems()` uses `array_any($this->getItems() ?? [], …)`, so an order without items (`null`) has no shippable items instead of failing in `foreach`. The implementation now returns `bool`; `OrderInterface` keeps `?bool`, because narrowing it would break other implementations. A subclass that overrides the method with `: ?bool` must narrow it to `: bool`.
 - **Where:** `Model/Order.php:55-68` (`OrderInterface::getItems(): ?array`).
 - **Problem:** a custom order or a getter override that returns `null` causes `foreach() argument must be of type array|object` (a 500 in debug mode) during shipping and checkout processing.
 - **Fix:** `return array_any($this->getItems() ?? [], static fn (OrderItemInterface $i) => $i->getDigitalProduct() !== true);` with a `bool` return type.

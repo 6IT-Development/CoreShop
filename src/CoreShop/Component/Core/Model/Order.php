@@ -52,18 +52,11 @@ abstract class Order extends BaseOrder implements OrderInterface
         return $this->getShipping(true) - $this->getShipping(false);
     }
 
-    public function hasShippableItems(): ?bool
+    public function hasShippableItems(): bool
     {
-        $shippable = false;
-        /** @var OrderItemInterface $item */
-        foreach ($this->getItems() as $item) {
-            if ($item->getDigitalProduct() !== true) {
-                $shippable = true;
-
-                break;
-            }
-        }
-
-        return $shippable;
+        return array_any(
+            $this->getItems() ?? [],
+            static fn (OrderItemInterface $item): bool => $item->getDigitalProduct() !== true,
+        );
     }
 }

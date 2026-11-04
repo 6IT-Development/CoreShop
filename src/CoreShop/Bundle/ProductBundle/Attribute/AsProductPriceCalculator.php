@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\ProductBundle\Attribute;
 
+/**
+ * @deprecated since CoreShop 4.1, it registers a retail price calculator. Use {@see AsProductRetailPriceCalculator} instead.
+ */
 #[\Attribute(\Attribute::TARGET_CLASS)]
 final class AsProductPriceCalculator
 {

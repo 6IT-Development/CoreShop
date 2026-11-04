@@ -124,6 +124,10 @@ services:
             - product-price-calculators
         tags:
             - { name: coreshop.registry, type_hint: productPriceCalculators }
+        deprecated:
+            package: 'coreshop/product-bundle'
+            version: '4.1'
+            message: 'The "%service_id%" service is deprecated and will be removed in CoreShop 5.0. Nothing registers into it or reads it; use the retail, discount-price, discount or custom-attributes calculator registries.'
 
     CoreShop\Component\Product\Calculator\ProductPriceCalculatorInterface: '@CoreShop\Component\Product\Calculator\ProductPriceCalculator'
     CoreShop\Component\Product\Calculator\ProductPriceCalculator:

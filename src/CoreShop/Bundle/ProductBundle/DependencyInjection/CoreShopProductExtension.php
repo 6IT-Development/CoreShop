@@ -40,7 +40,6 @@ use CoreShop\Bundle\ResourceBundle\DependencyInjection\Extension\AbstractModelEx
 use CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductDiscountCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductDiscountPriceCalculatorInterface;
-use CoreShop\Component\Product\Calculator\ProductPriceCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductRetailPriceCalculatorInterface;
 use CoreShop\Component\Product\Rule\Action\ProductActionProcessorInterface;
 use CoreShop\Component\Product\Rule\Action\ProductSpecificActionProcessorInterface;
@@ -48,6 +47,7 @@ use CoreShop\Component\Product\Rule\Condition\ProductConditionCheckerInterface;
 use CoreShop\Component\Product\Rule\Condition\ProductSpecificConditionCheckerInterface;
 use CoreShop\Component\Registry\Autoconfiguration;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
@@ -93,16 +93,27 @@ final class CoreShopProductExtension extends AbstractModelExtension
             $configs['autoconfigure_with_attributes'],
         );
 
-        // ProductPriceCalculatorInterface is the facade, not a strategy: tagging every
-        // implementation by interface would register decorators of the facade into the
-        // retail composite. Only the explicit attribute is still mapped (see TODO-2 B-02).
+        // ProductPriceCalculatorInterface is the facade, not a strategy: it is never
+        // autoconfigured by interface. The deprecated #[AsProductPriceCalculator] always
+        // meant "retail price calculator"; it is still mapped to the retail tag for BC.
         if ($configs['autoconfigure_with_attributes']) {
-            Autoconfiguration::registerForAutoConfiguration(
-                $container,
-                ProductPriceCalculatorInterface::class,
-                ProductRetailPriceCalculatorsPass::PRODUCT_RETAIL_PRICE_CALCULATOR_TAG,
+            $container->registerAttributeForAutoconfiguration(
                 AsProductPriceCalculator::class,
-                true,
+                static function (ChildDefinition $definition, AsProductPriceCalculator $attribute, \Reflector $reflector): void {
+                    trigger_deprecation(
+                        'coreshop/product-bundle',
+                        '4.1',
+                        'The "%s" attribute (used on "%s") is deprecated, it registers a retail price calculator. Use "%s" instead.',
+                        AsProductPriceCalculator::class,
+                        $reflector instanceof \ReflectionClass ? $reflector->getName() : '?',
+                        AsProductRetailPriceCalculator::class,
+                    );
+
+                    $definition->addTag(
+                        ProductRetailPriceCalculatorsPass::PRODUCT_RETAIL_PRICE_CALCULATOR_TAG,
+                        ['type' => $attribute->getType()],
+                    );
+                },
             );
         }
 

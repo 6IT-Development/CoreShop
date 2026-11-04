@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\AddressBundle\Form\Type;
 
+use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Address\Model\StateInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Symfony\Component\Form\AbstractType;
@@ -37,17 +38,20 @@ final class StateChoiceType extends AbstractType
         $resolver
             ->setDefaults([
                 'choices' => function (Options $options) {
-                    if (null === $options['active']) {
-                        /**
-                         * @var StateInterface[] $states
-                         */
-                        $states = $this->countryRepository->findAll();
-                    } else {
-                        /**
-                         * @var StateInterface[] $states
-                         */
-                        $states = $this->countryRepository->findBy(['active' => $options['active']]);
+                    $criteria = [];
+
+                    if (null !== $options['active']) {
+                        $criteria['active'] = $options['active'];
                     }
+
+                    if (null !== $options['country']) {
+                        $criteria['country'] = $options['country'];
+                    }
+
+                    /**
+                     * @var StateInterface[] $states
+                     */
+                    $states = [] === $criteria ? $this->countryRepository->findAll() : $this->countryRepository->findBy($criteria);
 
                     usort($states, function (StateInterface $a, StateInterface $b): int {
                         return $a->getName() <=> $b->getName();
@@ -59,7 +63,10 @@ final class StateChoiceType extends AbstractType
                 'choice_label' => 'name',
                 'choice_translation_domain' => false,
                 'active' => true,
+                // only offer the states of this country; null offers the states of all countries
+                'country' => null,
             ])
+            ->setAllowedTypes('country', ['null', CountryInterface::class])
         ;
     }
 

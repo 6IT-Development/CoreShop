@@ -19,8 +19,14 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\AddressBundle\Form\Type;
 
 use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
+use CoreShop\Component\Address\Model\AddressInterface;
+use CoreShop\Component\Address\Model\CountryInterface;
+use Symfony\Component\Form\ChoiceList\ChoiceListInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class AddressType extends AbstractResourceType
@@ -57,20 +63,29 @@ final class AddressType extends AbstractResourceType
                 'active' => true,
                 'label' => 'coreshop.form.address.country',
             ])
-            ->add('state', StateChoiceType::class, [
-                'active' => true,
-                'label' => 'coreshop.form.address.state',
-                // The state is optional (Pimcore field not mandatory, no constraint). A required
-                // single choice gets no empty option, so the browser would pre-select the first
-                // state and save it on every address, including countries without states.
-                'required' => false,
-                'placeholder' => '',
-            ])
+        ;
+
+        $this->addStateField($builder, null);
+
+        $builder
             ->add('phoneNumber', TextType::class, [
                 'label' => 'coreshop.form.address.phone_number',
                 'required' => false,
             ])
         ;
+
+        // offer only the states of the address's country, and of the submitted country on submit
+        $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event): void {
+            $address = $event->getData();
+
+            $this->addStateField($event->getForm(), $address instanceof AddressInterface ? $address->getCountry() : null);
+        });
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event): void {
+            $data = $event->getData();
+            $form = $event->getForm();
+
+            $this->addStateField($form, $this->getSubmittedCountry($form, is_array($data) ? ($data['country'] ?? null) : null));
+        });
 
         if ($options['show_address_identifier_choice'] === true) {
             $builder->add('addressIdentifier', AddressIdentifierChoiceType::class, [
@@ -78,6 +93,38 @@ final class AddressType extends AbstractResourceType
                 'required' => false,
             ]);
         }
+    }
+
+    private function addStateField(FormBuilderInterface|FormInterface $form, ?CountryInterface $country): void
+    {
+        $form->add('state', StateChoiceType::class, [
+            'active' => true,
+            'country' => $country,
+            'label' => 'coreshop.form.address.state',
+            // The state is optional (Pimcore field not mandatory, no constraint). A required
+            // single choice gets no empty option, so the browser would pre-select the first
+            // state and save it on every address, including countries without states.
+            'required' => false,
+            'placeholder' => '',
+        ]);
+    }
+
+    private function getSubmittedCountry(FormInterface $form, mixed $countryValue): ?CountryInterface
+    {
+        if (!is_scalar($countryValue) || '' === (string) $countryValue || !$form->has('country')) {
+            return null;
+        }
+
+        $choiceList = $form->get('country')->getConfig()->getAttribute('choice_list');
+
+        if (!$choiceList instanceof ChoiceListInterface) {
+            return null;
+        }
+
+        $countries = $choiceList->getChoicesForValues([(string) $countryValue]);
+        $country = reset($countries);
+
+        return $country instanceof CountryInterface ? $country : null;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

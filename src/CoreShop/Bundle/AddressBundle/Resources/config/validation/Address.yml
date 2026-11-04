@@ -1,4 +1,6 @@
 CoreShop\Component\Address\Model\Address:
+    constraints:
+        - CoreShop\Bundle\AddressBundle\Validator\Constraints\StateBelongsToCountry: { groups: [coreshop] }
     getters:
         firstname:
             - NotBlank: { groups: [coreshop] }

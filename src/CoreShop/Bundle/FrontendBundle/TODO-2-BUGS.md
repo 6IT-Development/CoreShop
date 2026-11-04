@@ -79,6 +79,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Broken features and runtime errors
 
 ### B-10 — The cart's shipment calculator can never render: single-colon controller reference plus unregistered services
+- **Status:** fixed — `Cart/Summary/_items.html.twig` references `CartController::shipmentCalculationAction` (two colons), so Symfony 7.4 resolves it. `CartController::getSubscribedServices()` now includes `coreshop.factory.address`, `TaxedShippingCalculatorInterface` and `CarriersResolverInterface`. The carriers are sorted with `usort(… <=> …)`, so the comparator returns an int and the list is reindexed. No functional test was added (the repository has no controller test setup).
 - **Where:** `Resources/views/Cart/Summary/_items.html.twig:49-51`: `render(controller('…\\CartController:shipmentCalculationAction'))` (one colon). `Controller/CartController.php:167-213` uses `coreshop.factory.address`, `TaxedShippingCalculatorInterface::class` and `CarriersResolverInterface::class`, none of which are in `CartController::getSubscribedServices()` (`:407-430`).
 - **Problem:**
   - Symfony 7.4 `ControllerResolver::createController()` only splits on `::`. `Class:method` is treated as a service or class name, which gives `InvalidArgumentException: Controller "…CartController:shipmentCalculationAction" does neither exist as service nor as class`.

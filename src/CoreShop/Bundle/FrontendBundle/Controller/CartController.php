@@ -41,6 +41,7 @@ use CoreShop\Component\Order\Model\OrderItemInterface;
 use CoreShop\Component\Order\Model\PurchasableInterface;
 use CoreShop\Component\Order\OrderSaleTransitions;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherRepositoryInterface;
+use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use CoreShop\Component\Shipping\Calculator\TaxedShippingCalculatorInterface;
 use CoreShop\Component\Shipping\Resolver\CarriersResolverInterface;
@@ -206,9 +207,7 @@ class CartController extends FrontendController
                     'data' => $carrier,
                 ];
             }
-            uasort($availableCarriers, function ($a, $b) {
-                return $a['price'] > $b['price'];
-            });
+            usort($availableCarriers, static fn (array $a, array $b): int => $a['price'] <=> $b['price']);
         }
 
         return $this->render($this->getTemplateConfigurator()->findTemplate('Cart/ShipmentCalculator/_widget.html'), [
@@ -464,6 +463,9 @@ class CartController extends FrontendController
                 new SubscribedService('coreshop.storage', CartPriceRuleUnProcessorInterface::class),
                 new SubscribedService('coreshop.storage_list.context_provider.order', ContextProviderInterface::class, attributes: new Autowire(service: 'coreshop.storage_list.context_provider.order')),
                 new SubscribedService('coreshop.storage_list.storage.order', StorageListStorageInterface::class, attributes: new Autowire(service: 'coreshop.storage_list.storage.order')),
+                new SubscribedService('coreshop.factory.address', FactoryInterface::class, attributes: new Autowire(service: 'coreshop.factory.address')),
+                new SubscribedService(TaxedShippingCalculatorInterface::class, TaxedShippingCalculatorInterface::class),
+                new SubscribedService(CarriersResolverInterface::class, CarriersResolverInterface::class),
             ],
         );
     }

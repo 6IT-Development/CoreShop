@@ -29,16 +29,14 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Element\ElementInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductUnitDefinitionsController extends ResourceController
 {
     public function productUnitDefinitionsListAction(Request $request, StackRepositoryInterface $coreshopProductStackRepository): Response
     {
         $product = $this->findViewableProduct($request, $coreshopProductStackRepository);
-
-        if (null === $product) {
-            return $this->viewHandler->handle([]);
-        }
 
         return $this->viewHandler->handle($this->getUnitDefinitionsForProduct($product, 'all'));
     }
@@ -47,32 +45,44 @@ class ProductUnitDefinitionsController extends ResourceController
     {
         $product = $this->findViewableProduct($request, $coreshopProductStackRepository);
 
-        if (null === $product) {
-            return $this->viewHandler->handle([]);
-        }
-
         return $this->viewHandler->handle($this->getUnitDefinitionsForProduct($product, 'additional'));
     }
 
     /**
      * Both endpoints feed panels of the object editor, which edits the latest version
      * of the object. They must read the same state, so both use the latest version.
+     *
+     * @throws BadRequestHttpException when productId is missing or not a positive integer
+     * @throws NotFoundHttpException   when productId is not a product
      */
-    protected function findViewableProduct(Request $request, StackRepositoryInterface $coreshopProductStackRepository): ?ProductInterface
+    protected function findViewableProduct(Request $request, StackRepositoryInterface $coreshopProductStackRepository): ProductInterface
     {
-        $product = $coreshopProductStackRepository->find($this->getParameterFromRequest($request, 'productId'));
+        $productId = $this->getParameterFromRequest($request, 'productId');
+        $productId = is_int($productId) || is_string($productId)
+            ? filter_var($productId, \FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+            : false;
+
+        if (false === $productId) {
+            throw new BadRequestHttpException('The "productId" parameter must be a positive integer.');
+        }
+
+        $product = $coreshopProductStackRepository->find($productId);
 
         if (!$product instanceof ProductInterface) {
-            return null;
+            throw $this->createNotFoundException(sprintf('Product with ID %d not found.', $productId));
         }
 
         $this->denyAccessUnlessProductViewable($product);
 
         if ($product instanceof Concrete) {
-            $product = VersionHelper::getLatestVersion($product);
+            $latestVersion = VersionHelper::getLatestVersion($product);
+
+            if ($latestVersion instanceof ProductInterface) {
+                $product = $latestVersion;
+            }
         }
 
-        return $product instanceof ProductInterface ? $product : null;
+        return $product;
     }
 
     protected function denyAccessUnlessProductViewable(ProductInterface $product): void

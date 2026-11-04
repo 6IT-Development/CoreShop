@@ -56,7 +56,7 @@ class OrderCommentController extends PimcoreController
             $noteData = $note->getData();
             $parsedData[] = [
                 'id' => $note->getId(),
-                'text' => $note->getDescription(),
+                'text' => $this->toSafeHtml((string) $note->getDescription()),
                 'date' => $note->getDate(),
                 'userName' => $user ? $user->getName() : 'anonymous',
                 'submitAsEmail' => isset($noteData['submitAsEmail']) && $noteData['submitAsEmail']['data'] === true,
@@ -84,7 +84,7 @@ class OrderCommentController extends PimcoreController
             $objectNoteService = $this->container->get(NoteServiceInterface::class);
             $commentEntity = $objectNoteService->createPimcoreNoteInstance($order, Notes::NOTE_ORDER_COMMENT);
             $commentEntity->setTitle('Order Comment');
-            $commentEntity->setDescription(nl2br($comment));
+            $commentEntity->setDescription($this->toSafeHtml((string) $comment));
             $commentEntity->addData('submitAsEmail', 'bool', $submitAsEmail);
             $comment = $objectNoteService->storeNote($commentEntity, ['order' => $order, 'submitAsEmail' => $submitAsEmail]);
 
@@ -107,6 +107,17 @@ class OrderCommentController extends PimcoreController
         }
 
         return $this->viewHandler->handle(['success' => true]);
+    }
+
+    /**
+     * Escapes a comment and turns newlines into <br />. Idempotent, so comments stored
+     * escaped and older comments stored with only nl2br() are both rendered safely.
+     */
+    private function toSafeHtml(string $text): string
+    {
+        $text = (string) preg_replace('#<br\s*/?>(\r\n|\n|\r)?#i', "\n", $text);
+
+        return nl2br(htmlspecialchars($text, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8', false));
     }
 
     private function getOrderRepository(): PimcoreRepositoryInterface

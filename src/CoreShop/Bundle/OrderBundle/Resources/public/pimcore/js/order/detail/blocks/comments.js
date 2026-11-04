@@ -77,7 +77,7 @@ coreshop.order.order.detail.blocks.comments = Class.create(coreshop.order.order.
             bodyPadding: 10,
             margin: '0 0 10px 0',
             style: 'border-bottom: 1px dashed #b7b7b7;',
-            title: commentDate + ' - <span class="published-by">' + t('coreshop_order_comments_published_by') + ' ' + comment.userName + '</span>',
+            title: commentDate + ' - <span class="published-by">' + t('coreshop_order_comments_published_by') + ' ' + Ext.util.Format.htmlEncode(comment.userName) + '</span>',
             cls: 'coreshop-order-comment-block',
             tools: [
                 {

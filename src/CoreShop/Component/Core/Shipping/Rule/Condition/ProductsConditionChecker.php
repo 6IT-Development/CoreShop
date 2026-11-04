@@ -59,9 +59,9 @@ class ProductsConditionChecker extends AbstractConditionChecker
         }
 
         $productIdsToCheck = $this->getProductsToCheck(
-            $configuration['products'],
+            $configuration['products'] ?? [],
             $store,
-            $configuration['include_variants'] ?: false,
+            (bool) ($configuration['include_variants'] ?? false),
             [self::SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG],
         );
 

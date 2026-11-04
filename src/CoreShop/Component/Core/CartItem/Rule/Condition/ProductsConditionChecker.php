@@ -45,9 +45,9 @@ final class ProductsConditionChecker extends AbstractConditionChecker
         array $configuration,
     ): bool {
         $productIdsToCheck = $this->getProductsToCheck(
-            $configuration['products'],
+            $configuration['products'] ?? [],
             $orderItem->getOrder()->getStore(),
-            $configuration['include_variants'] ?: false,
+            (bool) ($configuration['include_variants'] ?? false),
             [sprintf('cs_rule_variant_%s', $cartPriceRule->getId())],
         );
 

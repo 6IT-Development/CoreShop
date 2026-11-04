@@ -59,9 +59,9 @@ final class CategoriesConditionChecker extends AbstractConditionChecker
         $cartItems = $shippable->getItems() ?? [];
 
         $categoryIdsToCheck = $this->getCategoriesToCheck(
-            $configuration['categories'],
+            $configuration['categories'] ?? [],
             $store,
-            $configuration['recursive'] ?: false,
+            (bool) ($configuration['recursive'] ?? false),
         );
 
         foreach ($cartItems as $item) {

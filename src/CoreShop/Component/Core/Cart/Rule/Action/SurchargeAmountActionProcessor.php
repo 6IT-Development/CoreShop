@@ -47,7 +47,7 @@ class SurchargeAmountActionProcessor implements CartPriceRuleActionProcessorInte
             return false;
         }
 
-        $this->cartRuleApplier->applySurcharge($cart, $cartPriceRuleItem, $discount, $configuration['gross']);
+        $this->cartRuleApplier->applySurcharge($cart, $cartPriceRuleItem, $discount, (bool) ($configuration['gross'] ?? false));
 
         return true;
     }

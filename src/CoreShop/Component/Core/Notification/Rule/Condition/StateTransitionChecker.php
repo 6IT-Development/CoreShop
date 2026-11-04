@@ -43,7 +43,7 @@ final class StateTransitionChecker extends AbstractConditionChecker
         }
 
         if (isset($params['transition'])) {
-            return $configuration['transition'] === $params['transition'];
+            return ($configuration['transition'] ?? null) === $params['transition'];
         }
 
         return false;

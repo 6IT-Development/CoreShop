@@ -42,6 +42,6 @@ final class StoresConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($store->getId(), $configuration['stores']);
+        return in_array($store->getId(), $configuration['stores'] ?? []);
     }
 }

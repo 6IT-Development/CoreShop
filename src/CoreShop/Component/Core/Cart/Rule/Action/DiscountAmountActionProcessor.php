@@ -48,7 +48,7 @@ class DiscountAmountActionProcessor implements CartPriceRuleActionProcessorInter
             return false;
         }
 
-        $this->cartRuleApplier->applyDiscount($cart, $cartPriceRuleItem, $discount, $configuration['gross']);
+        $this->cartRuleApplier->applyDiscount($cart, $cartPriceRuleItem, $discount, (bool) ($configuration['gross'] ?? false));
 
         return true;
     }
@@ -66,11 +66,11 @@ class DiscountAmountActionProcessor implements CartPriceRuleActionProcessorInter
         $applyOn = $configuration['applyOn'] ?? 'total';
 
         if ('total' === $applyOn) {
-            $cartAmount = $cart->getTotal($configuration['gross']);
+            $cartAmount = $cart->getTotal((bool) ($configuration['gross'] ?? false));
         } else {
             $cartAmount =
-                $cart->getSubtotal($configuration['gross']) +
-                $cart->getAdjustmentsTotal(AdjustmentInterface::CART_PRICE_RULE, $configuration['gross']);
+                $cart->getSubtotal((bool) ($configuration['gross'] ?? false)) +
+                $cart->getAdjustmentsTotal(AdjustmentInterface::CART_PRICE_RULE, (bool) ($configuration['gross'] ?? false));
         }
 
         $currency = $this->currencyRepository->find($configuration['currency']);

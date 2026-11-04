@@ -28,7 +28,7 @@ class CarriersChecker extends AbstractConditionChecker
     {
         if ($subject instanceof OrderInterface) {
             if ($subject->getCarrier() instanceof CarrierInterface) {
-                if (in_array($subject->getCarrier()->getId(), $configuration['carriers'])) {
+                if (in_array($subject->getCarrier()->getId(), $configuration['carriers'] ?? [])) {
                     return true;
                 }
             }

@@ -40,6 +40,6 @@ final class SimpleStateChecker extends AbstractConditionChecker
 
         $state = PropertyAccess::createPropertyAccessor()->getValue($subject, $this->stateField);
 
-        return $state === $configuration[$this->configurationField];
+        return $state === ($configuration[$this->configurationField] ?? null);
     }
 }

@@ -46,9 +46,9 @@ final class CategoriesConditionChecker extends AbstractConditionChecker
         array $configuration,
     ): bool {
         $categoryIdsToCheck = $this->getCategoriesToCheck(
-            $configuration['categories'],
+            $configuration['categories'] ?? [],
             $orderItem->getOrder()->getStore(),
-            $configuration['recursive'] ?: false,
+            (bool) ($configuration['recursive'] ?? false),
         );
 
         $product = $orderItem->getProduct();

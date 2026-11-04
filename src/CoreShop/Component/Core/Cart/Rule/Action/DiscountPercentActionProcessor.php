@@ -23,6 +23,7 @@ use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Order\Cart\Rule\Action\CartPriceRuleActionProcessorInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\PriceRuleItemInterface;
+use Webmozart\Assert\Assert;
 
 class DiscountPercentActionProcessor implements CartPriceRuleActionProcessorInterface
 {
@@ -33,10 +34,9 @@ class DiscountPercentActionProcessor implements CartPriceRuleActionProcessorInte
 
     public function applyRule(OrderInterface $cart, array $configuration, PriceRuleItemInterface $cartPriceRuleItem): bool
     {
-        /**
-         * @var StoreInterface $store
-         */
         $store = $cart->getStore();
+
+        Assert::isInstanceOf($store, StoreInterface::class);
 
         $discount = $this->getDiscount($cart, $configuration, $store->getUseGrossPrice());
 

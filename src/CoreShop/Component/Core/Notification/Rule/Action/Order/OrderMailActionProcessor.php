@@ -35,11 +35,7 @@ class OrderMailActionProcessor implements NotificationRuleProcessorInterface
 
     public function apply($subject, NotificationRuleInterface $rule, array $configuration, array $params = []): void
     {
-        if (!array_key_exists('doNotSendToDesignatedRecipient', $configuration)) {
-            $configuration['doNotSendToDesignatedRecipient'] = false;
-        }
-
-        $params['doNotSendToDesignatedRecipient'] = $configuration['doNotSendToDesignatedRecipient'];
+        $params['doNotSendToDesignatedRecipient'] = (bool) ($configuration['doNotSendToDesignatedRecipient'] ?? false);
         $order = null;
 
         if ($subject instanceof OrderInterface) {
@@ -55,15 +51,23 @@ class OrderMailActionProcessor implements NotificationRuleProcessorInterface
                 throw new \Exception('OrderMailActionProcessor: Language is not set.');
             }
 
-            if (array_key_exists($language, $configuration['mails'])) {
-                $mailDocumentId = $configuration['mails'][$language];
+            $mails = $configuration['mails'] ?? [];
+
+            if (array_key_exists($language, $mails)) {
+                $mailDocumentId = $mails[$language];
                 $mailDocument = Document::getById($mailDocumentId);
 
                 $params['mailRule'] = $rule;
                 $params['document'] = $subject;
 
                 if ($mailDocument instanceof Document\Email) {
-                    $this->orderMailProcessor->sendOrderMail($mailDocument, $order, $configuration['sendInvoices'], $configuration['sendShipments'], $params);
+                    $this->orderMailProcessor->sendOrderMail(
+                        $mailDocument,
+                        $order,
+                        (bool) ($configuration['sendInvoices'] ?? false),
+                        (bool) ($configuration['sendShipments'] ?? false),
+                        $params,
+                    );
                 }
             }
         }

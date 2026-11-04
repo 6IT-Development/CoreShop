@@ -41,9 +41,9 @@ final class ProductsConditionChecker extends AbstractConditionChecker
     public function isCartRuleValid(OrderInterface $cart, CartPriceRuleInterface $cartPriceRule, ?CartPriceRuleVoucherCodeInterface $voucher, array $configuration): bool
     {
         $productIdsToCheck = $this->getProductsToCheck(
-            $configuration['products'],
+            $configuration['products'] ?? [],
             $cart->getStore(),
-            $configuration['include_variants'] ?: false,
+            (bool) ($configuration['include_variants'] ?? false),
             [sprintf('cs_rule_%s', $cartPriceRule->getId())],
         );
 

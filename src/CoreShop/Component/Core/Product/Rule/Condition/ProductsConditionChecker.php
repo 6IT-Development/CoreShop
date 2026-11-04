@@ -52,9 +52,9 @@ class ProductsConditionChecker implements ConditionCheckerInterface
         }
 
         $productIdsToCheck = $this->getProductsToCheck(
-            $configuration['products'],
+            $configuration['products'] ?? [],
             $params['store'],
-            $configuration['include_variants'] ?: false,
+            (bool) ($configuration['include_variants'] ?? false),
             [sprintf('cs_rule_variant_%s', $rule->getId())],
         );
 

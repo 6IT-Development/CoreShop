@@ -34,6 +34,6 @@ final class CarrierConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($payable->getCarrier()?->getId(), $configuration['carriers']);
+        return in_array($payable->getCarrier()?->getId(), $configuration['carriers'] ?? []);
     }
 }

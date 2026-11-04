@@ -37,6 +37,6 @@ class CountriesConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($country->getId(), $configuration['countries']);
+        return in_array($country->getId(), $configuration['countries'] ?? []);
     }
 }

@@ -41,6 +41,6 @@ final class CustomersConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($shippable->getCustomer()->getId(), $configuration['customers']);
+        return in_array($shippable->getCustomer()->getId(), $configuration['customers'] ?? []);
     }
 }

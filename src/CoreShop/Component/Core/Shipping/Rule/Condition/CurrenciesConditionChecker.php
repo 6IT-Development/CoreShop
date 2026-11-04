@@ -36,6 +36,6 @@ final class CurrenciesConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($shippable->getCurrency()->getId(), $configuration['currencies']);
+        return in_array($shippable->getCurrency()->getId(), $configuration['currencies'] ?? []);
     }
 }

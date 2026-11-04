@@ -142,51 +142,69 @@ final class WkHtmlToPdf implements PdfRendererInterface
      */
     private function replaceUrls($string): string
     {
-        $hostUrl = $this->kernelRootDir . '/public';
-        $replacePrefix = '';
+        $publicDir = $this->kernelRootDir . '/public';
 
-        //matches all links
-        preg_match_all(
-            "@(href|src)\s*=[\"']([^(http|mailto|javascript|data:|#)].*?(css|jpe?g|gif|png)?)[\"']@is",
+        // Look-ahead on the scheme: a character class would skip every relative URL starting with h, m, t, p, ...
+        $string = preg_replace_callback(
+            "@\\b(href|src)(\\s*=\\s*)([\"'])(.*?)\\3@is",
+            fn (array $match): string => $match[1] . $match[2] . $match[3] . $this->toLocalUrl($match[4], $publicDir) . $match[3],
             $string,
-            $matches,
-        );
-        if (!empty($matches[0])) {
-            foreach ($matches[0] as $key => $value) {
-                $path = $matches[2][$key];
+        ) ?? $string;
 
-                if (str_starts_with($path, '//')) {
-                    $absolutePath = 'http:' . $path;
-                } elseif (str_starts_with($path, '/')) {
-                    $absolutePath = preg_replace('@^' . $replacePrefix . '/@', '/', $path);
-                    $absolutePath = $hostUrl . $absolutePath;
-                } else {
-                    $absolutePath = $hostUrl . "/$path";
-                    if ($path[0] == '?') {
-                        $absolutePath = $hostUrl . $path;
-                    }
-                    $netUrl = new \Net_URL2($absolutePath);
-                    $absolutePath = $netUrl->getNormalizedURL();
+        return preg_replace_callback(
+            "@\\bsrcset(\\s*=\\s*)([\"'])(.*?)\\2@is",
+            function (array $match) use ($publicDir): string {
+                $candidates = [];
+                foreach (explode(',', $match[3]) as $candidate) {
+                    $parts = preg_split('@\\s+@', trim($candidate), 2);
+                    $parts[0] = $this->toLocalUrl($parts[0], $publicDir);
+                    $candidates[] = implode(' ', $parts);
                 }
 
-                $path = preg_quote($path);
-                $string = preg_replace("!([\"'])$path([\"'])!is", '\\1' . $absolutePath . '\\2', $string);
-            }
+                return 'srcset' . $match[1] . $match[2] . implode(', ', $candidates) . $match[2];
+            },
+            $string,
+        ) ?? $string;
+    }
+
+    /**
+     * Turns a relative or root-relative URL into a path below the public directory.
+     * URLs with a scheme and fragments are kept, "../" cannot leave the public directory.
+     */
+    private function toLocalUrl(string $url, string $publicDir): string
+    {
+        if ($url === '' || $url[0] === '#' || preg_match('@^[a-z][a-z0-9+.\\-]*:@i', $url)) {
+            return $url;
         }
 
-        preg_match_all("@srcset\s*=[\"'](.*?)[\"']@is", $string, $matches);
-        foreach ($matches[1] as $i => $value) {
-            $parts = explode(',', $value);
-            foreach ($parts as $key => $v) {
-                $parts[$key] = $hostUrl . trim($v);
-            }
-            $s = ' srcset="' . implode(', ', $parts) . '" ';
-            if ($matches[0][$i]) {
-                $string = str_replace($matches[0][$i], $s, $string);
-            }
+        if (str_starts_with($url, '//')) {
+            return 'http:' . $url;
         }
 
-        return $string;
+        $path = preg_split('@[?#]@', $url, 2)[0];
+
+        if ($path === '') {
+            return $url;
+        }
+
+        $segments = [];
+        foreach (explode('/', str_replace('\\', '/', $path)) as $segment) {
+            $decoded = rawurldecode($segment);
+
+            if ($decoded === '' || $decoded === '.') {
+                continue;
+            }
+
+            if ($decoded === '..') {
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return $publicDir . '/' . implode('/', $segments);
     }
 
     /**

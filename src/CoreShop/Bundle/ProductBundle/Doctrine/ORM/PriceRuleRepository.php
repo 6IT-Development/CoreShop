@@ -23,11 +23,20 @@ use CoreShop\Component\Product\Repository\PriceRuleRepositoryInterface;
 
 class PriceRuleRepository extends RuleRepository implements PriceRuleRepositoryInterface
 {
+    /**
+     * Loads the conditions and actions in the same query: the price calculation reads both for
+     * every rule, so lazy collections would cost two extra queries per rule.
+     */
     public function findActive(): array
     {
         return $this->createQueryBuilder('o')
+            ->leftJoin('o.conditions', 'conditions')
+            ->addSelect('conditions')
+            ->leftJoin('o.actions', 'actions')
+            ->addSelect('actions')
             ->andWhere('o.active = 1')
             ->addOrderBy('o.priority', 'ASC')
+            ->addOrderBy('o.id', 'ASC')
             ->getQuery()
             ->getResult()
         ;

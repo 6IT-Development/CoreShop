@@ -146,6 +146,7 @@ services:
 
     CoreShop\Bundle\ProductBundle\EventListener\CategoryPersistEventListener:
         tags:
+            - { name: kernel.event_listener, event: pimcore.dataobject.preAdd, method: onPreUpdate }
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: onPreUpdate }
 
     CoreShop\Bundle\ProductBundle\EventListener\ProductDeleteListener:

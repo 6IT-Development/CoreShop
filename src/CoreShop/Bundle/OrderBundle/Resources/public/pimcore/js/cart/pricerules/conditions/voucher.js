@@ -20,11 +20,15 @@ coreshop.cart.pricerules.conditions.voucher = Class.create(coreshop.rules.condit
             items: [{
                 fieldLabel: t('coreshop_action_voucher_max_usage_per_code'),
                 xtype: 'numberfield',
+                allowDecimals: false,
+                minValue: 0,
                 name: 'maxUsagePerCode',
                 value: this.data.maxUsagePerCode
             },{
                 fieldLabel: t('coreshop_action_voucher_max_usage_per_user'),
                 xtype: 'numberfield',
+                allowDecimals: false,
+                minValue: 0,
                 name: 'maxUsagePerUser',
                 value: this.data.maxUsagePerUser
             },

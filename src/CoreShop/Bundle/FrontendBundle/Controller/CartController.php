@@ -216,7 +216,7 @@ class CartController extends FrontendController
     {
         if ($request->isMethod('GET') && !($this->isGranted('CORESHOP_CART') && $this->isGranted('CORESHOP_CART_ADD_ITEM'))) {
             return $this->render(
-                $this->getParameterFromRequest($request, 'template', $this->getTemplateConfigurator()->findTemplate('Product/_addToCart.html')),
+                $this->getAddToCartTemplate($request),
                 [
                     'form' => null,
                     'product' => null,
@@ -302,12 +302,33 @@ class CartController extends FrontendController
         }
 
         return $this->render(
-            $this->getParameterFromRequest($request, 'template', $this->getTemplateConfigurator()->findTemplate('Product/_addToCart.html')),
+            $this->getAddToCartTemplate($request),
             [
                 'form' => $form->createView(),
                 'product' => $product,
             ],
         );
+    }
+
+    /**
+     * The template can only be overridden from internal sub-requests
+     * (render(controller(..., {template: ...}))) or route defaults, never from
+     * the query string or body, and only with a Twig template name.
+     */
+    protected function getAddToCartTemplate(Request $request): string
+    {
+        $default = $this->getTemplateConfigurator()->findTemplate('Product/_addToCart.html');
+        $template = $request->attributes->get('template');
+
+        if (!is_string($template) ||
+            !str_ends_with($template, '.twig') ||
+            str_contains($template, '..') ||
+            str_contains($template, '\\')
+        ) {
+            return $default;
+        }
+
+        return $template;
     }
 
     public function removeItemAction(Request $request): Response

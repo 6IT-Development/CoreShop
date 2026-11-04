@@ -2,5 +2,6 @@ CoreShop\Component\Product\Model\ProductSpecificPriceRule:
     properties:
       name:
           - NotBlank: { groups: [coreshop] }
+          - Length: { max: 255, groups: [coreshop] }
       active:
           - Type: { type: boolean, groups: [coreshop] }

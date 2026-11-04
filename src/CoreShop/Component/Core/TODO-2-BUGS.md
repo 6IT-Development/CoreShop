@@ -169,6 +169,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** reuse an existing gift item with the same key and product, and only update it. Remove gift items by adjustment key, regardless of the product lookup. Compare object identity in `removeItem()` when ids are `null`.
 
 ### B-22 — `CartItemRuleApplier::applySurcharge()` caps surcharges at the item total
+- **Status:** fixed — `CartItemRuleApplier::apply()` caps the amount at the item's remaining total (item total plus the neutral cart-rule adjustments already on it) only for discounts, like `CartRuleApplier`, and never below 0. A surcharge is applied in full. The extra cap at the gross item total, which also applied to net discounts, is gone: the remaining total is never larger than it.
 - **Where:** `CartItem/Rule/Applier/CartItemRuleApplier.php:52-59`, `:71-86`.
 - **Problem:** unlike `CartRuleApplier` (`:89-91`, which caps only when `!$positive`), the item applier always applies `min($discount, item total)`. A surcharge larger than the item value is cut silently. No core action calls it today, but the interface exposes it for custom actions.
 - **Fix:** apply the cap only to discounts (`!$positive`).

@@ -23,6 +23,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class CustomerLoginType extends AbstractType
 {
@@ -47,6 +48,19 @@ class CustomerLoginType extends AbstractType
                 'required' => false,
             ])
         ;
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        /**
+         * The form is posted to the firewall's form_login check path, so the token has to use the field
+         * name and token id the login authenticator validates (enable_csrf: true).
+         */
+        $resolver->setDefaults([
+            'csrf_protection' => true,
+            'csrf_field_name' => '_csrf_token',
+            'csrf_token_id' => 'authenticate',
+        ]);
     }
 
     public function getBlockPrefix(): string

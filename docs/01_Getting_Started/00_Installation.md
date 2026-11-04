@@ -49,6 +49,7 @@ CoreShop:
              form_login:
                  login_path: coreshop_login
                  check_path: coreshop_login_check
+                 enable_csrf: true
                  provider: coreshop_user
                  failure_path: coreshop_login
                  default_target_path: coreshop_index

@@ -82,12 +82,18 @@ final class AddressAssignmentManager implements AddressAssignmentManagerInterfac
         }
 
         $company = $customer->getCompany();
+
+        // Without a company, the customer gets their own addresses, the same fallback as the CustomerAddressAllocator
+        if (!$company instanceof CompanyInterface) {
+            return $customer->hasAddress($address);
+        }
+
         if ($customer->getAddressAccessType() === CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_COMPANY_ONLY) {
-            return $company instanceof CompanyInterface && $company->hasAddress($address);
+            return $company->hasAddress($address);
         }
 
         if ($customer->getAddressAccessType() === CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_AND_COMPANY) {
-            return $customer->hasAddress($address) || ($company instanceof CompanyInterface && $company->hasAddress($address));
+            return $customer->hasAddress($address) || $company->hasAddress($address);
         }
 
         return false;

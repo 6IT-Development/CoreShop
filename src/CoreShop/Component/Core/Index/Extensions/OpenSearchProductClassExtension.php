@@ -67,7 +67,7 @@ final class OpenSearchProductClassExtension implements IndexColumnsExtensionInte
                     $parents = $c->getHierarchy();
 
                     foreach ($parents as $p) {
-                        $parentCategoryIds[] = $p->getId();
+                        $parentCategoryIds[$p->getId()] = $p->getId();
                     }
                 }
             }
@@ -82,7 +82,7 @@ final class OpenSearchProductClassExtension implements IndexColumnsExtensionInte
 
             return [
                 'categoryIds' => array_values($categoryIds),
-                'parentCategoryIds' => $parentCategoryIds,
+                'parentCategoryIds' => array_values($parentCategoryIds),
                 'stores' => $stores,
             ];
         }

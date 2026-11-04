@@ -40,9 +40,12 @@ final class ProductClassExtension implements IndexColumnsExtensionInterface
     public function getSystemColumns(): array
     {
         return [
-            'categoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'parentCategoryIds' => MysqlWorkerInterface::FIELD_TYPE_STRING,
-            'stores' => MysqlWorkerInterface::FIELD_TYPE_STRING,
+            /**
+             * TEXT, because a VARCHAR(255) is too short for products in many (or deeply nested) categories
+             */
+            'categoryIds' => MysqlWorkerInterface::FIELD_TYPE_TEXT,
+            'parentCategoryIds' => MysqlWorkerInterface::FIELD_TYPE_TEXT,
+            'stores' => MysqlWorkerInterface::FIELD_TYPE_TEXT,
         ];
     }
 
@@ -67,7 +70,7 @@ final class ProductClassExtension implements IndexColumnsExtensionInterface
                     $parents = $c->getHierarchy();
 
                     foreach ($parents as $p) {
-                        $parentCategoryIds[] = $p->getId();
+                        $parentCategoryIds[$p->getId()] = $p->getId();
                     }
                 }
             }

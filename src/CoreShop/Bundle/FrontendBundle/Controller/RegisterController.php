@@ -28,6 +28,7 @@ use CoreShop\Bundle\UserBundle\Form\Type\ResetPasswordType;
 use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Core\Model\UserInterface;
 use CoreShop\Component\Customer\Context\CustomerContextInterface;
+use CoreShop\Component\Customer\Context\CustomerNotFoundException;
 use CoreShop\Component\Locale\Context\LocaleContextInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\User\Repository\UserRepositoryInterface;
@@ -183,6 +184,7 @@ class RegisterController extends FrontendController
                 new SubscribedService('coreshop.context.locale', LocaleContextInterface::class),
                 new SubscribedService(CustomerManagerInterface::class, CustomerManagerInterface::class),
                 new SubscribedService('event_dispatcher', EventDispatcherInterface::class),
+                new SubscribedService(CustomerContextInterface::class, CustomerContextInterface::class),
             ],
         );
     }
@@ -190,16 +192,12 @@ class RegisterController extends FrontendController
     protected function getCustomer(): ?CustomerInterface
     {
         try {
-            /**
-             * @var CustomerInterface $customer
-             */
             $customer = $this->container->get(CustomerContextInterface::class)->getCustomer();
-
-            return $customer;
-        } catch (\Exception) {
+        } catch (CustomerNotFoundException) {
+            return null;
         }
 
-        return null;
+        return $customer instanceof CustomerInterface ? $customer : null;
     }
 
     /**

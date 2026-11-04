@@ -39,7 +39,12 @@ final class OrderItemToShipmentItemTransformer implements OrderDocumentItemTrans
         array $options = [],
     ): OrderDocumentItemInterface {
         if ($documentItem instanceof OrderShipmentItemInterface && $orderItem instanceof \CoreShop\Component\Core\Model\OrderItemInterface) {
-            $documentItem->setWeight($orderItem->getItemWeight() * $quantity);
+            /**
+             * The item weight is per default unit, the quantity is in the item's unit
+             */
+            $documentItem->setWeight(
+                $orderItem->getItemWeight() * $quantity * (float) ($orderItem->getUnitDefinition()?->getConversionRate() ?? 1.0),
+            );
         }
 
         return $this->inner->transform($orderDocument, $orderItem, $documentItem, $quantity, $options);

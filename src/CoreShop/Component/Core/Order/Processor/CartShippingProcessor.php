@@ -65,8 +65,13 @@ final class CartShippingProcessor implements CartProcessorInterface
             $product = $item->getProduct();
 
             if ($product instanceof ProductInterface) {
+                /**
+                 * The product weight is per default unit, the quantity is in the item's unit
+                 */
                 $item->setItemWeight($product->getWeight());
-                $item->setTotalWeight($item->getQuantity() * $product->getWeight());
+                $item->setTotalWeight(
+                    $item->getQuantity() * (float) ($item->getUnitDefinition()?->getConversionRate() ?? 1.0) * $product->getWeight(),
+                );
 
                 $totalWeight += $item->getWeight();
             }

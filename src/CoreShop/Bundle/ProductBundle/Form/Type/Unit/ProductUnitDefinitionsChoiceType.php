@@ -31,10 +31,12 @@ final class ProductUnitDefinitionsChoiceType extends AbstractType
     {
         parent::configureOptions($resolver);
 
+        $resolver->setRequired('product');
+        $resolver->setAllowedTypes('product', ProductInterface::class);
+
         $resolver->setDefaults([
-            'product' => null,
             'placeholder' => false,
-            'choices' => function (Options $options) {
+            'choices' => static function (Options $options): iterable {
                 /** @var ProductInterface $product */
                 $product = $options['product'];
                 if ($product->hasUnitDefinitions() === false) {
@@ -43,12 +45,11 @@ final class ProductUnitDefinitionsChoiceType extends AbstractType
 
                 return $product->getUnitDefinitions()->getUnitDefinitions();
             },
-            'entry_type' => ProductUnitDefinitionType::class,
             'choice_value' => 'id',
-            'choice_label' => function (ProductUnitDefinitionInterface $definition) {
-                return $definition->getUnit()->getFullLabel();
+            'choice_label' => static function (ProductUnitDefinitionInterface $definition): string {
+                return $definition->getUnit()?->getFullLabel() ?? (string) $definition->getId();
             },
-            'choice_attr' => function (ProductUnitDefinitionInterface $definition) {
+            'choice_attr' => static function (ProductUnitDefinitionInterface $definition): array {
                 return ['data-cs-unit-precision' => $definition->getPrecision()];
             },
             'choice_translation_domain' => false,

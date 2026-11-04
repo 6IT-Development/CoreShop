@@ -77,6 +77,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** add `->addDefaultsIfNotSet()` to the `path` array node. Add a Configuration unit test that processes `[]` and asserts the defaults.
 
 ### B-10 — `autoconfigure_with_attributes` is a `scalarNode`: any non-bool value causes a `TypeError` at container build
+- **Status:** fixed — `autoconfigure_with_attributes` is a `booleanNode`, as in ProductBundle (B-04). Checked by processing the configuration (Symfony 7.4.22): `true` passes, while `"yes"` and `1` are rejected with `InvalidTypeException` at config validation instead of a `TypeError` in `Autoconfiguration::registerForAutoConfiguration()`. Still not supported: an `%env(bool:…)%` placeholder, because autoconfiguration is decided at compile time and the extension would receive the placeholder string.
 - **Where:** `DependencyInjection/Configuration.php:44`; `DependencyInjection/CoreShopCustomerExtension.php:52-66` → `Component/Registry/Autoconfiguration::registerForAutoConfiguration(..., bool $autoconfigureWithAttributes)`
 - **Problem:** the node accepts `"yes"`, `1` or `"%env(bool:X)%"` (verified: `"yes"` is accepted as-is). The extension file is `strict_types=1`, so passing a string to a `bool` parameter throws a `TypeError` and the whole container fails to compile. An env placeholder is also a string at that point.
 - **Fix direction:** use `->booleanNode('autoconfigure_with_attributes')->defaultFalse()`. Env placeholders cannot drive compile-time autoconfiguration anyway, so document that.

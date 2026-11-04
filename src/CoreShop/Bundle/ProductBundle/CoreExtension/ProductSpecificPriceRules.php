@@ -35,7 +35,6 @@ use Pimcore\Model\DataObject\LazyLoadedFieldsInterface;
 use Pimcore\Model\DataObject\Traits\SimpleComparisonTrait;
 use Pimcore\Model\Element\ValidationException;
 use Symfony\Component\Form\FormFactoryInterface;
-use Webmozart\Assert\Assert;
 
 /**
  * @psalm-suppress InvalidReturnType, InvalidReturnStatement
@@ -91,9 +90,8 @@ class ProductSpecificPriceRules extends Data implements
      */
     public function preGetData(mixed $object, array $params = []): mixed
     {
-        Assert::isInstanceOf($object, ProductInterface::class);
-
-        if (!$object instanceof Concrete) {
+        // The rules are stored per product; any other container (a non-product class) has none.
+        if (!$object instanceof Concrete || !$object instanceof ProductInterface) {
             return [];
         }
 

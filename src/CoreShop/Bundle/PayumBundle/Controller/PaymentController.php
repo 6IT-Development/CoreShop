@@ -49,12 +49,16 @@ class PaymentController extends AbstractController
 
     public function prepareCaptureAction(Request $request): RedirectResponse
     {
-        if ($request->attributes->has('token')) {
-            $property = 'token';
-            $identifier = $request->attributes->get('token');
-        } else {
-            $property = 'id';
-            $identifier = $request->attributes->get('order');
+        /*
+         * Only the order token identifies the order. The old order-id lookup
+         * (deprecated coreshop_payment route) would let anyone start a payment
+         * for any order id and learn its token from the redirect afterwards.
+         */
+        $property = 'token';
+        $identifier = $request->attributes->get('token');
+
+        if (!is_string($identifier) || '' === $identifier) {
+            throw new NotFoundHttpException('Missing order token.');
         }
 
         /**

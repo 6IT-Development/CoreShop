@@ -75,7 +75,14 @@ abstract class User extends AbstractPimcoreModel implements UserInterface
 
     public function getUserIdentifier(): string
     {
-        return $this->getLoginIdentifier();
+        $identifier = $this->getLoginIdentifier();
+
+        // Symfony requires a non-empty identifier, so fail clearly instead of with a TypeError
+        if (null === $identifier || '' === $identifier) {
+            throw new \LogicException(sprintf('User "%s" has no login identifier.', $this->getId()));
+        }
+
+        return $identifier;
     }
 
     public function getUsername(): ?string

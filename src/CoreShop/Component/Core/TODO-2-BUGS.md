@@ -297,6 +297,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `$this->currency = $currency; $this->currencyCode = $currency?->getIsoCode();`.
 
 ### B-40 — `User::getUserIdentifier()` returns a nullable value from a `string` method
+- **Status:** fixed — the Core override is deleted, and the base `Component/User/Model/User::getUserIdentifier()` throws a `\LogicException` (`User "<id>" has no login identifier.`) for a `null` or empty login identifier instead of a `TypeError` or an empty identifier. A user without an identifier still cannot get a token; refusing such users before authentication and making the field mandatory remain with UserBundle **B-04** / User **CB-01**.
 - **Where:** `Model/User.php:26-29` (`return $this->getLoginIdentifier();`, which is `?string`). Same code in `Component/User/Model/User.php:76-79`.
 - **Problem:** under `strict_types`, a user without a login identifier (an incomplete import, or an empty field in the admin) throws a `TypeError` as soon as Symfony builds or refreshes the token, or the profiler or a log processor reads it. Symfony 7.4 also requires a **non-empty** identifier.
 - **Fix:** delete the Core override and fix the base: `return $this->getLoginIdentifier() ?: throw new \LogicException(...)`, or fall back to a stable value.

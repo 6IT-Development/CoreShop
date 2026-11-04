@@ -26,6 +26,7 @@ use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
+use Pimcore\Db;
 use Pimcore\File;
 use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\Concrete;
@@ -80,6 +81,12 @@ final class CustomerTransformHelper implements CustomerTransformHelperInterface
             throw new ValidationException($e->getMessage());
         }
 
+        $companyName = $options['companyData']['name'] ?? null;
+
+        if (!is_string($companyName) || '' === trim($companyName)) {
+            throw new ValidationException('A name is required for the new company.');
+        }
+
         /** @var CompanyInterface $company */
         $company = $this->companyFactory->createNew();
 
@@ -88,7 +95,7 @@ final class CustomerTransformHelper implements CustomerTransformHelperInterface
         $company->setParent(
             $this->folderCreationService->createFolderForResource(
                 $company,
-                ['suffix' => mb_strtoupper(mb_substr($options['companyData']['name'] ?? '--', 0, 1))],
+                ['suffix' => mb_strtoupper(mb_substr($companyName, 0, 1))],
             ),
         );
 
@@ -99,13 +106,29 @@ final class CustomerTransformHelper implements CustomerTransformHelperInterface
             $company->setChildrenSortBy('index');
         }
 
+        /**
+         * Create the company and move the customer in one transaction, so a failed move leaves no empty company behind
+         */
+        $db = Db::get();
+        $db->beginTransaction();
+
         try {
-            $this->forceSave($company);
+            try {
+                $this->forceSave($company);
+            } catch (\Throwable $e) {
+                throw new ValidationException($e->getMessage());
+            }
+
+            $customer = $this->moveCustomerToCompany($customer, $company, $options);
+
+            $db->commit();
         } catch (\Throwable $e) {
-            throw new ValidationException($e->getMessage());
+            $db->rollBack();
+
+            throw $e;
         }
 
-        return $this->moveCustomerToCompany($customer, $company, $options);
+        return $customer;
     }
 
     public function moveCustomerToExistingCompany(CustomerInterface $customer, CompanyInterface $company, array $transformOptions): CustomerInterface

@@ -58,6 +58,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Validation
 
 ### B-07 — `ValidAddressIdentifierValidator`: wrong exception class, `TypeError` paths, almost never triggers
+- **Status:** fixed — the validator throws `Symfony\Component\Validator\Exception\UnexpectedTypeException`, takes `mixed $value`, and reports a violation when the value is not an `AddressIdentifierInterface`, has no id (not persisted; no `find()` call on it), no longer exists, or is inactive. The message parameter is the identifier name (or the id / value type), always a string. The options-array constructor of the constraint is still B-16. Note: an address whose identifier is deactivated now fails validation when it is re-saved through a form with the `coreshop` group.
 - **Where:** `Validator/Constraints/ValidAddressIdentifierValidator.php:23, 34-52`; `Resources/config/validation/Address.yml:17-18`
 - **Problems:**
   1. It throws `Symfony\Component\Form\Exception\UnexpectedTypeException`. It should throw `Symfony\Component\Validator\Exception\UnexpectedTypeException`, and as written it adds a hidden dependency on the Form component.

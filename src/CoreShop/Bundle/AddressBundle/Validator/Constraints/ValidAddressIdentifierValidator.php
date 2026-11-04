@@ -20,10 +20,14 @@ namespace CoreShop\Bundle\AddressBundle\Validator\Constraints;
 
 use CoreShop\Component\Address\Model\AddressIdentifierInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
-use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 
+/**
+ * An address identifier is valid when it is a persisted, still existing and active
+ * AddressIdentifier entity.
+ */
 final class ValidAddressIdentifierValidator extends ConstraintValidator
 {
     public function __construct(
@@ -31,7 +35,7 @@ final class ValidAddressIdentifierValidator extends ConstraintValidator
     ) {
     }
 
-    public function validate($value, Constraint $constraint): void
+    public function validate(mixed $value, Constraint $constraint): void
     {
         if (!$constraint instanceof ValidAddressIdentifier) {
             throw new UnexpectedTypeException($constraint, ValidAddressIdentifier::class);
@@ -41,13 +45,26 @@ final class ValidAddressIdentifierValidator extends ConstraintValidator
             return;
         }
 
-        $addressIdentifier = $this->addressIdentifierRepository->find($value);
+        if (!$value instanceof AddressIdentifierInterface) {
+            $this->addViolation($constraint, get_debug_type($value));
 
-        if (!$addressIdentifier instanceof AddressIdentifierInterface) {
-            $this->context->buildViolation($constraint->message)
-                ->setParameter('%address_identifier%', $value)
-                ->addViolation()
-            ;
+            return;
         }
+
+        // a new (unpersisted) identifier has no id, and find() on it would throw
+        $id = $value->getId();
+        $identifier = null !== $id ? $this->addressIdentifierRepository->find($id) : null;
+
+        if (!$identifier instanceof AddressIdentifierInterface || true !== $identifier->getActive()) {
+            $this->addViolation($constraint, (string) ($value->getName() ?? $id ?? ''));
+        }
+    }
+
+    private function addViolation(ValidAddressIdentifier $constraint, string $name): void
+    {
+        $this->context->buildViolation($constraint->message)
+            ->setParameter('%address_identifier%', $name)
+            ->addViolation()
+        ;
     }
 }

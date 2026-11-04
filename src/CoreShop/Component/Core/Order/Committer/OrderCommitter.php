@@ -34,6 +34,7 @@ use CoreShop\Component\Order\OrderTransitions;
 use CoreShop\Component\Pimcore\DataObject\ObjectClonerInterface;
 use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
+use Pimcore\Db;
 use Pimcore\Model\DataObject\Service;
 use Webmozart\Assert\Assert;
 
@@ -55,58 +56,77 @@ class OrderCommitter implements OrderCommitterInterface
          */
         Assert::isInstanceOf($order, \CoreShop\Component\Core\Model\OrderInterface::class);
 
-        $orderFolder = $this->folderCreationService->createFolderForResource($order, [
-            'suffix' => date('Y/m/d'),
-            'path' => 'order',
-        ]);
-        $orderNumber = $this->numberGenerator->generate($order);
-
-        $order->setParent($orderFolder);
-        $order->setSaleState(OrderSaleStates::STATE_ORDER);
-        $order->setOrderDate(Carbon::now());
-        $order->setOrderNumber($orderNumber);
-        $order->setKey(Service::getValidKey($orderNumber, 'object'));
-        $order->setOrderState(OrderStates::STATE_INITIALIZED);
-        $order->setShippingState(OrderShipmentStates::STATE_NEW);
-        $order->setPaymentState(OrderPaymentStates::STATE_NEW);
-        $order->setInvoiceState(OrderInvoiceStates::STATE_NEW);
-
-        $this->cartManager->persistCart($order);
-
         $originalShippingAddress = $order->hasShippableItems() === false ? $order->getInvoiceAddress() : $order->getShippingAddress();
+        $originalInvoiceAddress = $order->getInvoiceAddress();
 
         /**
-         * @var AddressInterface $shippingAddress
-         *
-         * @psalm-suppress InvalidArgument
+         * Check the addresses before anything is saved, otherwise the cart would already be stored as an order
+         * with an order number when the address cloning fails.
          */
-        $shippingAddress = $this->objectCloner->cloneObject(
-            $originalShippingAddress,
-            $this->folderCreationService->createFolderForResource($originalShippingAddress, ['prefix' => $order->getFullPath()]),
-            'shipping',
-            false,
-        );
-        /**
-         * @var AddressInterface $invoiceAddress
-         *
-         * @psalm-suppress InvalidArgument
-         */
-        $invoiceAddress = $this->objectCloner->cloneObject(
-            $order->getInvoiceAddress(),
-            $this->folderCreationService->createFolderForResource($order->getInvoiceAddress(), ['prefix' => $order->getFullPath()]),
-            'invoice',
-            false,
-        );
+        Assert::isInstanceOf($originalShippingAddress, AddressInterface::class, 'An order needs a shipping address to be committed.');
+        Assert::isInstanceOf($originalInvoiceAddress, AddressInterface::class, 'An order needs an invoice address to be committed.');
 
-        VersionHelper::useVersioning(function () use ($shippingAddress, $invoiceAddress) {
-            $shippingAddress->save();
-            $invoiceAddress->save();
-        }, false);
+        $db = Db::get();
+        $db->beginTransaction();
 
-        $order->setShippingAddress($shippingAddress);
-        $order->setInvoiceAddress($invoiceAddress);
+        try {
+            $orderFolder = $this->folderCreationService->createFolderForResource($order, [
+                'suffix' => date('Y/m/d'),
+                'path' => 'order',
+            ]);
+            $orderNumber = $this->numberGenerator->generate($order);
 
-        $this->cartManager->persistCart($order);
+            $order->setParent($orderFolder);
+            $order->setSaleState(OrderSaleStates::STATE_ORDER);
+            $order->setOrderDate(Carbon::now());
+            $order->setOrderNumber($orderNumber);
+            $order->setKey(Service::getValidKey($orderNumber, 'object'));
+            $order->setOrderState(OrderStates::STATE_INITIALIZED);
+            $order->setShippingState(OrderShipmentStates::STATE_NEW);
+            $order->setPaymentState(OrderPaymentStates::STATE_NEW);
+            $order->setInvoiceState(OrderInvoiceStates::STATE_NEW);
+
+            $this->cartManager->persistCart($order);
+
+            /**
+             * @var AddressInterface $shippingAddress
+             *
+             * @psalm-suppress InvalidArgument
+             */
+            $shippingAddress = $this->objectCloner->cloneObject(
+                $originalShippingAddress,
+                $this->folderCreationService->createFolderForResource($originalShippingAddress, ['prefix' => $order->getFullPath()]),
+                'shipping',
+                false,
+            );
+            /**
+             * @var AddressInterface $invoiceAddress
+             *
+             * @psalm-suppress InvalidArgument
+             */
+            $invoiceAddress = $this->objectCloner->cloneObject(
+                $originalInvoiceAddress,
+                $this->folderCreationService->createFolderForResource($originalInvoiceAddress, ['prefix' => $order->getFullPath()]),
+                'invoice',
+                false,
+            );
+
+            VersionHelper::useVersioning(function () use ($shippingAddress, $invoiceAddress) {
+                $shippingAddress->save();
+                $invoiceAddress->save();
+            }, false);
+
+            $order->setShippingAddress($shippingAddress);
+            $order->setInvoiceAddress($invoiceAddress);
+
+            $this->cartManager->persistCart($order);
+
+            $db->commit();
+        } catch (\Throwable $exception) {
+            $db->rollBack();
+
+            throw $exception;
+        }
 
         $this->stateMachineApplier->apply($order, OrderTransitions::IDENTIFIER, OrderTransitions::TRANSITION_CREATE);
     }

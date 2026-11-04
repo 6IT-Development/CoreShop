@@ -101,6 +101,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** remove the dispatch inside the branch, or skip the second one for this case. Treat the event the same way on both paths.
 
 ### B-13 — `CheckoutController::doCheckoutAction()`: no `can()` before `TRANSITION_ORDER`, events built from the context cart after it became an order, inconsistent handling of a stopped `CHECKOUT_PAYMENT_PRE`
+- **Status:** fixed — `doCheckoutAction()` checks `$workflow->can($order, TRANSITION_ORDER)` before applying it; if the cart cannot become an order (for example a quote, or a double submit that already changed it) it flashes the new `coreshop.ui.error.cart_not_orderable` (en/de/it) and redirects to the cart summary. `CHECKOUT_DO_PRE`, `CHECKOUT_PAYMENT_PRE` and `CHECKOUT_DO_POST` get `$order` instead of asking the cart context again. Every stopped checkout event (the two step events included) now goes through the new `getStoppedEventResponse()`: flash, then the event response or a redirect to `coreshop_index`. A stopped `CHECKOUT_PAYMENT_PRE` without a response therefore no longer continues to payment. A non-stopped event that sets a response is still honoured.
 - **Where:** `Controller/CheckoutController.php:218-222`, `:224-238`, `:254`, `:259`.
 - **Problem:**
   - `$workflow->apply($order, TRANSITION_ORDER)` without `$workflow->can()` throws `NotEnabledTransitionException` (500) when the cart is in a sale state other than `cart`/`order` (for example `quote`). A double-click race can also cause it.

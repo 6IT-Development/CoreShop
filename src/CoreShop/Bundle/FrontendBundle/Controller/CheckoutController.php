@@ -86,14 +86,8 @@ class CheckoutController extends FrontendController
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_STEP_PRE);
 
-        if ($event->isStopped()) {
-            $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
-
-            return $this->redirectToRoute('coreshop_index');
+        if ($response = $this->getStoppedEventResponse($event)) {
+            return $response;
         }
 
         if ($request->isMethod('POST')) {
@@ -138,14 +132,8 @@ class CheckoutController extends FrontendController
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_STEP_POST);
 
-        if ($event->isStopped()) {
-            $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
-
-            return $this->redirectToRoute('coreshop_index');
+        if ($response = $this->getStoppedEventResponse($event)) {
+            return $response;
         }
 
         return $this->renderResponseForCheckoutStep($request, $step, $stepIdentifier, $dataForStep);
@@ -203,24 +191,18 @@ class CheckoutController extends FrontendController
             }
         }
 
-        $event = new CheckoutEvent($this->getCart());
-
-        $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_DO_PRE);
-
-        if ($event->isStopped()) {
-            $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
-
-            return $this->redirectToRoute('coreshop_index');
-        }
-
         /**
          * If everything is valid, we continue with Order-Creation.
          */
         $order = $this->getCart();
+
+        $event = new CheckoutEvent($order);
+
+        $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_DO_PRE);
+
+        if ($response = $this->getStoppedEventResponse($event)) {
+            return $response;
+        }
 
         //Fallback for Orders/Carts without token (eg. legacy carts)
         //will be removed in future
@@ -234,6 +216,16 @@ class CheckoutController extends FrontendController
         $workflow = $this->container->get(StateMachineManagerInterface::class)->get($order, OrderSaleTransitions::IDENTIFIER);
 
         if ($order->getSaleState() !== OrderSaleStates::STATE_ORDER) {
+            /*
+             * Only a cart can become an order (a quote, for example, cannot), and
+             * a concurrent request may already have applied the transition.
+             */
+            if (!$workflow->can($order, OrderSaleTransitions::TRANSITION_ORDER)) {
+                $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.cart_not_orderable'));
+
+                return $this->redirectToRoute('coreshop_cart_summary');
+            }
+
             $workflow->apply($order, OrderSaleTransitions::TRANSITION_ORDER);
         }
 
@@ -241,16 +233,16 @@ class CheckoutController extends FrontendController
             $request->getSession()->set(self::TRACK_COMPLETE_SESSION_KEY, (string) $order->getToken());
         }
 
-        $event = new CheckoutEvent($this->getCart(), ['order' => $order]);
+        /*
+         * The cart is an order now: the cart context may already return a new,
+         * empty cart, so the events get the order itself.
+         */
+        $event = new CheckoutEvent($order, ['order' => $order]);
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_PAYMENT_PRE);
 
-        if ($event->isStopped()) {
-            $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
+        if ($response = $this->getStoppedEventResponse($event)) {
+            return $response;
         }
 
         if ($event->hasResponse()) {
@@ -274,18 +266,12 @@ class CheckoutController extends FrontendController
             $response = $this->redirectToRoute('coreshop_checkout_thank_you', ['token' => $order->getToken()]);
         }
 
-        $event = new CheckoutEvent($this->getCart(), ['order' => $order]);
+        $event = new CheckoutEvent($order, ['order' => $order]);
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_DO_POST);
 
-        if ($event->isStopped()) {
-            $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
-
-            return $this->redirectToRoute('coreshop_index');
+        if ($response = $this->getStoppedEventResponse($event)) {
+            return $response;
         }
 
         /*
@@ -346,6 +332,26 @@ class CheckoutController extends FrontendController
     protected function getCheckoutManagerFactory(): CheckoutManagerFactoryInterface
     {
         return $this->container->get('coreshop.checkout_manager.factory');
+    }
+
+    /**
+     * Returns the response for a stopped checkout event: the event's own
+     * response, or a redirect to the home page. Returns null if the event
+     * was not stopped.
+     */
+    protected function getStoppedEventResponse(CheckoutEvent $event): ?Response
+    {
+        if (!$event->isStopped()) {
+            return null;
+        }
+
+        $this->addEventFlash($event->getMessageType(), $event->getMessage(), $event->getMessageParameters());
+
+        if ($event->hasResponse()) {
+            return $event->getResponse();
+        }
+
+        return $this->redirectToRoute('coreshop_index');
     }
 
     protected function addEventFlash(string $type, ?string $message = null, array $parameters = []): void

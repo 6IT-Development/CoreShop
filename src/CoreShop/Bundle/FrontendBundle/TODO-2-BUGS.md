@@ -116,6 +116,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** set the key only when `$eventType === 'add'`, and use `Pimcore\Model\Element\Service::getUniqueKey()` or a UUID (`Symfony\Component\Uid\Uuid::v7()`).
 
 ### B-15 — Category listing: `perPage`, `page` and `sort` are not validated (resource exhaustion and 500s)
+- **Status:** fixed — `CategoryController::detail()` clamps `page` to `>= 1` (non-numeric → 1). `perPage` goes through the new `resolvePerPage()`, which accepts only a value from the configured `system.category.{list,grid}.per_page` list (compared as ints) and otherwise uses the configured default (or 10). `type` is limited to `list`/`grid`. A non-string `sort` falls back to the default sort key in both listing modes, so `parseSorting()` no longer gets an array. The general typed-read rewrite of `getParameterFromRequest()` stays with B-16 / TODO-3 I-06.
 - **Where:** `Controller/CategoryController.php:120-126` and `:161-162`, `:191-198`, `:269-296`.
 - **Problem:**
   - `perPage` is never checked against `$allowedPerPage` (`system.category.*.per_page`). `?perPage=100000` loads and hydrates every product in the category, so a single request can tie up a PHP worker and the database. This is cheap to repeat, so it works as a DoS.

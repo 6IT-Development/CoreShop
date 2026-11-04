@@ -117,13 +117,22 @@ class CategoryController extends FrontendController
         );
         $variantMode = $this->getConfigurationService()->getForStore('system.category.variant_mode');
 
-        $page = (int) $this->getParameterFromRequest($request, 'page', 1) ?: 1;
+        $page = $this->getParameterFromRequest($request, 'page', 1);
+        $page = is_numeric($page) ? max(1, (int) $page) : 1;
         $type = $this->getParameterFromRequest($request, 'type', $listModeDefault);
+
+        if (!in_array($type, ['list', 'grid'], true)) {
+            $type = $listModeDefault === 'grid' ? 'grid' : 'list';
+        }
 
         $defaultPerPage = $type === 'list' ? $listPerPageDefault : $gridPerPageDefault;
         $allowedPerPage = $type === 'list' ? $listPerPageAllowed : $gridPerPageAllowed;
 
-        $perPage = (int) $this->getParameterFromRequest($request, 'perPage', $defaultPerPage) ?: 10;
+        $perPage = $this->resolvePerPage(
+            $this->getParameterFromRequest($request, 'perPage', $defaultPerPage),
+            $allowedPerPage,
+            $defaultPerPage,
+        );
 
         $this->validateCategory($request, $category);
 
@@ -159,6 +168,11 @@ class CategoryController extends FrontendController
                 'coreshop.frontend.category.default_sort_direction',
             ) : $orderDirection);
             $sort = $this->getParameterFromRequest($request, 'sort', $sortKey);
+
+            if (!is_string($sort)) {
+                $sort = $sortKey;
+            }
+
             $sortParsed = $this->parseSorting($sort);
 
             $filteredList->setOrderKey($sortParsed['name']);
@@ -188,13 +202,15 @@ class CategoryController extends FrontendController
             $viewParameters['conditions'] = $preparedConditions;
         } else {
             //Classic Listing Mode
-            $sort = $this->getParameterFromRequest(
-                $request,
-                'sort',
-                $this->getParameter('coreshop.frontend.category.default_sort_name') . '_' . $this->getParameter(
-                    'coreshop.frontend.category.default_sort_direction',
-                ),
+            $sortKey = $this->getParameter('coreshop.frontend.category.default_sort_name') . '_' . $this->getParameter(
+                'coreshop.frontend.category.default_sort_direction',
             );
+            $sort = $this->getParameterFromRequest($request, 'sort', $sortKey);
+
+            if (!is_string($sort)) {
+                $sort = $sortKey;
+            }
+
             $sortParsed = $this->parseSorting($sort);
 
             $categories = [$category];
@@ -264,6 +280,27 @@ class CategoryController extends FrontendController
                 sprintf(sprintf('store (id %s) not available in category', $this->getContext()->getStore()->getId())),
             );
         }
+    }
+
+    /**
+     * Accepts only one of the configured per-page values, so a request cannot
+     * load an unlimited number of products. Anything else uses the default.
+     */
+    protected function resolvePerPage(mixed $perPage, mixed $allowedPerPage, mixed $defaultPerPage): int
+    {
+        $default = is_numeric($defaultPerPage) && (int) $defaultPerPage > 0 ? (int) $defaultPerPage : 10;
+
+        if (!is_numeric($perPage) || !is_array($allowedPerPage)) {
+            return $default;
+        }
+
+        $allowed = array_map('intval', array_filter($allowedPerPage, 'is_numeric'));
+
+        if (!in_array((int) $perPage, $allowed, true)) {
+            return $default;
+        }
+
+        return (int) $perPage;
     }
 
     protected function parseSorting(string $sortString): array

@@ -1,7 +1,7 @@
 {
     "id": "cs_company",
     "description": null,
-    "parentClass": "CoreShop\\Component\\Core\\Model\\Company",
+    "parentClass": "CoreShop\\Component\\Customer\\Model\\Company",
     "listingParentClass": null,
     "useTraits": null,
     "listingUseTraits": null,

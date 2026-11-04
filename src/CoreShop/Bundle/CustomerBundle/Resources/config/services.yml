@@ -15,7 +15,8 @@ services:
             - '@CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver'
             - '@request_stack'
         tags:
-            # explicit priorities keep the order request-based > fixed > token-based (higher wins)
+            # explicit priorities keep the order request-based > fixed > token-based (higher wins);
+            # the token-based context (priority 10) is registered by CoreBundle (services/context.yml)
             - { name: coreshop.context.customer, priority: 30 }
 
     CoreShop\Component\Customer\Context\FixedCustomerContext:
@@ -26,9 +27,3 @@ services:
     CoreShop\Component\Customer\Context\RequestBased\RequestResolverInterface: '@CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver'
     CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver:
         public: false
-
-    CoreShop\Component\Core\Context\TokenBasedCustomerContext:
-        arguments:
-            - '@Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface'
-        tags:
-            - { name: coreshop.context.customer, priority: 10 }

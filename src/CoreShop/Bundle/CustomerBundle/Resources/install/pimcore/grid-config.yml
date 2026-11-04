@@ -225,82 +225,9 @@ grid_config:
                             returnLastResult: false
                         key: "#5e399f0ae915f"
                     isOperator: true
-                "#5e399f0ae9160":
-                    name: "#5e399f0ae9160"
-                    position: 10
-                    hidden: false
-                    width: 200
-                    fieldConfig:
-                        isOperator: true
-                        attributes:
-                            label: Addresses
-                            type: operator
-                            class: AnyGetter
-                            childs:
-                                -   label: Addresses (addresses)
-                                    type: value
-                                    class: DefaultValue
-                                    attribute: addresses
-                                    dataType: manyToManyRelation
-                                    childs: []
-                            attribute: street
-                            param1: ''
-                            isArrayType: true
-                            forwardAttribute: street
-                            forwardParam1: ''
-                            returnLastResult: false
-                        key: "#5e399f0ae9160"
-                    isOperator: true
-                "#5e399f0ae9161":
-                    name: "#5e399f0ae9161"
-                    position: 11
-                    hidden: false
-                    width: 200
-                    fieldConfig:
-                        isOperator: true
-                        attributes:
-                            label: Address
-                            type: operator
-                            class: Concatenator
-                            childs:
-                                -   label: Default Address
-                                    type: operator
-                                    class: AnyGetter
-                                    childs:
-                                        -   label: Default Address (defaultAddress)
-                                            type: value
-                                            class: DefaultValue
-                                            attribute: defaultAddress
-                                            dataType: manyToOneRelation
-                                            childs: []
-                                    attribute: street
-                                    param1: ''
-                                    isArrayType: false
-                                    forwardAttribute: ''
-                                    forwardParam1: ''
-                                    returnLastResult: false
-                                -   label: Number
-                                    type: operator
-                                    class: AnyGetter
-                                    childs:
-                                        -   label: Default Address (defaultAddress)
-                                            type: value
-                                            class: DefaultValue
-                                            attribute: defaultAddress
-                                            dataType: manyToOneRelation
-                                            childs: []
-                                    attribute: number
-                                    param1: ''
-                                    isArrayType: false
-                                    forwardAttribute: ''
-                                    forwardParam1: ''
-                                    returnLastResult: false
-                            glue: " "
-                        key: "#5e399f0ae9161"
-                    isOperator: true
                 "#5e39a1e53b225":
                     name: "#5e39a1e53b225"
-                    position: 11
+                    position: 10
                     hidden: false
                     width: 200
                     fieldConfig:
@@ -559,82 +486,9 @@ grid_config:
                             returnLastResult: false
                         key: "#5e399f0ae915f"
                     isOperator: true
-                "#5e399f0ae9160":
-                    name: "#5e399f0ae9160"
-                    position: 10
-                    hidden: false
-                    width: 200
-                    fieldConfig:
-                        isOperator: true
-                        attributes:
-                            label: Adressen
-                            type: operator
-                            class: AnyGetter
-                            childs:
-                                -   label: Addresses (addresses)
-                                    type: value
-                                    class: DefaultValue
-                                    attribute: addresses
-                                    dataType: manyToManyRelation
-                                    childs: []
-                            attribute: street
-                            param1: ''
-                            isArrayType: true
-                            forwardAttribute: street
-                            forwardParam1: ''
-                            returnLastResult: false
-                        key: "#5e399f0ae9160"
-                    isOperator: true
-                "#5e399f0ae9161":
-                    name: "#5e399f0ae9161"
-                    position: 11
-                    hidden: false
-                    width: 200
-                    fieldConfig:
-                        isOperator: true
-                        attributes:
-                            label: Adresse
-                            type: operator
-                            class: Concatenator
-                            childs:
-                                -   label: Default Address
-                                    type: operator
-                                    class: AnyGetter
-                                    childs:
-                                        -   label: Default Address (defaultAddress)
-                                            type: value
-                                            class: DefaultValue
-                                            attribute: defaultAddress
-                                            dataType: manyToOneRelation
-                                            childs: []
-                                    attribute: street
-                                    param1: ''
-                                    isArrayType: false
-                                    forwardAttribute: ''
-                                    forwardParam1: ''
-                                    returnLastResult: false
-                                -   label: Number
-                                    type: operator
-                                    class: AnyGetter
-                                    childs:
-                                        -   label: Default Address (defaultAddress)
-                                            type: value
-                                            class: DefaultValue
-                                            attribute: defaultAddress
-                                            dataType: manyToOneRelation
-                                            childs: []
-                                    attribute: number
-                                    param1: ''
-                                    isArrayType: false
-                                    forwardAttribute: ''
-                                    forwardParam1: ''
-                                    returnLastResult: false
-                            glue: " "
-                        key: "#5e399f0ae9161"
-                    isOperator: true
                 "#5e39a1e53b225":
                     name: "#5e39a1e53b225"
-                    position: 11
+                    position: 10
                     hidden: false
                     width: 200
                     fieldConfig:

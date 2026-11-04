@@ -13,6 +13,14 @@ services:
             - '@CoreShop\Component\Customer\Context\CustomerContextInterface'
             - '@CoreShop\Component\Order\Context\CartContextInterface'
 
+    # registered here, not in CustomerBundle: the class lives in coreshop/core and needs SecurityBundle;
+    # priority 10 keeps it below the request-based (30) and fixed (20) customer contexts
+    CoreShop\Component\Core\Context\TokenBasedCustomerContext:
+        arguments:
+            - '@Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface'
+        tags:
+            - { name: coreshop.context.customer, priority: 10 }
+
     CoreShop\Component\Core\Currency\CurrencyStorageInterface: '@CoreShop\Component\Core\Currency\CurrencyStorage'
     CoreShop\Component\Core\Currency\CurrencyStorage:
         arguments:

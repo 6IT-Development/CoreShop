@@ -15,3 +15,8 @@ core_shop_customer:
             classes:
                 interface: CoreShop\Component\Core\Model\CompanyInterface
                 install_file: '@CoreShopCoreBundle/Resources/install/pimcore/classes/CoreShopCustomerBundle/CoreShopCompany.json'
+    pimcore_admin:
+        install:
+            # the customer bundle's own grid config has no address columns (the fields exist only in the CoreBundle class)
+            grid_config:
+                - '@CoreShopCoreBundle/Resources/install/pimcore/grid-config-customer.yml'

@@ -1,0 +1,9 @@
+CoreShop\Component\Product\Model\ProductUnit:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity:
+            fields: [name]
+            groups: [coreshop]
+    properties:
+        name:
+            - NotBlank: { groups: [coreshop] }
+            - Length: { max: 190, groups: [coreshop] }

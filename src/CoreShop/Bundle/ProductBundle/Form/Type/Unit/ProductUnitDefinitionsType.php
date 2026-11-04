@@ -26,6 +26,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\Validator\Constraints\Valid;
 
 final class ProductUnitDefinitionsType extends AbstractResourceType
 {
@@ -37,6 +38,7 @@ final class ProductUnitDefinitionsType extends AbstractResourceType
             ->add('product', ProductSelectionType::class)
             ->add('defaultUnitDefinition', ProductUnitDefinitionType::class, [
                 'mapped' => false,
+                'constraints' => [new Valid()],
             ])
             ->add('additionalUnitDefinitions', ProductUnitDefinitionCollectionType::class, [
                 'mapped' => false,

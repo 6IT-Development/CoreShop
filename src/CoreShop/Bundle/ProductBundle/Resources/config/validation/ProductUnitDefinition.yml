@@ -1,0 +1,10 @@
+# "unit" is checked by a NotNull constraint on the form field (ProductUnitDefinitionType), because
+# ProductUnitDefinitionsType::onSubmit() skips definitions without a unit before validation runs.
+CoreShop\Component\Product\Model\ProductUnitDefinition:
+    properties:
+        conversionRate:
+            - NotBlank: { groups: [coreshop] }
+            - Positive: { groups: [coreshop] }
+        precision:
+            - NotNull: { groups: [coreshop] }
+            - PositiveOrZero: { groups: [coreshop] }

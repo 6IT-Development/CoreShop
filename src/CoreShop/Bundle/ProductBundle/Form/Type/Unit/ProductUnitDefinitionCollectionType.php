@@ -21,6 +21,7 @@ namespace CoreShop\Bundle\ProductBundle\Form\Type\Unit;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Valid;
 
 class ProductUnitDefinitionCollectionType extends AbstractType
 {
@@ -33,6 +34,8 @@ class ProductUnitDefinitionCollectionType extends AbstractType
             'allow_delete' => true,
             'by_reference' => false,
             'entry_type' => ProductUnitDefinitionType::class,
+            // Validate each entry against its class constraints (Resources/config/validation).
+            'constraints' => [new Valid()],
         ]);
     }
 

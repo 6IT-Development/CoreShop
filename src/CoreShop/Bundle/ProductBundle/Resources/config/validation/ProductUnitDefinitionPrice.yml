@@ -1,0 +1,7 @@
+CoreShop\Component\Product\Model\ProductUnitDefinitionPrice:
+    properties:
+        price:
+            - NotNull: { groups: [coreshop] }
+            - PositiveOrZero: { groups: [coreshop] }
+        unitDefinition:
+            - NotNull: { groups: [coreshop] }

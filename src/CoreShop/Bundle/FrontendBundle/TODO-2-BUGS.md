@@ -145,6 +145,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** use `stores LIKE ?` with `'%,' . $id . ',%'` (or the repository's existing store condition). Escape `%`, `_` and `\` in the text, or move to the index or full-text search. Add `NotBlank` + `Length(min: 2, max: 100)` to `Form/Type/SearchType.php`.
 
 ### B-19 — `validateProduct()` / `validateCategory()` fail on objects without stores
+- **Status:** fixed — `validateProduct()` and `validateCategory()` read `getStores() ?? []`, cast the ids and the current store id to `int`, and compare strictly. A product or category without stores now gets the `NotFoundHttpException` (404) instead of a `TypeError`, and a string id such as `'1'` still matches store 1.
 - **Where:** `Controller/ProductController.php:86` (`in_array(…, $product->getStores())`); `Controller/CategoryController.php:262` (`array_values($category->getStores())`).
 - **Problem:** `getStores()` returns `?array` for objects that were never assigned a store (common after imports), so these lines throw a `TypeError` (500) instead of returning a 404. `in_array` is also non-strict (`'1abc' == 1` was true before PHP 8; it is still loose for strings).
 - **Fix direction:** `in_array($storeId, $product->getStores() ?? [], true)` (keep the int/string types consistent). Throw `NotFoundHttpException` on failure.

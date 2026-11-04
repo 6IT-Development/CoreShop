@@ -275,7 +275,10 @@ class CategoryController extends FrontendController
             throw new NotFoundHttpException('category not found');
         }
 
-        if (!in_array($this->getContext()->getStore()->getId(), array_values($category->getStores()))) {
+        // getStores() is null for categories that were never assigned a store; the ids may be strings
+        $storeIds = array_map('intval', $category->getStores() ?? []);
+
+        if (!in_array((int) $this->getContext()->getStore()->getId(), $storeIds, true)) {
             throw new NotFoundHttpException(
                 sprintf(sprintf('store (id %s) not available in category', $this->getContext()->getStore()->getId())),
             );

@@ -49,7 +49,12 @@ class Country extends BaseCountry implements CountryInterface
 
     public function setCurrency(?CurrencyInterface $currency = null)
     {
+        $previousCurrency = $this->currency;
         $this->currency = $currency;
+
+        if (null !== $previousCurrency && $previousCurrency !== $currency) {
+            $previousCurrency->removeCountry($this);
+        }
 
         if (null !== $currency) {
             $currency->addCountry($this);

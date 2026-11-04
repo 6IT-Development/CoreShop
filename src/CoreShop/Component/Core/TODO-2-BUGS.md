@@ -309,6 +309,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `return $this->getPimcoreMetaDescription($language) ?: (($d = $this->getDescription($language)) ? strip_tags($d) : null);`.
 
 ### B-42 — (reproduced) The Country ↔ Currency link is not kept in sync when a country changes currency
+- **Status:** fixed — `Country::setCurrency()` removes the country from its previous currency when the currency changes, and `Currency::removeCountry()` clears the country's currency only while it still points to that currency, which is the recursion guard. `setCurrency($b)`, `$b->addCountry()` and `$a->removeCountry()` all leave both sides consistent. The `cascade-all` / `orphan-removal` mapping stays CurrencyBundle **C-04**.
 - **Where:** `Model/Country.php:50-59`, `Model/Currency.php:50-64`.
 - **Problem:** `Country::setCurrency($new)` adds the country to the new currency's collection, but does not remove it from the old one. Reproduced: after `setCurrency($a)` and then `setCurrency($b)`, `$a->hasCountry($country) === true`. Because `Currency.countries` is mapped with `cascade-all` / `orphan-removal` (CurrencyBundle **C-04**), deleting the old currency later in the same request also affects the country that was just moved.
 - **Fix:** when the currency changes, call `$this->currency?->removeCountry($this)` before assigning, with a recursion guard (`Currency::removeCountry()` calls `setCurrency(null)`).

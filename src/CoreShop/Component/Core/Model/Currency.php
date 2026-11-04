@@ -59,7 +59,11 @@ class Currency extends BaseCurrency implements CurrencyInterface
     {
         if ($this->hasCountry($country)) {
             $this->countries->removeElement($country);
-            $country->setCurrency(null);
+
+            // the country may already point to its new currency
+            if ($country->getCurrency() === $this) {
+                $country->setCurrency(null);
+            }
         }
     }
 

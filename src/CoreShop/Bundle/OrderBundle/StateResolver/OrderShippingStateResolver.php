@@ -85,10 +85,12 @@ final class OrderShippingStateResolver implements StateResolverInterface
     private function isPartiallyShippedButOrderStateNotUpdated(OrderInterface $order): bool
     {
         $shipmentInShippedStateAmount = $this->countOrderShipmentsInState($order, ShipmentStates::STATE_SHIPPED);
+        $shipmentAmount = count($this->orderShipmentRepository->getDocumentsNotInState($order, OrderShipmentStates::STATE_CANCELLED));
 
+        // Partial while some shipments are not shipped yet, even if together they cover every item.
         return
             $shipmentInShippedStateAmount > 0 &&
-            !$this->processable->isFullyProcessed($order) &&
+            ($shipmentInShippedStateAmount < $shipmentAmount || !$this->processable->isFullyProcessed($order)) &&
             OrderShipmentStates::STATE_PARTIALLY_SHIPPED !== $order->getShippingState();
     }
 }

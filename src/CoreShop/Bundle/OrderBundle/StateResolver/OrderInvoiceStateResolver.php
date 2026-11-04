@@ -85,10 +85,12 @@ final class OrderInvoiceStateResolver implements StateResolverInterface
     private function isPartiallyInvoicedButOrderStateNotUpdated(OrderInterface $order): bool
     {
         $invoiceInCompleteStateAmount = $this->countOrderInvoicesInState($order, InvoiceStates::STATE_COMPLETE);
+        $invoiceAmount = count($this->orderInvoiceRepository->getDocumentsNotInState($order, OrderInvoiceStates::STATE_CANCELLED));
 
+        // Partial while some invoices are not complete yet, even if together they cover every item.
         return
             $invoiceInCompleteStateAmount > 0 &&
-            !$this->processable->isFullyProcessed($order) &&
+            ($invoiceInCompleteStateAmount < $invoiceAmount || !$this->processable->isFullyProcessed($order)) &&
             OrderInvoiceStates::STATE_PARTIALLY_INVOICED !== $order->getInvoiceState();
     }
 }

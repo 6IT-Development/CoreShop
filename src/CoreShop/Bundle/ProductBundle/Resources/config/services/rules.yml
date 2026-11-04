@@ -24,7 +24,7 @@ services:
             - { name: coreshop.registry.rule_availability_assessor, type: product_price }
 
     coreshop.rule.availability_assessor.product_specific_price:
-        class: CoreShop\Bundle\RuleBundle\Assessor\RuleAvailabilityAssessor
+        class: CoreShop\Bundle\ProductBundle\Assessor\ProductSpecificPriceRuleAvailabilityAssessor
         arguments:
              - '@coreshop.repository.product_specific_price_rule'
         tags:

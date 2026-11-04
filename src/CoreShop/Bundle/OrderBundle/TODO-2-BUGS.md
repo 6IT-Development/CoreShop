@@ -171,6 +171,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## State resolvers and workflows
 
 ### B-21 — `partially_shipped` / `partially_invoiced` is never reached once every item is on some document
+- **Status:** fixed — both resolvers treat the order as partial when at least one document is shipped/complete and either not every non-cancelled document is, or some items are still not on any document (`done > 0 && (done < notCancelled || !isFullyProcessed())`). With two shipments covering all items and one shipped, the order now goes `ready → partially_shipped → shipped`; invoices behave the same. The transitions are still applied without `can()` (B-22).
 - **Where:** `StateResolver/OrderShippingStateResolver.php:52-54,85-93`; `StateResolver/OrderInvoiceStateResolver.php:52-54,85-93`; `Component/Order/Processable/ProcessableOrderItems.php`.
 - **Problem:** the partial branch requires `!isFullyProcessed()`, which means that some items are not yet on any document. With two shipments that together cover all items and only one of them shipped, the order stays `ready` until it jumps to `shipped`. Invoices behave the same way. Verified by tracing the code.
 - **Fix:** treat the order as partial when `doneCount > 0 && (doneCount < notCancelledCount || !isFullyProcessed())`.

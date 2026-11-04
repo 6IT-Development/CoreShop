@@ -33,6 +33,7 @@ use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\LazyLoadedFieldsInterface;
 use Pimcore\Model\DataObject\Traits\SimpleComparisonTrait;
+use Pimcore\Model\Element\ValidationException;
 use Symfony\Component\Form\FormFactoryInterface;
 use Webmozart\Assert\Assert;
 
@@ -309,7 +310,7 @@ class ProductSpecificPriceRules extends Data implements
         $specificPriceRuleRepository = $this->getProductSpecificPriceRuleRepositoryFactory()->createNewRepository($tempEntityManager);
 
         if ($data && $object instanceof Concrete) {
-            foreach ($data as $dataRow) {
+            foreach ($data as $rowIndex => $dataRow) {
                 $ruleId = isset($dataRow['id']) && is_numeric($dataRow['id']) ? $dataRow['id'] : null;
 
                 $storedRule = null;
@@ -333,18 +334,20 @@ class ProductSpecificPriceRules extends Data implements
 
                     $prices[] = $formData;
                 } else {
+                    $ruleName = is_array($dataRow) && isset($dataRow['name']) && is_scalar($dataRow['name']) && '' !== (string) $dataRow['name']
+                        ? (string) $dataRow['name']
+                        : sprintf('#%s', is_int($rowIndex) ? $rowIndex + 1 : (string) $rowIndex);
+
                     foreach ($form->getErrors(true, true) as $e) {
-                        $errorMessageTemplate = $e->getMessageTemplate();
-                        foreach ($e->getMessageParameters() as $key => $value) {
-                            $errorMessageTemplate = str_replace($key, $value, $errorMessageTemplate);
-                        }
-
-                        $errors[] = sprintf('%s: %s', $e->getOrigin()->getConfig()->getName(), $errorMessageTemplate);
+                        $errors[] = sprintf('%s: %s: %s', $ruleName, $e->getOrigin()?->getConfig()->getName() ?? '', $e->getMessage());
                     }
-
-                    throw new \Exception(implode(\PHP_EOL, $errors));
                 }
             }
+        }
+
+        // Report the errors of all rules at once, as a validation error the admin shows to the user.
+        if (count($errors) > 0) {
+            throw new ValidationException(implode(\PHP_EOL, $errors));
         }
 
         return $prices;

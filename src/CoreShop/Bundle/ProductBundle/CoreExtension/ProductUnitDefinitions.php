@@ -35,6 +35,7 @@ use Pimcore\Model;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\LazyLoadedFieldsInterface;
+use Pimcore\Model\Element\ValidationException;
 use Webmozart\Assert\Assert;
 
 /**
@@ -433,16 +434,13 @@ class ProductUnitDefinitions extends Data implements
         if ($form->isValid()) {
             $productUnitDefinitionsValues = $form->getData();
         } else {
+            // getMessage() is already interpolated and translated; rebuilding it from the template
+            // failed for non-string parameters (e.g. the int {{ limit }} of Length).
             foreach ($form->getErrors(true, true) as $e) {
-                $errorMessageTemplate = $e->getMessageTemplate();
-                foreach ($e->getMessageParameters() as $key => $value) {
-                    $errorMessageTemplate = str_replace($key, $value, $errorMessageTemplate);
-                }
-
-                $errors[] = sprintf('%s: %s', $e->getOrigin()->getConfig()->getName(), $errorMessageTemplate);
+                $errors[] = sprintf('%s: %s', $e->getOrigin()?->getConfig()->getName() ?? '', $e->getMessage());
             }
 
-            throw new \Exception(implode(\PHP_EOL, $errors));
+            throw new ValidationException(implode(\PHP_EOL, $errors));
         }
 
         return $productUnitDefinitionsValues;

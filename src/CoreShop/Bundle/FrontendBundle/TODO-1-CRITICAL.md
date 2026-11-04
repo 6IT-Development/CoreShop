@@ -17,6 +17,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## C-01 — `services.yml` imports a file from `TestBundle` by relative monorepo path, so the container cannot be built when `coreshop/frontend-bundle` is installed as its own package
 
+- **Status:** fixed — the `../../../TestBundle/Resources/config/twig.yml` import is gone. `coreshop_test_html_attribute()` and `coreshop_test_form_attribute()` now come from the bundle's own `Twig\TestAttributeExtension` (registered in `services.yml` with `%kernel.environment%`). It returns `''` / `[]` outside `test*` environments, so the storefront templates work without CoreShopTestBundle. The HTML variant now escapes the name and value. The TestBundle classes are kept but marked `@deprecated` (nothing loads their `twig.yml` any more). The split-package CI job is not added here; it was checked only with `php -l`, because this checkout has no `vendor/`.
 - **Where:**
   - `Resources/config/services.yml:2`: `- { resource: ../../../TestBundle/Resources/config/twig.yml }`
   - `composer.json:26-29`: requires only `coreshop/core-bundle` and `six-it/pimcore-source`. There is no `coreshop/test-bundle`.

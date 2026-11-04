@@ -1,5 +1,4 @@
 imports:
-    - { resource: ../../../TestBundle/Resources/config/twig.yml }
     - { resource: services/frontend-installer.yaml }
 
 services:
@@ -37,5 +36,11 @@ services:
             - { name: twig.extension }
 
     CoreShop\Bundle\FrontendBundle\Twig\TypeCastExtension:
+        tags:
+            - { name: twig.extension }
+
+    CoreShop\Bundle\FrontendBundle\Twig\TestAttributeExtension:
+        arguments:
+            - '%kernel.environment%'
         tags:
             - { name: twig.extension }

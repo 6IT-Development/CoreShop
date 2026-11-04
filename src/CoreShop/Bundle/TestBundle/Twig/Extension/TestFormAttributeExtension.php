@@ -21,6 +21,9 @@ namespace CoreShop\Bundle\TestBundle\Twig\Extension;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
+/**
+ * @deprecated since 4.1, use CoreShop\Bundle\FrontendBundle\Twig\TestAttributeExtension, which FrontendBundle registers itself.
+ */
 final class TestFormAttributeExtension extends AbstractExtension
 {
     public function __construct(

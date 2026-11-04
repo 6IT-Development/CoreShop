@@ -207,6 +207,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Contexts and long-running processes
 
 ### B-27 — `StoreAwareCountryContext` breaks the `CountryContextInterface` contract
+- **Status:** fixed — `StoreAwareCountryContext` catches a `StoreNotFoundException` from the store lookup and rethrows it as `CountryNotFoundException` (with `previous`), and also throws `CountryNotFoundException` when the store is not a Core `StoreInterface`. Both fallbacks go through `getBaseCountry()`, which throws `CountryNotFoundException` (with the inner context's exception as `previous`, if any) when the store has no base country, instead of returning `null`. `ShopperContext::hasCountry()` now returns `false` in these cases.
 - **Where:** `Context/Country/StoreAwareCountryContext.php:35-51`.
 - **Problem:** `getStore()` is called outside the `try`, so a `StoreNotFoundException` escapes. `ShopperContext::hasCountry()` (`Context/ShopperContext.php:103-112`) only catches `CountryNotFoundException`, so it throws instead of returning `false`. The two fallbacks return `$store->getBaseCountry()`, which is `null` for a store without a base country (nullable column). That is a `TypeError` against the `CountryInterface` return type. This is the same pattern as Currency **B-01**, but for countries.
 - **Fix:** wrap the store lookup and rethrow as `CountryNotFoundException` (with `previous`). Throw `CountryNotFoundException` when the base country is `null`.

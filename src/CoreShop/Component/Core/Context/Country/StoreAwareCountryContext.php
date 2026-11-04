@@ -23,6 +23,7 @@ use CoreShop\Component\Address\Context\CountryNotFoundException;
 use CoreShop\Component\Core\Model\CountryInterface;
 use CoreShop\Component\Core\Model\StoreInterface;
 use CoreShop\Component\Store\Context\StoreContextInterface;
+use CoreShop\Component\Store\Context\StoreNotFoundException;
 
 final class StoreAwareCountryContext implements CountryContextInterface
 {
@@ -34,20 +35,38 @@ final class StoreAwareCountryContext implements CountryContextInterface
 
     public function getCountry(): \CoreShop\Component\Address\Model\CountryInterface
     {
-        /** @var StoreInterface $store */
-        $store = $this->storeContext->getStore();
+        try {
+            $store = $this->storeContext->getStore();
+        } catch (StoreNotFoundException $exception) {
+            throw new CountryNotFoundException($exception);
+        }
+
+        if (!$store instanceof StoreInterface) {
+            throw new CountryNotFoundException();
+        }
 
         try {
             $country = $this->countryContext->getCountry();
 
             if (!$country instanceof CountryInterface || !$this->isCountryAvailable($country, $store)) {
-                return $store->getBaseCountry();
+                return $this->getBaseCountry($store);
             }
 
             return $country;
-        } catch (CountryNotFoundException) {
-            return $store->getBaseCountry();
+        } catch (CountryNotFoundException $exception) {
+            return $this->getBaseCountry($store, $exception);
         }
+    }
+
+    private function getBaseCountry(StoreInterface $store, ?\Exception $previousException = null): \CoreShop\Component\Address\Model\CountryInterface
+    {
+        $country = $store->getBaseCountry();
+
+        if (!$country instanceof \CoreShop\Component\Address\Model\CountryInterface) {
+            throw new CountryNotFoundException($previousException);
+        }
+
+        return $country;
     }
 
     private function isCountryAvailable(CountryInterface $country, StoreInterface $store): bool

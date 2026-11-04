@@ -26,6 +26,8 @@ class ProductPriceRuleController extends ResourceController
 {
     public function getConfigAction(Request $request): Response
     {
+        $this->isGrantedOr403();
+
         $actions = $this->getConfigActions();
         $conditions = $this->getConfigConditions();
 

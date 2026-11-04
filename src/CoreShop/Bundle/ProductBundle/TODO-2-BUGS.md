@@ -54,6 +54,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** remove the `additional_routes.config` block for `coreshop_admin_product_unit`.
 
 ### B-07 — The controller actions do no permission or object-right check
+- **Status:** fixed — `ProductPriceRuleController::getConfigAction()` now calls `$this->isGrantedOr403()` (requires `coreshop_permission_product_price_rule`, like `CartPriceRuleController::getConfigAction()`). Its only caller is `product/pricerule/panel.js`, which already needs that permission. The `$product->isAllowed('view')` check in both unit-definition actions was already added with TODO-1 **C-01** (`denyAccessUnlessProductViewable()`). Not run against a live admin.
 - **Where:** `Controller/ProductPriceRuleController.php:27-33` (`getConfigAction`, no `isGrantedOr403()`); `Controller/ProductUnitDefinitionsController.php:34-63` (both actions, no `isGrantedOr403()`, no `$product->isAllowed('view')`).
 - **Problem:**
   - Any backend user can read the unit definitions of any product ID, including the **unpublished latest version** (`productAdditionalUnitDefinitionsListAction` loads `VersionHelper::getLatestVersion()`), regardless of their workspace.

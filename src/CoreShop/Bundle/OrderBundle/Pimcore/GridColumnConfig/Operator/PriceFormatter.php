@@ -50,12 +50,24 @@ class PriceFormatter extends AbstractOperator
         $c = $children[0];
         $result = $c->getLabeledValue($element);
 
-        if ($element instanceof CurrencyAwareInterface) {
+        if (!is_int($result->value ?? null)) {
+            return $result;
+        }
+
+        $currency = null;
+
+        if ($element instanceof OrderInterface) {
+            // Only the converted* fields are in the shopper's currency, the others are in the base currency.
+            $fieldName = $result->def->name ?? null;
+            $currency = is_string($fieldName) && str_starts_with($fieldName, 'converted')
+                ? $element->getCurrency()
+                : $element->getBaseCurrency();
+        } elseif ($element instanceof CurrencyAwareInterface) {
             $currency = $element->getCurrency();
+        }
+
+        if (null !== $currency) {
             $result->value = $this->moneyFormatter->format($result->value, $currency->getIsoCode(), $this->localeService->getLocaleCode());
-        } elseif ($element instanceof OrderInterface) {
-            $store = $element->getStore();
-            $result->value = $this->moneyFormatter->format($result->value, $store->getCurrency()->getIsoCode(), $this->localeService->getLocaleCode());
         }
 
         return $result;

@@ -201,6 +201,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Admin grid, PDF and Twig
 
 ### B-25 — The `PriceFormatter` grid operator labels base-currency amounts with the shopper's currency
+- **Status:** fixed — for an order, fields whose name starts with `converted` are formatted in `getCurrency()`, all others in `getBaseCurrency()`. Other `CurrencyAwareInterface` objects keep `getCurrency()`. A value that is not an `int` (null, string, missing child result) is returned unformatted, and nothing is formatted when the currency is null. The constructor signature is B-26.
 - **Where:** `Pimcore/GridColumnConfig/Operator/PriceFormatter.php:53-61`.
 - **Problem:** `OrderInterface` extends `CurrencyAwareInterface`, so the first branch always uses `getCurrency()` (the shopper currency) and the `elseif` branch is dead. But `total`, `subtotal` and `paymentTotal` are stored in the base currency (`Component/Core/Order/Processor/CartCurrencyConversionProcessor.php:39-41`), so multi-currency stores show the wrong currency symbol. `format(int)` also receives the value unchecked, which is a `TypeError` for `null` or strings.
 - **Fix:** use `getCurrency()` for `converted*` fields and `getBaseCurrency()` for the rest (or add an operator option), and skip non-int values.

@@ -24,7 +24,7 @@ use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 use Pimcore\Model\User;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\Finder\Exception\AccessDeniedException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class PimcoreController extends AdminController
 {
@@ -40,7 +40,7 @@ class PimcoreController extends AdminController
     }
 
     /**
-     * @throws AccessDeniedException
+     * @throws AccessDeniedHttpException
      */
     protected function isGrantedOr403(): void
     {
@@ -54,11 +54,11 @@ class PimcoreController extends AdminController
              */
             $user = $this->getAdminUser();
 
-            if ($user->isAllowed($this->getPermission())) {
+            if ($user instanceof User && $user->isAllowed($this->getPermission())) {
                 return;
             }
 
-            throw new AccessDeniedException();
+            throw $this->createAccessDeniedHttpException();
         }
     }
 

@@ -78,6 +78,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** validate the inputs, whitelist `saleType` against `order`/`quote`/`cart`, add null checks, and return JSON errors or 404. Request DTOs with `#[MapRequestPayload]` / `#[MapQueryParameter]` would cover most of these.
 
 ### B-11 — A permission denial returns 500 instead of 403 — (dependent)
+- **Status:** fixed with TODO-1 **C-01** — `PimcoreController::isGrantedOr403()` throws `AccessDeniedHttpException` and treats a missing user as denied. The stale TODO comment in `OrderCreationController` is removed.
 - **Where:** `ResourceBundle/Controller/PimcoreController.php:27,61` uses `Symfony\Component\Finder\Exception\AccessDeniedException`. Affected: `OrderCreationController::saleCreationAction`, and every check added for TODO-1 **C-01**.
 - **Problem:** the Finder exception extends `\UnexpectedValueException`, so a denied user gets a 500 instead of a 403. `ResourceController` uses the Security exception correctly. Also, the comment at `OrderCreationController.php:114` ("TODO: fails with must not be accessed before initialization") looks stale: `setTokenResolver` is wired in `ResourceBundle/Resources/config/services.yml:60-67` and is inherited through `PimcoreDriver.php:79-99`.
 - **Fix:** throw `Symfony\Component\Security\Core\Exception\AccessDeniedException` (or `AccessDeniedHttpException`) and handle a null user. Remove the stale TODO.

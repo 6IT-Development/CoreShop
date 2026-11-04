@@ -49,13 +49,15 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderCreationController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     protected AddressFormatterInterface $addressFormatter;
 
     public function getCustomerDetailsAction(
         Request $request,
         CustomerRepositoryInterface $customerRepository,
     ): Response {
-        //$this->isGrantedOr403();
+        $this->checkAnySaleCreatePermission();
 
         $customerId = $this->getParameterFromRequest($request, 'customerId');
         $customer = $customerRepository->find($customerId);
@@ -76,6 +78,8 @@ class OrderCreationController extends PimcoreController
         FormFactoryInterface $formFactory,
         CartProcessorInterface $cartProcessor,
     ): Response {
+        $this->checkSaleCreatePermission($this->getParameterFromRequest($request, 'saleType', OrderSaleTransitions::TRANSITION_CART));
+
         /**
          * @var OrderInterface $cart
          */
@@ -111,10 +115,9 @@ class OrderCreationController extends PimcoreController
         ErrorSerializer $errorSerializer,
         StateMachineManagerInterface $manager,
     ): Response {
-        // TODO: fails with must not be accessed before initialization
-        $this->isGrantedOr403();
-
         $type = $this->getParameterFromRequest($request, 'saleType', OrderSaleTransitions::TRANSITION_CART);
+
+        $this->checkSaleCreatePermission($type);
 
         /**
          * @var OrderInterface $cart
@@ -327,11 +330,6 @@ class OrderCreationController extends PimcoreController
     {
         $this->addressFormatter = $this->container->get('CoreShop\Component\Address\Formatter\AddressFormatter');
         //$this->addressFormatter = $addressFormatter;
-    }
-
-    protected function getPermission(): string
-    {
-        return 'coreshop_permission_order_create';
     }
 
     public static function getSubscribedServices(): array

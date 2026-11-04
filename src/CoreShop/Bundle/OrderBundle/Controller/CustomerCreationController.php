@@ -37,11 +37,15 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class CustomerCreationController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function createCustomerAction(
         Request $request,
         FolderCreationServiceInterface $folderCreationService,
         ErrorSerializer $errorSerializer,
     ): Response {
+        $this->checkAnySaleCreatePermission();
+
         $form = $this->container->get('form.factory')->createNamed('', AdminCustomerCreationType::class);
 
         if ($request->getMethod() === 'POST') {

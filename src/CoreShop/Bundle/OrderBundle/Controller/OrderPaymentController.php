@@ -40,6 +40,8 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderPaymentController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function updateStateAction(Request $request): JsonResponse
     {
         $payment = $this->getPaymentRepository()->find($this->getParameterFromRequest($request, 'id'));
@@ -48,6 +50,14 @@ class OrderPaymentController extends PimcoreController
         if (!$payment instanceof PaymentInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'invalid payment']);
         }
+
+        $order = $payment instanceof OrderPaymentInterface ? $payment->getOrder() : null;
+
+        if (!$order instanceof OrderInterface) {
+            throw $this->createAccessDeniedHttpException();
+        }
+
+        $this->checkSalePermission($order, 'save');
 
         //apply state machine
         $workflow = $this->getStateMachineManager()->get($payment, 'coreshop_payment');
@@ -73,6 +83,8 @@ class OrderPaymentController extends PimcoreController
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'Order with ID "' . $orderId . '" not found']);
         }
+
+        $this->checkSalePermission($order, 'save');
 
         $payments = $this->getPaymentRepository()->findForPayable($order);
         $paymentProvider = $this->getPaymentProviderRepository()->find($paymentProviderId);

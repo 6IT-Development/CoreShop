@@ -38,6 +38,7 @@ use CoreShop\Component\Order\Notes;
 use CoreShop\Component\Order\OrderEditPossibleInterface;
 use CoreShop\Component\Order\OrderInvoiceStates;
 use CoreShop\Component\Order\OrderPaymentStates;
+use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Order\OrderShipmentStates;
 use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\OrderTransitions;
@@ -67,8 +68,12 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function getStatesAction(Request $request): Response
     {
+        $this->checkAnySaleDetailPermission();
+
         /**
          * @var array $identifiers
          */
@@ -157,6 +162,8 @@ class OrderController extends PimcoreController
             throw new \Exception('invalid order');
         }
 
+        $this->checkSalePermission($order, 'save');
+
         //apply state machine
         $workflow = $stateMachineManager->get($order, 'coreshop_order');
         if (!$workflow->can($order, $transition)) {
@@ -177,12 +184,16 @@ class OrderController extends PimcoreController
 
     public function getFolderConfigurationAction(Request $request): Response
     {
-        $this->isGrantedOr403();
-
         $name = null;
         $folderId = null;
 
         $type = $this->getParameterFromRequest($request, 'saleType', 'order');
+
+        if (!in_array($type, [OrderSaleStates::STATE_ORDER, OrderSaleStates::STATE_QUOTE, OrderSaleStates::STATE_CART], true)) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->checkPermission(sprintf('coreshop_permission_%s_list', $type));
 
         $orderClassId = (string) $this->getParameter('coreshop.model.order.pimcore_class_name');
         $folderPath = (string) $this->getParameter('coreshop.folder.' . $type);
@@ -203,14 +214,14 @@ class OrderController extends PimcoreController
 
     public function detailAction(Request $request, OrderRepositoryInterface $orderRepository): Response
     {
-        $this->isGrantedOr403();
-
         $orderId = $this->getParameterFromRequest($request, 'id');
         $order = $orderRepository->find($orderId);
 
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => "Order with ID '$orderId' not found"]);
         }
+
+        $this->checkSalePermission($order);
 
         /**
          * @var \Pimcore\Security\User\User $user
@@ -230,14 +241,14 @@ class OrderController extends PimcoreController
         CartManagerInterface $cartManager,
         CartProcessorInterface $cartProcessor,
     ): Response {
-        $this->isGrantedOr403();
-
         $orderId = $this->getParameterFromRequest($request, 'id');
         $order = $orderRepository->find($orderId);
 
         if (!$order instanceof OrderInterface) {
             throw $this->createNotFoundException();
         }
+
+        $this->checkSalePermission($order, 'save');
 
         $form = $formFactory->createNamed('', OrderType::class, $order, [
             'allow_zero_quantity' => true,
@@ -326,7 +337,7 @@ class OrderController extends PimcoreController
 
     public function findOrderAction(Request $request, OrderRepositoryInterface $orderRepository): Response
     {
-        $this->isGrantedOr403();
+        $this->checkAnySaleDetailPermission();
 
         $number = $this->getParameterFromRequest($request, 'number');
 

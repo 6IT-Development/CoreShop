@@ -33,10 +33,18 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderCommentController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function listAction(Request $request): JsonResponse
     {
         $orderId = $this->getParameterFromRequest($request, 'id');
         $order = $this->getOrderRepository()->find($orderId);
+
+        if (!$order instanceof OrderInterface) {
+            return $this->viewHandler->handle(['success' => false, 'message' => "Order with ID '$orderId' not found"]);
+        }
+
+        $this->checkSalePermission($order);
 
         $objectNoteService = $this->container->get(NoteServiceInterface::class);
         $notes = $objectNoteService->getObjectNotes($order, Notes::NOTE_ORDER_COMMENT);
@@ -69,6 +77,8 @@ class OrderCommentController extends PimcoreController
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => "Order with ID '$orderId' not found"]);
         }
+
+        $this->checkSalePermission($order, 'save');
 
         try {
             $objectNoteService = $this->container->get(NoteServiceInterface::class);

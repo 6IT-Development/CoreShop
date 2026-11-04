@@ -42,6 +42,8 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 class OrderEditController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function editItemsAction(
         Request $request,
         OrderRepositoryInterface $orderRepository,
@@ -49,8 +51,6 @@ class OrderEditController extends PimcoreController
         ErrorSerializer $errorSerializer,
         CartManagerInterface $cartManager,
     ): JsonResponse {
-        $this->isGrantedOr403();
-
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
 
@@ -59,6 +59,8 @@ class OrderEditController extends PimcoreController
                 ['success' => false, 'message' => "Order with ID '$cartId' not found"],
             );
         }
+
+        $this->checkSalePermission($cart, 'save');
 
         $form = $formFactory->createNamed('', EditCartType::class, $cart);
 
@@ -94,8 +96,6 @@ class OrderEditController extends PimcoreController
         CartManagerInterface $cartManager,
         CartModifier $cartModifier,
     ): JsonResponse {
-        $this->isGrantedOr403();
-
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
 
@@ -104,6 +104,8 @@ class OrderEditController extends PimcoreController
                 ['success' => false, 'message' => "Order with ID '$cartId' not found"],
             );
         }
+
+        $this->checkSalePermission($cart, 'save');
 
         $commands = [];
 
@@ -162,8 +164,6 @@ class OrderEditController extends PimcoreController
         CartManagerInterface $cartManager,
         CartModifier $cartModifier,
     ): JsonResponse {
-        $this->isGrantedOr403();
-
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
 
@@ -172,6 +172,8 @@ class OrderEditController extends PimcoreController
                 ['success' => false, 'message' => "Order with ID '$cartId' not found"],
             );
         }
+
+        $this->checkSalePermission($cart, 'save');
 
         $cartItemId = $this->getParameterFromRequest($request, 'cartItem');
         $cartItem = $orderItemRepository->find($cartItemId);

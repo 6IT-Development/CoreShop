@@ -34,11 +34,15 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class AddressCreationController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function createAddressAction(
         Request $request,
         ObjectServiceInterface $objectService,
         ErrorSerializer $errorSerializer,
     ): Response {
+        $this->checkAnySaleCreatePermission();
+
         $form = $this->container->get('form.factory')->createNamed('', AdminAddressCreationType::class);
 
         if ($request->getMethod() === 'POST') {

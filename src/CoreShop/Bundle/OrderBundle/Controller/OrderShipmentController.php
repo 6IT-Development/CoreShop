@@ -47,6 +47,8 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderShipmentController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function getShipAbleItemsAction(Request $request): JsonResponse
     {
         $orderId = $this->getParameterFromRequest($request, 'id');
@@ -55,6 +57,8 @@ class OrderShipmentController extends PimcoreController
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'Order with ID "' . $orderId . '" not found']);
         }
+
+        $this->checkSalePermission($order);
 
         $itemsToReturn = [];
 
@@ -120,6 +124,8 @@ class OrderShipmentController extends PimcoreController
                 return $this->viewHandler->handle(['success' => false, 'message' => "Order with ID '$orderId' not found"]);
             }
 
+            $this->checkSalePermission($order, 'save');
+
             try {
                 // request shipment ready state from order, if it's our first shipment.
                 $workflow = $this->getStateMachineManager()->get($order, 'coreshop_order_shipment');
@@ -159,6 +165,8 @@ class OrderShipmentController extends PimcoreController
             return $this->viewHandler->handle(['success' => false, 'message' => 'invalid shipment']);
         }
 
+        $this->checkDocumentPermission($shipment, 'save');
+
         //apply state machine
         $workflow = $this->getStateMachineManager()->get($shipment, 'coreshop_shipment');
         if (!$workflow->can($shipment, $transition)) {
@@ -176,6 +184,8 @@ class OrderShipmentController extends PimcoreController
         $shipment = $this->getOrderShipmentRepository()->find($shipmentId);
 
         if ($shipment instanceof OrderShipmentInterface) {
+            $this->checkDocumentPermission($shipment);
+
             try {
                 $responseData = $this->getOrderDocumentRenderer()->renderDocumentPdf($shipment);
                 $header = [

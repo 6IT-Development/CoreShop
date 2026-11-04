@@ -47,6 +47,8 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderInvoiceController extends PimcoreController
 {
+    use SalePermissionTrait;
+
     public function getInvoiceAbleItemsAction(Request $request): JsonResponse
     {
         $orderId = $this->getParameterFromRequest($request, 'id');
@@ -55,6 +57,8 @@ class OrderInvoiceController extends PimcoreController
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'Order with ID "' . $orderId . '" not found']);
         }
+
+        $this->checkSalePermission($order);
 
         $itemsToReturn = [];
 
@@ -123,6 +127,8 @@ class OrderInvoiceController extends PimcoreController
                 ]);
             }
 
+            $this->checkSalePermission($order, 'save');
+
             try {
                 // request invoice ready state from order, if it's our first invoice.
                 $workflow = $this->getStateMachineManager()->get($order, 'coreshop_order_invoice');
@@ -163,6 +169,8 @@ class OrderInvoiceController extends PimcoreController
             return $this->viewHandler->handle(['success' => false, 'message' => 'invalid shipment']);
         }
 
+        $this->checkDocumentPermission($invoice, 'save');
+
         //apply state machine
         $workflow = $this->getStateMachineManager()->get($invoice, InvoiceStates::IDENTIFIER);
         if (!$workflow->can($invoice, $transition)) {
@@ -180,6 +188,8 @@ class OrderInvoiceController extends PimcoreController
         $invoice = $this->getOrderInvoiceRepository()->find($invoiceId);
 
         if ($invoice instanceof OrderInvoiceInterface) {
+            $this->checkDocumentPermission($invoice);
+
             try {
                 $responseData = $this->getOrderDocumentRenderer()->renderDocumentPdf($invoice);
                 $header = [

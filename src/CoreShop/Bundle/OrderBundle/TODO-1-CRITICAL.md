@@ -17,6 +17,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Security / admin authorization
 
 ### C-01 — Order admin endpoints have no effective permission check (missing authorization + IDOR) — (dependent)
+- **Status:** fixed — new `Controller/SalePermissionTrait.php`. Every action that loads an order, quote or cart now requires `coreshop_permission_<saleState>_detail` plus the Pimcore object ACL (`view` for reads, `save` for writes); invoices, shipments and payments are checked through their order. `getStates`/`findOrder` require any `*_detail` permission, the folder configuration requires `<saleType>_list`, and order creation (preview, create, customer details) requires `<saleType>_create`. Customer and address creation require any `*_create` permission. `cart_detail` is now enforced, so roles that only had `cart_list` need it to open carts. The 403 exception class is fixed with it (TODO-2 **B-11**).
 - **Where:**
   - Root cause: `ResourceBundle/Controller/PimcoreController.php:45-68`. `isGrantedOr403()` checks only when `getPermission()` is non-empty, and the base returns `''`. In this bundle only `Controller/OrderCreationController.php:332-335` overrides it.
   - No check at all: `Controller/OrderController.php:70-176` (`getStatesAction`, `updateOrderStateAction`), `OrderPaymentController.php:43-141`, `OrderInvoiceController.php:50-197`, `OrderShipmentController.php:50-193`, `OrderCommentController.php:36-100`, `CustomerCreationController.php:40-116`, `AddressCreationController.php:37-92`.

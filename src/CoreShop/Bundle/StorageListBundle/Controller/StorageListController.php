@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\StorageListBundle\Controller;
 
+use CoreShop\Bundle\ResourceBundle\Controller\SafeRedirectTrait;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use CoreShop\Component\StorageList\Context\StorageListContextInterface;
@@ -45,6 +46,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class StorageListController extends AbstractController
 {
+    use SafeRedirectTrait;
+
     public function __construct(
         ContainerInterface $container,
         protected string $identifier,
@@ -85,7 +88,7 @@ class StorageListController extends AbstractController
         $this->denyAccessUnlessGranted($privilege);
         $this->denyAccessUnlessGranted($privilegeAdd);
 
-        $redirect = $this->getParameterFromRequest($request, '_redirect', $this->generateUrl($this->summaryRoute));
+        $redirect = $this->getSafeRedirectTarget($request, $this->getParameterFromRequest($request, '_redirect'), $this->generateUrl($this->summaryRoute));
         $product = $this->productRepository->find($this->getParameterFromRequest($request, 'product'));
         $storageList = $this->context->getStorageList();
 

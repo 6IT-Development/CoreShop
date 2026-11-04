@@ -20,9 +20,9 @@ namespace CoreShop\Bundle\ProductBundle\Form\Type\Rule\Action;
 
 use CoreShop\Bundle\CurrencyBundle\Form\Type\CurrencyChoiceType;
 use CoreShop\Bundle\MoneyBundle\Form\Type\MoneyType;
-use CoreShop\Component\Currency\Model\CurrencyInterface;
+use CoreShop\Bundle\ProductBundle\Form\DataTransformer\CurrencyToIdentifierTransformer;
+use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
@@ -35,6 +35,7 @@ final class PriceConfigurationType extends AbstractType
      */
     public function __construct(
         protected array $validationGroups,
+        private ?RepositoryInterface $currencyRepository = null,
     ) {
     }
 
@@ -55,22 +56,7 @@ final class PriceConfigurationType extends AbstractType
             ])
         ;
 
-        $builder->get('currency')->addModelTransformer(new CallbackTransformer(
-            function (mixed $currency) {
-                if ($currency instanceof CurrencyInterface) {
-                    return $currency->getId();
-                }
-
-                return null;
-            },
-            function (mixed $currency) {
-                if ($currency instanceof CurrencyInterface) {
-                    return $currency->getId();
-                }
-
-                return null;
-            },
-        ));
+        $builder->get('currency')->addModelTransformer(new CurrencyToIdentifierTransformer($this->currencyRepository));
     }
 
     public function getBlockPrefix(): string

@@ -35,6 +35,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - **(dependent)** In `ResourceBundle`, consider making `isGrantedOr403()` deny by default when no permission is configured, and call it from `listAction()` as well.
 
 ### C-02 — `ProductSpecificPriceRules::getDataFromEditmode()` loads rules by the posted ID without checking that they belong to the product: a product editor can move (steal) or overwrite the specific price rules of any other product
+- **Status:** fixed — `getDataFromEditmode()` loads a posted rule ID only with `findOneBy(['id' => …, 'product' => <this product>])`. An ID of another product's rule is treated as a new rule (the `id` is an extra field and is ignored). `save()` skips stored rules (with an ID) whose `product` is set and differs from the saved product, so they are neither moved nor changed. No functional test was added.
 - **Where:** `CoreExtension/ProductSpecificPriceRules.php:306-324` (`find($ruleId)` on an unscoped repository, then `$formData->setProduct($object->getId())`), `:343-375` (`save()` merges and persists the rule with the new product ID). Merge semantics: `ResourceBundle/Doctrine/ORM/EntityMerger.php` (`doMerge()` registers the detached instance as managed with the original data, so the product change becomes an `UPDATE`).
 - **Problem:**
   - Each posted row may contain an `id`. The rule with that ID is loaded from **any** product, bound to the form, and its `product` is overwritten with the ID of the product being saved.

@@ -309,8 +309,13 @@ class ProductSpecificPriceRules extends Data implements
 
                 $storedRule = null;
 
-                if ($ruleId !== null) {
-                    $storedRule = $specificPriceRuleRepository->find($ruleId);
+                // Only rules of this product may be updated. A posted ID of another
+                // product's rule is treated as a new rule instead.
+                if ($ruleId !== null && null !== $object->getId()) {
+                    $storedRule = $specificPriceRuleRepository->findOneBy([
+                        'id' => (int) $ruleId,
+                        'product' => $object->getId(),
+                    ]);
                 }
 
                 $form = $this->getFormFactory()->createNamed('', ProductSpecificPriceRuleType::class, $storedRule);
@@ -353,6 +358,14 @@ class ProductSpecificPriceRules extends Data implements
             if (is_array($existingPriceRules)) {
                 foreach ($existingPriceRules as $price) {
                     if ($price instanceof ProductSpecificPriceRuleInterface) {
+                        // Never move a stored rule of another product to this one.
+                        if (null !== $price->getId() &&
+                            null !== $price->getProduct() &&
+                            (int) $price->getProduct() !== (int) $object->getId()
+                        ) {
+                            continue;
+                        }
+
                         $entityMerger->merge($price);
 
                         $price->setProduct($object->getId());

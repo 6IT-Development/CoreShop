@@ -167,8 +167,8 @@ final class Configuration implements ConfigurationInterface
                         ->useAttributeAsKey('name')
                         ->prototype('scalar')->end()
                     ->end()
-                    ->scalarNode('permissions')
-                        ->cannotBeOverwritten()
+                    ->arrayNode('permissions')
+                        ->scalarPrototype()->cannotBeEmpty()->end()
                         ->defaultValue([
                             'customer_list',
                             'customer_group_list',

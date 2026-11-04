@@ -24,6 +24,6 @@ class CartPriceRuleConditionChoiceType extends RuleConditionChoiceType
 {
     public function getBlockPrefix(): string
     {
-        return 'coreshop_cart_price_rule_action_condition_choice';
+        return 'coreshop_cart_price_rule_condition_choice';
     }
 }

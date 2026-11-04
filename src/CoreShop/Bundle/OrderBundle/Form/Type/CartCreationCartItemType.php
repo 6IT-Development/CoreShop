@@ -111,6 +111,6 @@ final class CartCreationCartItemType extends AbstractResourceType
 
     public function getBlockPrefix(): string
     {
-        return 'coreshop_cart_item';
+        return 'coreshop_cart_creation_cart_item';
     }
 }

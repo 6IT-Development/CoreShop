@@ -223,6 +223,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Tracking
 
 ### B-29 — (reproduced) Tracking sends order totals rounded to whole currency units
+- **Status:** fixed — `OrderExtractor::parseAmount()` returns `float`: `round($amount / $decimalFactor, $decimalPrecision)`, without the second rounding to whole units. Checked: 1999 → `19.99`, 12345 → `123.45`, 49 → `0.49`. The return type of the protected method changes from `int` to `float`, so a subclass that overrides it with `: int` must be updated. `affiliation` still uses it, which is **B-31**.
 - **Where:** `Tracking/Extractor/OrderExtractor.php:63-66` (`parseAmount(): int`, `(int) round(round($amount / $factor, $precision), 0)`).
 - **Problem:** reproduced: 1999 → `20`, 12345 → `123`, 49 → `0`. `total`, `subtotal`, `totalTax`, `shipping` and `discount` are sent to GA4, UA, GTM and Matomo as whole units. Revenue reporting is wrong for every order, and small values become 0. Item prices (`OrderItemExtractor`, `ProductExtractor`) are not rounded, so order totals and item sums no longer match.
 - **Fix:** return `float`: `round($amount / $this->decimalFactor, $this->decimalPrecision)`.

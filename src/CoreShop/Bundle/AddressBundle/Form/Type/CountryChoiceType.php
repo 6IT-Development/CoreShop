@@ -18,9 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\AddressBundle\Form\Type;
 
+use CoreShop\Bundle\ResourceBundle\Form\DataTransformer\CollectionOrArrayToArrayTransformer;
 use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
-use Symfony\Bridge\Doctrine\Form\DataTransformer\CollectionToArrayTransformer;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -37,7 +37,8 @@ final class CountryChoiceType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         if ($options['multiple']) {
-            $builder->addModelTransformer(new CollectionToArrayTransformer());
+            // works for Doctrine Collections and plain arrays (e.g. Pimcore multiselect fields)
+            $builder->addModelTransformer(new CollectionOrArrayToArrayTransformer());
         }
     }
 

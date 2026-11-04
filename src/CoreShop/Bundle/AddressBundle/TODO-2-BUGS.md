@@ -40,6 +40,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** store only scalars (id, ISO code, name), or `cloneVar()`. Make the template use them. Remove the dead data. Related: C-03.
 
 ### B-05 — `CountryChoiceType` with `multiple: true` only works with Doctrine Collections
+- **Status:** fixed — `CountryChoiceType` (`multiple: true`) uses the new `ResourceBundle\Form\DataTransformer\CollectionOrArrayToArrayTransformer`, which accepts a Doctrine `Collection` or a plain array and gives back the same kind (array for an array model, `ArrayCollection` otherwise, as before). The bundle no longer imports `symfony/doctrine-bridge`, so no new dependency is needed; `doctrine/collections` comes with `doctrine/orm`, which ResourceBundle requires. `StoreChoiceType`, `CurrencyChoiceType`, `ProductUnitChoiceType` and `LocaleChoiceType` still use Doctrine's transformer and can switch to the new one.
 - **Where:** `Form/Type/CountryChoiceType.php:23, 37-42`
 - **Problem:** `CollectionToArrayTransformer` throws `TransformationFailedException` when the model value is a plain array, for example a Pimcore `coreShopCountryMultiselect` field or an array property. `symfony/doctrine-bridge` is also not declared in the bundle `composer.json` (see B-17).
 - **Fix:** add the transformer only when the bound data is a `Collection`, or expose an option for it. Declare the dependency.

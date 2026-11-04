@@ -1,6 +1,8 @@
-CoreShop\Component\Order\Model\CartItem:
+CoreShop\Component\Order\Model\OrderItem:
     getters:
         quantity:
-            - NotBlank: { message: coreshop.cart_item.quantity.not_blank, groups: [coreshop] }
-            - Type: { type: numeric, message: coreshop.cart_item.quantity.numeric, groups: [coreshop] }
+            - NotBlank: { message: coreshop.cart_item.quantity.not_blank, groups: [coreshop, coreshop_backend_edit] }
+            - Type: { type: numeric, message: coreshop.cart_item.quantity.numeric, groups: [coreshop, coreshop_backend_edit] }
             - GreaterThan: { value: 0, message: coreshop.cart_item.quantity.min, groups: [coreshop] }
+            # admin order edit allows 0 to remove a line
+            - GreaterThanOrEqual: { value: 0, message: coreshop.cart_item.quantity.min_zero, groups: [coreshop_backend_edit] }

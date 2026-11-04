@@ -1,0 +1,7 @@
+coreshop:
+    cart_item:
+        quantity:
+            not_blank: 'Please enter a quantity.'
+            numeric: 'The quantity must be a number.'
+            min: 'The quantity must be greater than 0.'
+            min_zero: 'The quantity cannot be negative.'

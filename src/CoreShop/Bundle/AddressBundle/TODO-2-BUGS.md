@@ -105,6 +105,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `booleanNode()->defaultFalse()`.
 
 ### B-15 — `resources.*.graphql.enabled` flags have no effect
+- **Status:** fixed — the flags are not fully ignored: `ResourceBundle`'s `DoctrineProvider::initialize()` skips resources (and translations) with `graphql.enabled: false`, so no GraphQL type is built for them. But `data_hub.yml` still registered their field generators, which then returned a `null` field type and broke the DataHub schema of every class with a `coreShopCountry`, `coreShopCountryMultiselect`, `coreShopState` or `coreShopAddressIdentifier` field. `CoreShopAddressExtension` now removes the generators of a resource whose flag is `false` (without a generator DataHub does not offer the field). `zone` still has no flag and no generator; it was never exposed, and adding it would be a new feature rather than a fix.
 - **Where:** `DependencyInjection/Configuration.php:99-104, 120-125, 163-168, 184-189, 209-214`; `Resources/config/services/data_hub.yml`; `DependencyInjection/CoreShopAddressExtension.php:59-61`
 - **Problem:** `data_hub.yml` registers the GraphQL type generators whenever the DataHub bundle is present, regardless of `enabled: false`. Nothing else in the ResourceBundle reads the flag either. `zone` has no flag and no generator, which is inconsistent with the other resources.
 - **Fix:** register each generator only when its flag is true (in the Extension, or in a compiler pass), or remove the flags.

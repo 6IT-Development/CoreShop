@@ -33,6 +33,22 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 final class CoreShopAddressExtension extends AbstractModelExtension
 {
+    /**
+     * The DataHub field type generators in services/data_hub.yml, by resource.
+     */
+    private const DATA_HUB_TYPE_GENERATORS = [
+        'country' => [
+            'coreshop.datahub.graphql.querytypegenerator.resource.country',
+            'coreshop.datahub.graphql.querytypegenerator.resource.country.list',
+        ],
+        'state' => [
+            'coreshop.datahub.graphql.querytypegenerator.resource.state',
+        ],
+        'address_identifier' => [
+            'coreshop.datahub.graphql.querytypegenerator.resource.address_identifier',
+        ],
+    ];
+
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configs = $this->processConfiguration($this->getConfiguration([], $container), $configs);
@@ -58,6 +74,18 @@ final class CoreShopAddressExtension extends AbstractModelExtension
 
         if (array_key_exists('PimcoreDataHubBundle', $bundles)) {
             $loader->load('services/data_hub.yml');
+
+            // DoctrineProvider builds no GraphQL type for a disabled resource,
+            // so its field generators would return a null type and break the schema
+            foreach (self::DATA_HUB_TYPE_GENERATORS as $resource => $generators) {
+                if ($configs['resources'][$resource]['graphql']['enabled']) {
+                    continue;
+                }
+
+                foreach ($generators as $generator) {
+                    $container->removeDefinition($generator);
+                }
+            }
         }
 
         $loader->load('services.yml');

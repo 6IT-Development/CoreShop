@@ -228,15 +228,18 @@ class ProductUnitDefinition extends Data implements
         ];
 
         if ($data instanceof ProductUnitDefinitionInterface) {
+            // The unit is nullable (new or broken definitions): show the definition without it.
+            $unit = $data->getUnit();
+
             $parsedData = [
                 'id' => $data->getId(),
                 'conversationRate' => $data->getConversionRate(),
                 'precision' => $data->getPrecision(),
-                'unitName' => $data->getUnit()->getName(),
-                'fullLabel' => $data->getUnit()->getFullLabel(),
-                'fullPluralLabel' => $data->getUnit()->getFullPluralLabel(),
-                'shortLabel' => $data->getUnit()->getShortLabel(),
-                'shortPluralLabel' => $data->getUnit()->getShortPluralLabel(),
+                'unitName' => $unit?->getName(),
+                'fullLabel' => $unit?->getFullLabel(),
+                'fullPluralLabel' => $unit?->getFullPluralLabel(),
+                'shortLabel' => $unit?->getShortLabel(),
+                'shortPluralLabel' => $unit?->getShortPluralLabel(),
             ];
         }
 

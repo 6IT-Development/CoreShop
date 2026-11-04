@@ -140,6 +140,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## CoreExtension: `coreShopProductUnitDefinition` (single select)
 
 ### B-18 — (plausible) `getDataForEditmode()` crashes on a unit definition without a unit
+- **Status:** fixed — `getDataForEditmode()` reads the unit once and uses `$unit?->…` for the name and the four labels, so a definition without a unit shows its ID, conversion rate and precision with `null` unit fields. `marshalVersion()` (and so the recycle-bin and cache marshalling) goes through the same method, so saving a version of such an object no longer throws either. Checked directly: a unit-less definition gave `Error: Call to a member function getName() on null` before and the expected array after.
 - **Where:** `CoreExtension/ProductUnitDefinition.php:233-240` (`$data->getUnit()->getName()` and four more calls).
 - **Problem:** `ProductUnitDefinitionInterface::getUnit()` is nullable (the model's `getUnitDefinition()` checks it). A definition without a unit (new entity, broken data) makes opening the object fail with `Error: Call to a member function getName() on null`.
 - **Fix:** use `$data->getUnit()?->getName()` (and the same for the labels), or fall back to the empty array.

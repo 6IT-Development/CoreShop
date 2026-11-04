@@ -106,6 +106,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** scope deletion to the rule, check against `CartPriceRuleVoucherCodeInterface`, and implement or disable remote filter and sort.
 
 ### B-13 — `exportVoucherCodesAction` writes the CSV with `header()`/`echo`/`die()`
+- **Status:** fixed — the action returns a `StreamedResponse` (404 for an unknown rule). It writes the BOM and the rows with `fputcsv()`, so commas and quotes are quoted. Cells starting with `=`, `+`, `-`, `@`, tab or CR get a leading `'`. All codes of the rule are exported, read in batches of 500 and detached after writing; the grid's export button no longer sends `start`/`limit`. `Content-Disposition` is built with `HeaderUtils::makeDisposition()` (slashes replaced, ASCII fallback). `used` is now written as `0`/`1` instead of `''`/`1`. The `ini_set()` is gone.
 - **Where:** `Controller/CartPriceRuleController.php:158-203`.
 - **Problem:**
   - It bypasses the kernel: no response listeners, no session save, no profiler, and a `void` return.

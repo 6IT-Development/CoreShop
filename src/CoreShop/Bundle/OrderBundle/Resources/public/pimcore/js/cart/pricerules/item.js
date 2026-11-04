@@ -266,11 +266,7 @@ coreshop.cart.pricerules.item = Class.create(coreshop.rules.item, {
                             xtype: 'button',
                             text: t('coreshop_cart_pricerule_vouchers_export'),
                             handler: function () {
-                                var page = store.currentPage;
-                                var size = store.getPageSize();
-                                var start = (page - 1) * size;
-
-                                pimcore.helpers.download(Routing.generate('coreshop_cart_price_rule_exportVoucherCodes', {start: start, limit: size, cartPriceRule: this.data.id}));
+                                pimcore.helpers.download(Routing.generate('coreshop_cart_price_rule_exportVoucherCodes', {cartPriceRule: this.data.id}));
                             }.bind(this)
                         }
                     ]

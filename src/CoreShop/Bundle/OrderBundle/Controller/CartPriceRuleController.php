@@ -28,8 +28,10 @@ use CoreShop\Component\Order\Repository\CartPriceRuleRepositoryInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherRepositoryInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CartPriceRuleController extends ResourceController
@@ -168,53 +170,59 @@ class CartPriceRuleController extends ResourceController
         return $this->viewHandler->handle(['success' => false, 'message' => implode(\PHP_EOL, $errors)]);
     }
 
-    public function exportVoucherCodesAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): void
+    public function exportVoucherCodesAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): StreamedResponse
     {
         $this->isGrantedOr403();
 
         $id = $this->getParameterFromRequest($request, 'cartPriceRule');
         $priceRule = $this->repository->find($id);
 
-        if ($priceRule instanceof CartPriceRuleInterface) {
-            $fileName = $priceRule->getName() . '_vouchercodes';
-            $csvData = [];
-
-            $csvData[] = implode(',', [
-                'code',
-                'creationDate',
-                'used',
-                'uses',
-            ]);
-
-            $codes = $cartPriceRuleVoucherCodeRepository->findAllPaginator(
-                $priceRule,
-                (int) $this->getParameterFromRequest($request, 'start', 0),
-                (int) $this->getParameterFromRequest($request, 'limit', 50),
-            );
-
-            foreach ($codes as $code) {
-                $data = [
-                    'code' => $code->getCode(),
-                    'creationDate' => $code->getCreationDate() instanceof \DateTime ? $code->getCreationDate()->getTimestamp() : '',
-                    'used' => $code->getUsed(),
-                    'uses' => $code->getUses(),
-                ];
-
-                $csvData[] = implode(',', $data);
-            }
-
-            $csv = implode(\PHP_EOL, $csvData);
-
-            header('Content-Encoding: UTF-8');
-            header('Content-type: text/csv; charset=UTF-8');
-            header("Content-Disposition: attachment; filename=\"$fileName.csv\"");
-            ini_set('display_errors', 'off'); //to prevent warning messages in csv
-            echo "\xEF\xBB\xBF";
-            echo $csv;
-            die();
+        if (!$priceRule instanceof CartPriceRuleInterface) {
+            throw new NotFoundHttpException();
         }
 
-        exit;
+        $response = new StreamedResponse(function () use ($priceRule, $cartPriceRuleVoucherCodeRepository): void {
+            $handle = fopen('php://output', 'wb');
+
+            if ($handle === false) {
+                return;
+            }
+
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['code', 'creationDate', 'used', 'uses'], ',', '"', '');
+
+            $batchSize = 500;
+            $offset = 0;
+
+            do {
+                $codes = iterator_to_array($cartPriceRuleVoucherCodeRepository->findAllPaginator($priceRule, $offset, $batchSize)->getIterator());
+
+                /** @var CartPriceRuleVoucherCodeInterface $code */
+                foreach ($codes as $code) {
+                    fputcsv($handle, [
+                        $this->sanitizeCsvCell((string) $code->getCode()),
+                        $code->getCreationDate() instanceof \DateTimeInterface ? $code->getCreationDate()->getTimestamp() : '',
+                        (int) $code->getUsed(),
+                        (int) $code->getUses(),
+                    ], ',', '"', '');
+
+                    $this->manager->detach($code);
+                }
+
+                flush();
+                $offset += $batchSize;
+            } while (count($codes) === $batchSize);
+
+            fclose($handle);
+        });
+
+        $fileName = str_replace(['/', '\\'], '_', ($priceRule->getName() ?: 'cart_price_rule') . '_vouchercodes.csv');
+        $fallbackFileName = preg_replace('/[^A-Za-z0-9_.-]/', '_', $fileName) ?? 'vouchercodes.csv';
+
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $fileName, $fallbackFileName));
+
+        return $response;
     }
 
     public function deleteVoucherCodeAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): JsonResponse
@@ -238,6 +246,18 @@ class CartPriceRuleController extends ResourceController
         }
 
         return $this->viewHandler->handle(['success' => false]);
+    }
+
+    /**
+     * Prevents spreadsheet applications from evaluating a cell as a formula.
+     */
+    protected function sanitizeCsvCell(string $value): string
+    {
+        if ($value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'" . $value;
+        }
+
+        return $value;
     }
 
     /**

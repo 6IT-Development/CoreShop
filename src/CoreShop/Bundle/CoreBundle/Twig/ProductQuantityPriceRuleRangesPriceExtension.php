@@ -69,7 +69,9 @@ final class ProductQuantityPriceRuleRangesPriceExtension extends AbstractExtensi
 
     protected function getTaxCalculator(PurchasableInterface $product, array $context): ?TaxCalculatorInterface
     {
-        return $this->taxCalculatorFactory->getTaxCalculator($product, $this->getDefaultAddress($context), $context);
+        $address = $this->getDefaultAddress($context);
+
+        return null === $address ? null : $this->taxCalculatorFactory->getTaxCalculator($product, $address, $context);
     }
 
     protected function getDefaultAddress(array $context): ?AddressInterface

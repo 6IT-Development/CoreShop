@@ -58,9 +58,10 @@ final class CartItemProcessor implements CartItemProcessorInterface
         $cart = $context['cart'];
         $store = $context['store'];
 
-        $taxCalculator = $this->taxCalculator->getTaxCalculator(
+        $address = $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart);
+        $taxCalculator = null === $address ? null : $this->taxCalculator->getTaxCalculator(
             $product,
-            $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart),
+            $address,
             $context,
         );
 

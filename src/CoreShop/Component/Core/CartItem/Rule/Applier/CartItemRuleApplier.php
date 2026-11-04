@@ -98,9 +98,10 @@ class CartItemRuleApplier implements CartItemRuleApplierInterface
             $itemDiscountNet = $discount;
         }
 
-        $taxCalculator = $this->taxCalculatorFactory->getTaxCalculator(
+        $address = $order->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($order);
+        $taxCalculator = null === $address ? null : $this->taxCalculatorFactory->getTaxCalculator(
             $orderItem->getProduct(),
-            $order->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($order),
+            $address,
             $context,
         );
 

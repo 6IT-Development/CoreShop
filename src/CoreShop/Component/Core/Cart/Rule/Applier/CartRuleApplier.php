@@ -117,9 +117,10 @@ class CartRuleApplier implements CartRuleApplierInterface
                 continue;
             }
 
-            $taxCalculator = $this->taxCalculatorFactory->getTaxCalculator(
+            $address = $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart);
+            $taxCalculator = null === $address ? null : $this->taxCalculatorFactory->getTaxCalculator(
                 $item->getProduct(),
-                $cart->getShippingAddress() ?: $this->defaultAddressProvider->getAddress($cart),
+                $address,
                 $context,
             );
 

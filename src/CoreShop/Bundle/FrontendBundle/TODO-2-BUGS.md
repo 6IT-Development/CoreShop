@@ -71,6 +71,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** remove `coreshop_payment` from `staticroutes.yml` now, together with the `order` fallback in `PaymentController::prepareCaptureAction()`. Do not "repair" it.
 
 ### B-09 — Password reset is broken when `core_shop_customer.login_identifier` is `username`
+- **Status:** fixed — `passwordResetRequestAction()` reads `$passwordResetData[$resetIdentifier]`, the field `RequestResetPasswordType` actually creates (`email` or `username`). It looks the user up only for a string value, so username installs no longer hit `Undefined array key "email"` and a `TypeError`. The template already renders either field. No functional test was added (the repository has no controller test setup).
 - **Where:** `Controller/RegisterController.php:76-87`: the form is built with `reset_identifier = %coreshop.customer.security.login_identifier%`, but the code reads `$passwordResetData['email']`. (dependent) `UserBundle/Form/Type/RequestResetPasswordType.php` names the field after the identifier (`$builder->add($identifier, …)`).
 - **Problem:** with `login_identifier: username`, the form data has key `username`. The code gets `Undefined array key "email"`, passes `null` to `findByLoginIdentifier(string $value)`, gets a `TypeError`, and returns a 500. No customer can reset a password.
 - **Fix direction:** use `$passwordResetData[$resetIdentifier]`. Add a functional test for both identifier modes.

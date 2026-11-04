@@ -92,7 +92,9 @@ class RegisterController extends FrontendController
 
                 /** @var UserRepositoryInterface $userRepository */
                 $userRepository = $this->container->get('coreshop.repository.user');
-                $user = $userRepository->findByLoginIdentifier($passwordResetData['email']);
+                // the form names its field after the configured login identifier (email or username)
+                $identifierValue = $passwordResetData[$resetIdentifier] ?? null;
+                $user = is_string($identifierValue) ? $userRepository->findByLoginIdentifier($identifierValue) : null;
 
                 // Process the request only if user exists, but always show the same response
                 // to prevent user enumeration (CWE-204)

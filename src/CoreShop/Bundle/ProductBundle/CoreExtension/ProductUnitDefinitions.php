@@ -424,6 +424,11 @@ class ProductUnitDefinitions extends Data implements
             return null;
         }
 
+        // The definitions are stored per product: without one there is nothing to bind them to.
+        if (!$object instanceof ProductInterface) {
+            return null;
+        }
+
         $errors = [];
         $productUnitDefinitionsValues = null;
 

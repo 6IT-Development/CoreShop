@@ -124,6 +124,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** only clone and set the default definition when it is not `null`. Copy the other unit definitions in that case too (today only `getAdditionalUnitDefinitions()` is copied, which is empty without a default).
 
 ### B-16 — (plausible) `getDataFromEditmode()` dereferences a nullable `$object`
+- **Status:** fixed — `getDataFromEditmode()` returns `null` early when `$object` is not a `ProductInterface` (this includes `null`), before the temp entity manager, the repository lookup or `$object->getId()`. Checked with an empty fake container: the new code returns `null` for `$object = null` without touching any service, and the old code went on to fetch the services (it would then have hit `findOneForProduct(null)` / `null->getId()`). Non-product classes get `null` as well, consistent with `save()` and `getDataForEditmode()`, which also skip non-products.
 - **Where:** `CoreExtension/ProductUnitDefinitions.php:405`, `:423` (`findOneForProduct($object)`), `:429` (`$object->getId()`).
 - **Problem:** the signature allows `?Concrete $object = null` (the Pimcore `Data` contract). Any caller that uses it without an object (custom import code, a grid or DataHub integration, a test) gets `Error: Call to a member function getId() on null` instead of `null`. The call paths of the stock admin always pass the object; this was not traced for every Pimcore entry point.
 - **Fix:** return `null` early when `!$object instanceof ProductInterface`.

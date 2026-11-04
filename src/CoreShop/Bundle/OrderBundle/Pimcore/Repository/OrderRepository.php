@@ -132,23 +132,9 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
         return $list->getObjects();
     }
 
-    public function findExpiredCarts(int $days, bool $anonymous, bool $customer): array
+    public function findExpiredCarts(int $days, bool $anonymous, bool $customer, int $afterId = 0, ?int $limit = null): array
     {
-        $list = $this->getList();
-
-        $conditions = [];
         $groupCondition = [];
-        $params = [];
-
-        $daysTimestamp = Carbon::now();
-        $daysTimestamp->subDays($days);
-
-        $conditions[] = 'creationDate < ?';
-        $params[] = $daysTimestamp->getTimestamp();
-
-        //Never delete carts with a order
-        $conditions[] = 'saleState = ?';
-        $params[] = OrderSaleStates::STATE_CART;
 
         if (true === $anonymous) {
             $groupCondition[] = 'customer__id IS NULL';
@@ -158,18 +144,40 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
             $groupCondition[] = 'customer__id IS NOT NULL';
         }
 
-        $bind = ' AND ';
-        $groupBind = ' OR ';
-
-        $sql = implode($bind, $conditions);
-
-        if (count($groupCondition) > 1) {
-            $groupBind = ' OR ';
+        if (count($groupCondition) === 0) {
+            return [];
         }
 
-        $sql .= ' AND (' . implode($groupBind, $groupCondition) . ') ';
+        $list = $this->getList();
 
-        $list->setCondition($sql, $params);
+        $conditions = [];
+        $params = [];
+
+        $daysTimestamp = Carbon::now();
+        $daysTimestamp->subDays($days);
+
+        // The age counts from the last change, so a long-lived cart that is still in use is kept.
+        $conditions[] = 'modificationDate < ?';
+        $params[] = $daysTimestamp->getTimestamp();
+
+        //Never delete carts with a order
+        $conditions[] = 'saleState = ?';
+        $params[] = OrderSaleStates::STATE_CART;
+
+        if ($afterId > 0) {
+            $conditions[] = 'id > ?';
+            $params[] = $afterId;
+        }
+
+        $conditions[] = '(' . implode(' OR ', $groupCondition) . ')';
+
+        $list->setCondition(implode(' AND ', $conditions), $params);
+        $list->setOrderKey('id');
+        $list->setOrder('ASC');
+
+        if ($limit !== null) {
+            $list->setLimit($limit);
+        }
 
         /**
          * @var OrderInterface[] $result

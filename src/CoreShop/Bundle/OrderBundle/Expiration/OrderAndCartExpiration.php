@@ -30,7 +30,8 @@ final class OrderAndCartExpiration implements StorageListExpirationInterface
 
     public function expire(int $days, array $params = []): void
     {
-        $this->orderExpiration->expire($params['order']['days'], $params['order']['params'] ?? []);
-        $this->cartExpiration->expire($params['cart']['days'], $params['cart']['params'] ?? []);
+        // params is a variableNode, so a partial project override can leave any of these null.
+        $this->orderExpiration->expire((int) ($params['order']['days'] ?? 0), (array) ($params['order']['params'] ?? []));
+        $this->cartExpiration->expire((int) ($params['cart']['days'] ?? 0), (array) ($params['cart']['params'] ?? []));
     }
 }

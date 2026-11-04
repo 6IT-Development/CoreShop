@@ -35,7 +35,12 @@ interface OrderRepositoryInterface extends PimcoreRepositoryInterface, CustomerA
 
     public function findLatestCartByStoreAndCustomer(StoreInterface $store, CustomerInterface $customer): ?OrderInterface;
 
-    public function findExpiredCarts(int $days, bool $anonymous, bool $customer): array;
+    /**
+     * Pass $limit to load the carts in batches by ascending id, starting after $afterId.
+     *
+     * @return OrderInterface[]
+     */
+    public function findExpiredCarts(int $days, bool $anonymous, bool $customer, int $afterId = 0, ?int $limit = null): array;
 
     public function findByCustomer(CustomerInterface $customer): array;
 

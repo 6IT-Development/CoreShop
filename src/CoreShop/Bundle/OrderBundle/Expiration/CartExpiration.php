@@ -23,6 +23,8 @@ use CoreShop\Component\StorageList\Expiration\StorageListExpirationInterface;
 
 final class CartExpiration implements StorageListExpirationInterface
 {
+    private const BATCH_SIZE = 100;
+
     public function __construct(
         private OrderRepositoryInterface $cartRepository,
     ) {
@@ -34,10 +36,22 @@ final class CartExpiration implements StorageListExpirationInterface
             return;
         }
 
-        $carts = $this->cartRepository->findExpiredCarts($days, $params['anonymous'], $params['customer']);
+        // A partial config override can leave these null; fall back to the bundle defaults.
+        $anonymous = (bool) ($params['anonymous'] ?? true);
+        $customer = (bool) ($params['customer'] ?? false);
 
-        foreach ($carts as $cart) {
-            $cart->delete();
-        }
+        $afterId = 0;
+
+        do {
+            $carts = $this->cartRepository->findExpiredCarts($days, $anonymous, $customer, $afterId, self::BATCH_SIZE);
+
+            foreach ($carts as $cart) {
+                $afterId = max($afterId, (int) $cart->getId());
+
+                $cart->delete();
+            }
+
+            \Pimcore::collectGarbage();
+        } while (count($carts) === self::BATCH_SIZE);
     }
 }

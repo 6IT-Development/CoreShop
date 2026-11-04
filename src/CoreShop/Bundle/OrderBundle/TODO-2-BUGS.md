@@ -141,6 +141,11 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** write the note only when `can()` is true or the transition was applied, drop `initialized` from the condition (see TODO-1 **C-08**), and page the listing.
 
 ### B-18 — Cart expiration: active carts deleted, `--user` does the opposite, and some inputs crash
+- **Status:** fixed —
+  - `findExpiredCarts()` measures the age by `modificationDate` (saving the cart, including the `lastActivatedAt` stamp, updates it). It returns `[]` when neither group is selected instead of building `AND ()`; the dead `$groupBind` code is gone.
+  - `coreshop:cart:expire`: `--user` and `--anonymous` replace the configured groups (`--user` → `customer=true, anonymous=false`, `--anonymous` the reverse, both → both). The `days` shortcut is removed from both expire commands (`--days` still works).
+  - `CartExpiration` defaults `anonymous`/`customer` to `true`/`false` (the bundle config) when null; `OrderAndCartExpiration` and the commands cast `days` to int and `params` to array with `??` defaults.
+  - Carts are deleted in batches of 100 by id: `findExpiredCarts()` takes optional `$afterId` and `$limit` (custom implementations must add them).
 - **Where:** `Pimcore/Repository/OrderRepository.php:131-168`; `Expiration/CartExpiration.php:37`; `Expiration/OrderAndCartExpiration.php:31-35`; `Command/CartExpireCommand.php:47-76`.
 - **Problem:**
   - Age is measured by `creationDate`. When customer carts are enabled, a cart created long ago but edited yesterday is deleted.

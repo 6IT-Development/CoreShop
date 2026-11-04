@@ -40,7 +40,7 @@ final class CartExpireCommand extends Command
             ->setDescription('Expire abandoned Carts')
             ->addOption(
                 'days',
-                'days',
+                null,
                 InputOption::VALUE_OPTIONAL,
                 'Older than',
             )
@@ -48,31 +48,30 @@ final class CartExpireCommand extends Command
                 'anonymous',
                 'a',
                 InputOption::VALUE_NONE,
-                'Delete only anonymous carts',
+                'Delete anonymous carts (combine with --user for both)',
             )
             ->addOption(
                 'user',
                 'u',
                 InputOption::VALUE_NONE,
-                'Delete only user carts',
+                'Delete customer carts (combine with --anonymous for both)',
             )
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $days = $this->params['cart']['days'] ?? 0;
-        $params = $this->params['cart']['params'] ?? [];
+        $days = (int) ($this->params['cart']['days'] ?? 0);
+        $params = (array) ($this->params['cart']['params'] ?? []);
 
         if ($input->getOption('days')) {
             $days = (int) $input->getOption('days');
         }
 
-        if ($input->getOption('anonymous')) {
-            $params['anonymous'] = true;
-        }
-        if ($input->getOption('user')) {
-            $params['user'] = true;
+        // Either flag replaces the configured groups; both together select both.
+        if ($input->getOption('anonymous') || $input->getOption('user')) {
+            $params['anonymous'] = (bool) $input->getOption('anonymous');
+            $params['customer'] = (bool) $input->getOption('user');
         }
 
         $output->writeln('Running cart expire job, this could take some time.');

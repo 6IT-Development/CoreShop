@@ -40,7 +40,7 @@ final class OrderExpireCommand extends Command
             ->setDescription('Expire abandoned orders')
             ->addOption(
                 'days',
-                'days',
+                null,
                 InputOption::VALUE_OPTIONAL,
                 'Older than',
             )
@@ -49,7 +49,7 @@ final class OrderExpireCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $days = $this->params['order']['days'] ?? 0;
+        $days = (int) ($this->params['order']['days'] ?? 0);
 
         if ($input->getOption('days')) {
             $days = (int) $input->getOption('days');

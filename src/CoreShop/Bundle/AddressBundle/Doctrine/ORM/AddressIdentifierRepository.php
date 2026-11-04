@@ -29,6 +29,9 @@ class AddressIdentifierRepository extends EntityRepository implements AddressIde
         return $this->createQueryBuilder('o')
             ->andWhere('o.name = :name')
             ->setParameter('name', $name)
+            // name is unique since Version20261104150000; stay deterministic on older data
+            ->orderBy('o.id', 'ASC')
+            ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult()
         ;

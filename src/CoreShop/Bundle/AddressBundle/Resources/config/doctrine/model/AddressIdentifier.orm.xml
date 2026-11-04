@@ -4,6 +4,10 @@
                   xmlns:gedmo="http://gediminasm.org/schemas/orm/doctrine-extensions-mapping">
 
     <mapped-superclass name="CoreShop\Component\Address\Model\AddressIdentifier" table="coreshop_address_identifier">
+        <unique-constraints>
+            <unique-constraint name="coreshop_address_identifier_name" columns="name" />
+        </unique-constraints>
+
         <id name="id" column="id" type="integer">
             <generator strategy="AUTO" />
         </id>

@@ -82,6 +82,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add a unique constraint, make the column `NOT NULL`, and add `UniqueEntity` (B-08). Write a migration.
 
 ### B-10 — `AddressIdentifierRepository::findByName()` can throw `NonUniqueResultException`
+- **Status:** fixed — `AddressIdentifier.orm.xml` declares the unique constraint `coreshop_address_identifier_name` on `name`, added by `CoreBundle/Migrations/Version20261104150000`. The migration **aborts with the duplicate names** if there are any, so they can be cleaned up first. `findByName()` orders by id and uses `setMaxResults(1)`, so it no longer throws `NonUniqueResultException`. `UniqueEntity` came with B-08.
 - **Where:** `Doctrine/ORM/AddressIdentifierRepository.php:27-35`; `Resources/config/doctrine/model/AddressIdentifier.orm.xml:12`
 - **Problem:** `name` is not unique, but `getOneOrNullResult()` is used.
 - **Fix:** add a unique constraint and `UniqueEntity` (B-08). Write a migration.

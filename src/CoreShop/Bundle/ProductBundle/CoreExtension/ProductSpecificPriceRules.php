@@ -145,6 +145,21 @@ class ProductSpecificPriceRules extends Data implements
             $property->setAccessible(true);
             $property->setValue($newPriceRule, new ArrayCollection());
 
+            // The clone must own its translations: sharing the source rule's collection
+            // (and the translation entities, which point back to the source rule) means
+            // no labels are persisted for the copy.
+            $property = $reflectionClass->getProperty('translations');
+            $property->setAccessible(true);
+            $property->setValue($newPriceRule, new ArrayCollection());
+
+            $property = $reflectionClass->getProperty('translationsCache');
+            $property->setAccessible(true);
+            $property->setValue($newPriceRule, []);
+
+            $property = $reflectionClass->getProperty('currentTranslation');
+            $property->setAccessible(true);
+            $property->setValue($newPriceRule, null);
+
             foreach ($priceRule->getConditions() as $condition) {
                 $newCondition = clone $condition;
 
@@ -165,6 +180,21 @@ class ProductSpecificPriceRules extends Data implements
                 $property->setValue($newAction, null);
 
                 $newPriceRule->addAction($newAction);
+            }
+
+            foreach ($priceRule->getTranslations() as $translation) {
+                $newTranslation = clone $translation;
+
+                $reflectionClass = new \ReflectionClass($newTranslation);
+                $property = $reflectionClass->getProperty('id');
+                $property->setAccessible(true);
+                $property->setValue($newTranslation, null);
+
+                $property = $reflectionClass->getProperty('translatable');
+                $property->setAccessible(true);
+                $property->setValue($newTranslation, null);
+
+                $newTranslation->setTranslatable($newPriceRule);
             }
 
             $newPriceRules[] = $newPriceRule;

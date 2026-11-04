@@ -12,6 +12,12 @@ services:
         tags:
             -  { name: form.type }
 
+    CoreShop\Bundle\CurrencyBundle\Form\Type\CurrencyIdChoiceType:
+        arguments:
+            - '@coreshop.repository.currency'
+        tags:
+            -  { name: form.type }
+
     CoreShop\Bundle\CurrencyBundle\Form\Type\CurrencyType:
         arguments:
             - '%coreshop.model.currency.class%'

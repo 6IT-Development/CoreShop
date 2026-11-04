@@ -63,18 +63,31 @@ abstract class OrderItem extends BaseOrderItem implements OrderItemInterface
             return false;
         }
 
-        if (!$this->hasUnitDefinition()) {
-            return $coreEquals;
-        }
-
         if (!$storageListItem instanceof OrderItemInterface) {
             return $coreEquals;
         }
 
-        if (!$storageListItem->hasUnitDefinition()) {
+        // a line with a unit and a line without one are different lines
+        if ($this->hasUnitDefinition() !== $storageListItem->hasUnitDefinition()) {
+            return false;
+        }
+
+        if (!$this->hasUnitDefinition()) {
             return $coreEquals;
         }
 
-        return $storageListItem->getUnitDefinition()->getId() === $this->getUnitDefinition()->getId();
+        $unitDefinition = $this->getUnitDefinition();
+        $otherUnitDefinition = $storageListItem->getUnitDefinition();
+
+        if ($unitDefinition === $otherUnitDefinition) {
+            return true;
+        }
+
+        // unsaved unit definitions can only be compared by identity
+        if (null === $unitDefinition->getId() || null === $otherUnitDefinition->getId()) {
+            return false;
+        }
+
+        return $otherUnitDefinition->getId() === $unitDefinition->getId();
     }
 }

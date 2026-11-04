@@ -315,6 +315,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** when the currency changes, call `$this->currency?->removeCountry($this)` before assigning, with a recursion guard (`Currency::removeCountry()` calls `setCurrency(null)`).
 
 ### B-43 — (plausible) `OrderItem::equals()` merges cart lines with and without a unit definition
+- **Status:** fixed — `OrderItem::equals()` returns `false` when only one of the two items has a unit definition, so adding a product "per box" next to a line without a unit creates a new line. Two unit definitions are equal when they are the same object or have the same id; an unsaved one (id `null`) only matches itself, instead of `null === null` matching any other unsaved unit. Items that are not a Core `OrderItemInterface` still use the parent result.
 - **Where:** `Model/OrderItem.php:58-79`.
 - **Problem:** when the product matches and only one side has a unit definition, the method returns the parent result (`true`). Adding a product "per box" to a cart that already has a line for it without a unit increases that line's quantity instead of creating a new line. The quantity is then read in the wrong unit, which gives the wrong price per unit and the wrong `defaultUnitQuantity`.
 - **Fix:** treat "has a unit" and "has no unit" as different lines, and compare unsaved unit definitions by identity.

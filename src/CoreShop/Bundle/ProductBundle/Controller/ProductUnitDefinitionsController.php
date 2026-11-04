@@ -34,40 +34,45 @@ class ProductUnitDefinitionsController extends ResourceController
 {
     public function productUnitDefinitionsListAction(Request $request, StackRepositoryInterface $coreshopProductStackRepository): Response
     {
-        $definitions = [];
+        $product = $this->findViewableProduct($request, $coreshopProductStackRepository);
 
-        /** @var ProductInterface $product */
-        $product = $coreshopProductStackRepository->find($this->getParameterFromRequest($request, 'productId'));
-
-        if ($product instanceof ProductInterface) {
-            $this->denyAccessUnlessProductViewable($product);
-
-            $definitions = $this->getUnitDefinitionsForProduct($product, 'all');
+        if (null === $product) {
+            return $this->viewHandler->handle([]);
         }
 
-        return $this->viewHandler->handle($definitions);
+        return $this->viewHandler->handle($this->getUnitDefinitionsForProduct($product, 'all'));
     }
 
     public function productAdditionalUnitDefinitionsListAction(Request $request, StackRepositoryInterface $coreshopProductStackRepository): Response
     {
-        $definitions = [];
+        $product = $this->findViewableProduct($request, $coreshopProductStackRepository);
 
-        /** @var ProductInterface $product */
+        if (null === $product) {
+            return $this->viewHandler->handle([]);
+        }
+
+        return $this->viewHandler->handle($this->getUnitDefinitionsForProduct($product, 'additional'));
+    }
+
+    /**
+     * Both endpoints feed panels of the object editor, which edits the latest version
+     * of the object. They must read the same state, so both use the latest version.
+     */
+    protected function findViewableProduct(Request $request, StackRepositoryInterface $coreshopProductStackRepository): ?ProductInterface
+    {
         $product = $coreshopProductStackRepository->find($this->getParameterFromRequest($request, 'productId'));
 
-        if ($product instanceof ProductInterface) {
-            $this->denyAccessUnlessProductViewable($product);
+        if (!$product instanceof ProductInterface) {
+            return null;
         }
+
+        $this->denyAccessUnlessProductViewable($product);
 
         if ($product instanceof Concrete) {
             $product = VersionHelper::getLatestVersion($product);
         }
 
-        if ($product instanceof ProductInterface) {
-            $definitions = $this->getUnitDefinitionsForProduct($product, 'additional');
-        }
-
-        return $this->viewHandler->handle($definitions);
+        return $product instanceof ProductInterface ? $product : null;
     }
 
     protected function denyAccessUnlessProductViewable(ProductInterface $product): void

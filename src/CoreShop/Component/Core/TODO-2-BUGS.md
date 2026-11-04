@@ -87,6 +87,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** filter out inactive rates and groups (or, if `active` is meant to be UI-only, document that and remove it). Order deterministically: most specific first (state, then country, then wildcard), then by id.
 
 ### B-12 — `CachedTaxCalculatorFactory` keeps stale tax rates and grows without limit in long-running processes
+- **Status:** fixed — `CachedTaxCalculatorFactory` implements `ResetInterface` and is tagged `kernel.reset`, so the cache is emptied between requests and Messenger messages, and a rate changed in the admin is used by the next request. The context resources stay in the cache key: the default inner factory ignores them, but a decorating factory may use them, and within one request they do not change, so the key no longer grows across visitors.
 - **Where:** `Taxation/CachedTaxCalculatorFactory.php:30-63`; wiring `CoreBundle/Resources/config/services/taxation.yml:13-16` (no `kernel.reset`).
 - **Problem:** the cache is never reset. Its key includes every `ResourceInterface` in the context (cart, customer, store and so on), so Messenger and FrankenPHP/RoadRunner workers add one entry per cart. The cached calculators hold `TaxRate` entities, so a rate changed in the admin is not used until the worker restarts.
 - **Fix:** implement `ResetInterface` and clear `$this->cache` in `reset()`. Build the key only from inputs that affect the result (rule-group id, country, state).

@@ -24,8 +24,9 @@ use CoreShop\Component\Address\Model\StateInterface;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Taxation\Calculator\TaxCalculatorInterface;
 use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-class CachedTaxCalculatorFactory implements TaxCalculatorFactoryInterface
+class CachedTaxCalculatorFactory implements TaxCalculatorFactoryInterface, ResetInterface
 {
     private array $cache = [];
 
@@ -61,5 +62,10 @@ class CachedTaxCalculatorFactory implements TaxCalculatorFactoryInterface
         }
 
         return $this->cache[$cacheIdentifier];
+    }
+
+    public function reset(): void
+    {
+        $this->cache = [];
     }
 }

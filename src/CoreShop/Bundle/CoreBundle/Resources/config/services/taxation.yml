@@ -14,6 +14,8 @@ services:
         decorates: CoreShop\Component\Core\Taxation\TaxCalculatorFactoryInterface
         arguments:
             - '@CoreShop\Component\Core\Taxation\CachedTaxCalculatorFactory.inner'
+        tags:
+            - { name: kernel.reset, method: reset }
 
 
     CoreShop\Component\Core\Taxation\TaxationDisplayProviderInterface: '@CoreShop\Component\Core\Taxation\DefaultTaxationDisplayProvider'

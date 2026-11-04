@@ -38,13 +38,14 @@ use CoreShop\Component\Pimcore\DataObject\DataLoader;
 use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Store\Model\StoreInterface;
+use Pimcore\Db;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Security\User\TokenStorageUserResolver;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderCreationController extends PimcoreController
@@ -114,6 +115,7 @@ class OrderCreationController extends PimcoreController
         CartManagerInterface $cartManager,
         ErrorSerializer $errorSerializer,
         StateMachineManagerInterface $manager,
+        LoggerInterface $logger,
     ): Response {
         $type = $this->getParameterFromRequest($request, 'saleType', OrderSaleTransitions::TRANSITION_CART);
 
@@ -147,25 +149,50 @@ class OrderCreationController extends PimcoreController
             $cart = $handledForm->getData();
             $cart->setCreationDate(time());
 
-            $cartManager->persistCart($cart);
+            // The cart is only kept when the sale transition succeeds.
+            $db = Db::get();
+            $db->beginTransaction();
 
-            $workflow = $manager->get($cart, OrderSaleTransitions::IDENTIFIER);
-            $orderWorkflow = $manager->get($cart, OrderTransitions::IDENTIFIER);
+            try {
+                $cartManager->persistCart($cart);
 
-            if (!$workflow->can($cart, $type)) {
-                throw new HttpException(500);
-            }
+                $workflow = $manager->get($cart, OrderSaleTransitions::IDENTIFIER);
+                $orderWorkflow = $manager->get($cart, OrderTransitions::IDENTIFIER);
 
-            InheritanceHelper::useInheritedValues(static function () use ($workflow, $cart, $type, $cartManager, $orderWorkflow) {
-                $workflow->apply($cart, $type);
+                if (!$workflow->can($cart, $type)) {
+                    $db->rollBack();
 
-                if ($type === OrderSaleTransitions::TRANSITION_ORDER) {
-                    //confirm order
-                    $orderWorkflow->apply($cart, OrderTransitions::TRANSITION_CONFIRM);
+                    return $this->viewHandler->handle([
+                        'success' => false,
+                        'message' => sprintf('The %s cannot be created from this cart.', $type),
+                    ]);
                 }
 
-                $cartManager->persistCart($cart);
-            });
+                InheritanceHelper::useInheritedValues(static function () use ($workflow, $cart, $type, $cartManager, $orderWorkflow) {
+                    $workflow->apply($cart, $type);
+
+                    if ($type === OrderSaleTransitions::TRANSITION_ORDER) {
+                        //confirm order
+                        $orderWorkflow->apply($cart, OrderTransitions::TRANSITION_CONFIRM);
+                    }
+
+                    $cartManager->persistCart($cart);
+                });
+
+                $db->commit();
+            } catch (\Throwable $ex) {
+                if ($db->isTransactionActive()) {
+                    $db->rollBack();
+                }
+
+                $logger->error('CoreShop: creating the {saleType} in the admin failed: {message}', [
+                    'saleType' => $type,
+                    'message' => $ex->getMessage(),
+                    'exception' => $ex,
+                ]);
+
+                return $this->viewHandler->handle(['success' => false, 'message' => sprintf('The %s could not be created.', $type)]);
+            }
 
             return $this->viewHandler->handle([
                 'success' => true,

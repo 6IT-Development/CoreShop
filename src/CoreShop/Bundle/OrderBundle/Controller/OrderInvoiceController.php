@@ -36,6 +36,8 @@ use CoreShop\Component\Order\Transformer\OrderDocumentTransformerInterface;
 use CoreShop\Component\Pimcore\DataObject\NoteServiceInterface;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Factory\PimcoreFactoryInterface;
+use Pimcore\Db;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -99,7 +101,7 @@ class OrderInvoiceController extends PimcoreController
         return $this->viewHandler->handle(['success' => true, 'items' => $itemsToReturn]);
     }
 
-    public function createInvoiceAction(Request $request): JsonResponse
+    public function createInvoiceAction(Request $request, LoggerInterface $logger): JsonResponse
     {
         $orderId = $this->getParameterFromRequest($request, 'id');
 
@@ -136,6 +138,11 @@ class OrderInvoiceController extends PimcoreController
                 return $this->viewHandler->handle(['success' => false, 'message' => $itemsError]);
             }
 
+            // The state transition and the document are stored together: the transformer saves the
+            // document before its items, so a failure must not leave a half-built document behind.
+            $db = Db::get();
+            $db->beginTransaction();
+
             try {
                 // request invoice ready state from order, if it's our first invoice.
                 $workflow = $this->getStateMachineManager()->get($order, 'coreshop_order_invoice');
@@ -157,10 +164,22 @@ class OrderInvoiceController extends PimcoreController
                 $items = $resource['items'];
                 $invoice = $this->getOrderToInvoiceTransformer()->transform($order, $invoice, $items);
 
-                return $this->viewHandler->handle(['success' => true, 'invoiceId' => $invoice->getId()]);
-            } catch (\Exception $ex) {
-                return $this->viewHandler->handle(['success' => false, 'message' => $ex->getMessage()]);
+                $db->commit();
+            } catch (\Throwable $ex) {
+                if ($db->isTransactionActive()) {
+                    $db->rollBack();
+                }
+
+                $logger->error('CoreShop: creating the invoice for order {orderId} failed: {message}', [
+                    'orderId' => $order->getId(),
+                    'message' => $ex->getMessage(),
+                    'exception' => $ex,
+                ]);
+
+                return $this->viewHandler->handle(['success' => false, 'message' => 'The invoice could not be created.']);
             }
+
+            return $this->viewHandler->handle(['success' => true, 'invoiceId' => $invoice->getId()]);
         }
 
         return $this->viewHandler->handle(['success' => false, 'message' => 'Method not supported, use POST']);

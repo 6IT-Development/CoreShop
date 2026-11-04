@@ -36,6 +36,8 @@ use CoreShop\Component\Order\Transformer\OrderDocumentTransformerInterface;
 use CoreShop\Component\Order\Transformer\OrderToShipmentTransformer;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
+use Pimcore\Db;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -99,7 +101,7 @@ class OrderShipmentController extends PimcoreController
         return $this->viewHandler->handle(['success' => true, 'items' => $itemsToReturn]);
     }
 
-    public function createShipmentAction(Request $request): JsonResponse
+    public function createShipmentAction(Request $request, LoggerInterface $logger): JsonResponse
     {
         $orderId = $this->getParameterFromRequest($request, 'id');
 
@@ -133,6 +135,11 @@ class OrderShipmentController extends PimcoreController
                 return $this->viewHandler->handle(['success' => false, 'message' => $itemsError]);
             }
 
+            // The state transition and the document are stored together: the transformer saves the
+            // document before its items, so a failure must not leave a half-built document behind.
+            $db = Db::get();
+            $db->beginTransaction();
+
             try {
                 // request shipment ready state from order, if it's our first shipment.
                 $workflow = $this->getStateMachineManager()->get($order, 'coreshop_order_shipment');
@@ -154,10 +161,22 @@ class OrderShipmentController extends PimcoreController
                 $items = $resource['items'];
                 $shipment = $this->getOrderToShipmentTransformer()->transform($order, $shipment, $items);
 
-                return $this->viewHandler->handle(['success' => true, 'shipmentId' => $shipment->getId()]);
-            } catch (\Exception $ex) {
-                return $this->viewHandler->handle(['success' => false, 'message' => $ex->getMessage()]);
+                $db->commit();
+            } catch (\Throwable $ex) {
+                if ($db->isTransactionActive()) {
+                    $db->rollBack();
+                }
+
+                $logger->error('CoreShop: creating the shipment for order {orderId} failed: {message}', [
+                    'orderId' => $order->getId(),
+                    'message' => $ex->getMessage(),
+                    'exception' => $ex,
+                ]);
+
+                return $this->viewHandler->handle(['success' => false, 'message' => 'The shipment could not be created.']);
             }
+
+            return $this->viewHandler->handle(['success' => true, 'shipmentId' => $shipment->getId()]);
         }
 
         return $this->viewHandler->handle(['success' => false, 'message' => 'Method not supported, use POST']);

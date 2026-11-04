@@ -150,6 +150,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** compare `$condition->getType()` in the listener. Use one tag scheme for all checkers (for example `cs_<ruletype>_rule_variant_<id>`) and clear exactly that.
 
 ### B-20 — `StoresChecker` never matches `user` notification rules
+- **Status:** fixed — when the subject gives no store (the customer of a `user` rule), `StoresChecker` compares `$params['store_id']`, which `CustomerListener::prepareCustomerParameters()` passes, with the configured stores. The configured list defaults to `[]`.
 - **Where:** `Notification/Rule/Condition/StoresChecker.php:30-50`; wiring `CoreBundle/Resources/config/services/notification.yml:191` (`notification-type: user`).
 - **Problem:** the subject of `user` rules is a `CustomerInterface`, which is not `StoreAwareInterface`, `OrderDocumentInterface` or `PaymentInterface`. `$store` therefore stays `null`, and the condition is always `false`. `CustomerListener::prepareCustomerParameters()` passes `store_id` in `$params`, but the checker ignores `$params`. A "registration mail for store X only" rule never fires, and nothing reports an error.
 - **Fix:** fall back to `$params['store_id']` and compare it directly.

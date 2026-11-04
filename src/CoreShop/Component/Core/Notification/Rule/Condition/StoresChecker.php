@@ -44,7 +44,12 @@ class StoresChecker extends AbstractConditionChecker
         }
 
         if ($store instanceof StoreInterface) {
-            return in_array($store->getId(), $configuration['stores']);
+            return in_array($store->getId(), $configuration['stores'] ?? []);
+        }
+
+        // The subject of user rules is the customer, which has no store; the listener passes the store id instead
+        if (isset($params['store_id'])) {
+            return in_array($params['store_id'], $configuration['stores'] ?? []);
         }
 
         return false;

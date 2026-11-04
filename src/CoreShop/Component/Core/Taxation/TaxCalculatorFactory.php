@@ -23,6 +23,7 @@ use CoreShop\Component\Core\Model\TaxRuleInterface;
 use CoreShop\Component\Core\Repository\TaxRuleRepositoryInterface;
 use CoreShop\Component\Taxation\Calculator\TaxCalculatorInterface;
 use CoreShop\Component\Taxation\Calculator\TaxRulesTaxCalculator;
+use CoreShop\Component\Taxation\Model\TaxRateInterface;
 use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
 
 class TaxCalculatorFactory implements TaxCalculatorFactoryInterface
@@ -37,6 +38,11 @@ class TaxCalculatorFactory implements TaxCalculatorFactoryInterface
         AddressInterface $address,
         array $context = [],
     ): TaxCalculatorInterface {
+        // A deactivated tax rule group charges no tax
+        if (!$taxRuleGroup->getActive()) {
+            return new TaxRulesTaxCalculator([], TaxRulesTaxCalculator::COMBINE_METHOD);
+        }
+
         $taxRules = $this->taxRuleRepository->findForCountryAndState(
             $taxRuleGroup,
             $address->getCountry(),
@@ -61,6 +67,11 @@ class TaxCalculatorFactory implements TaxCalculatorFactoryInterface
 
         foreach ($taxRules as $taxRule) {
             $taxRate = $taxRule->getTaxRate();
+
+            // A rule with a deactivated tax rate is skipped completely, including its behaviour
+            if (!$taxRate instanceof TaxRateInterface || !$taxRate->getActive()) {
+                continue;
+            }
 
             $taxRates[] = $taxRate;
 

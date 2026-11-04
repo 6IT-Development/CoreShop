@@ -113,6 +113,7 @@ final class TaxRuleGroupContext implements Context
          */
         $taxRule = $this->taxRuleGroupFactory->createNew();
         $taxRule->setName($name);
+        $taxRule->setActive(true);
 
         $this->saveTaxRuleGroup($taxRule);
     }

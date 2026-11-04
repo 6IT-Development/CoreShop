@@ -59,6 +59,7 @@ final class TaxRateContext implements Context
         $taxRate = $this->taxRateFactory->createNew();
         $taxRate->setName($name, 'en');
         $taxRate->setRate($rate);
+        $taxRate->setActive(true);
 
         $this->saveTaxRate($taxRate);
     }

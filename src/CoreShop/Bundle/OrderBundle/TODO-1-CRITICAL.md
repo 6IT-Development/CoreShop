@@ -49,6 +49,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 - **Fix:** call `$this->isGrantedOr403()` first in every custom action, and add a 403 functional test.
 
 ### C-03 — State-changing admin routes accept GET, so Pimcore's CSRF check is skipped
+- **Status:** fixed — every write route in `Resources/config/pimcore/routing.yml` (state transitions, payment add, invoice/shipment create, comments add/delete, order creation and preview, `order-edit/*`, customer/address create) is `methods: POST`, so Pimcore's CSRF listener now checks them. Read routes are `[GET, POST]` (Ext.Ajax with `params` posts), the PDF render routes `GET`. Parameters are still read through `getParameterFromRequest()`; with POST-only routes a cross-site request can no longer pass the CSRF check, so body-only input was not added.
 - **Where:**
   - `Resources/config/pimcore/routing.yml`: `:61` `update_order_state`, `:87` `payment_add`, `:93` `payment_update_state`, `:112` `invoice_update_state`, `:131` `comments_add`, `:137` `comments_delete`, `:156` `shipment_update_state`, `:200` `order_remove`, plus invoice/shipment create, order-creation create, all `order-edit/*` routes and customer/address create. Only `coreshop_admin_order_update` (`:73-78`) declares `methods:`.
   - Controller actions with no method check of their own: `OrderController.php:147-176`, `OrderPaymentController.php:43-141`, `OrderInvoiceController.php:156-175`, `OrderShipmentController.php:153-171`, `OrderCommentController.php:61-100`, `OrderEditController.php:158-195`.

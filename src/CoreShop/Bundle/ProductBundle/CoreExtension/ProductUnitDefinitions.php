@@ -348,6 +348,11 @@ class ProductUnitDefinitions extends Data implements
 
     public function load(Concrete|Model\DataObject\Objectbrick\Data\AbstractData|Model\DataObject\Fieldcollection\Data\AbstractData|Model\DataObject\Localizedfield $object, array $params = []): mixed
     {
+        // Unit definitions are stored per product; any other container has none.
+        if (!$object instanceof ProductInterface) {
+            return null;
+        }
+
         if (isset($params['force']) && $params['force']) {
             return $this->getProductUnitDefinitionsRepository()->findOneForProduct($object);
         }

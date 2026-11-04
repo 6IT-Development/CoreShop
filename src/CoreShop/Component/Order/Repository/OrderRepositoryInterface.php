@@ -43,5 +43,10 @@ interface OrderRepositoryInterface extends PimcoreRepositoryInterface, CustomerA
 
     public function hasCustomerOrders(CustomerInterface $customer): bool;
 
-    public function findExpiredOrders(int $days): array;
+    /**
+     * Pass $limit to load the orders in batches by ascending id, starting after $afterId.
+     *
+     * @return OrderInterface[]
+     */
+    public function findExpiredOrders(int $days, int $afterId = 0, ?int $limit = null): array;
 }

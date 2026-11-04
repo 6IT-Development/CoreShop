@@ -432,6 +432,11 @@ class ProductSpecificPriceRules extends Data implements
 
     public function load(Concrete|\Pimcore\Model\DataObject\Objectbrick\Data\AbstractData|\Pimcore\Model\DataObject\Fieldcollection\Data\AbstractData|\Pimcore\Model\DataObject\Localizedfield $object, array $params = []): mixed
     {
+        // The rules are stored per product; any other container has none.
+        if (!$object instanceof ProductInterface) {
+            return isset($params['force']) && $params['force'] ? [] : null;
+        }
+
         if (isset($params['force']) && $params['force']) {
             return $this->getProductSpecificPriceRuleRepository()->findForProduct($object);
         }

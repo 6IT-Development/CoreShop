@@ -202,7 +202,7 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
         return $list->getTotalCount() > 0;
     }
 
-    public function findExpiredOrders(int $days): array
+    public function findExpiredOrders(int $days, int $afterId = 0, ?int $limit = null): array
     {
         $daysTimestamp = Carbon::now();
         $daysTimestamp->subDays($days);
@@ -231,12 +231,23 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
         $params[] = OrderInvoiceStates::STATE_NEW;
         $params[] = OrderInvoiceStates::STATE_READY;
 
+        if ($afterId > 0) {
+            $conditions[] = 'id > ?';
+            $params[] = $afterId;
+        }
+
         $bind = ' AND ';
 
         $sql = implode($bind, $conditions);
 
         $list = $this->getList();
         $list->setCondition($sql, $params);
+        $list->setOrderKey('id');
+        $list->setOrder('ASC');
+
+        if ($limit !== null) {
+            $list->setLimit($limit);
+        }
 
         /**
          * @var OrderInterface[] $result

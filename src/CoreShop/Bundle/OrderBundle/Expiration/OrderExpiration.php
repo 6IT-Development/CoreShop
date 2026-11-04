@@ -30,6 +30,8 @@ use Pimcore\Model\DataObject\Concrete;
 
 final class OrderExpiration implements StorageListExpirationInterface
 {
+    private const BATCH_SIZE = 100;
+
     public function __construct(
         private OrderRepositoryInterface $orderRepository,
         private StateMachineManagerInterface $stateMachineManager,
@@ -44,27 +46,41 @@ final class OrderExpiration implements StorageListExpirationInterface
             return;
         }
 
-        $orders = $this->orderRepository->findExpiredOrders($days);
+        // Batches by id: cancelled orders drop out of the result, skipped ones stay, so an offset would not work.
+        $afterId = 0;
 
-        foreach ($orders as $order) {
-            if ($this->hasActivePayment($order)) {
-                continue;
+        do {
+            $orders = $this->orderRepository->findExpiredOrders($days, $afterId, self::BATCH_SIZE);
+
+            foreach ($orders as $order) {
+                $afterId = max($afterId, (int) $order->getId());
+
+                $this->expireOrder($order);
             }
 
-            $workflow = $this->stateMachineManager->get($order, OrderTransitions::IDENTIFIER);
+            \Pimcore::collectGarbage();
+        } while (count($orders) === self::BATCH_SIZE);
+    }
 
-            if (!$workflow->can($order, OrderTransitions::TRANSITION_CANCEL)) {
-                continue;
-            }
+    private function expireOrder(OrderInterface $order): void
+    {
+        if ($this->hasActivePayment($order)) {
+            return;
+        }
 
-            $workflow->apply($order, OrderTransitions::TRANSITION_CANCEL);
+        $workflow = $this->stateMachineManager->get($order, OrderTransitions::IDENTIFIER);
 
-            if ($order instanceof Concrete) {
-                $this->historyLogger->log(
-                    $order,
-                    'Automatic Expiration Order Cancellation',
-                );
-            }
+        if (!$workflow->can($order, OrderTransitions::TRANSITION_CANCEL)) {
+            return;
+        }
+
+        $workflow->apply($order, OrderTransitions::TRANSITION_CANCEL);
+
+        if ($order instanceof Concrete) {
+            $this->historyLogger->log(
+                $order,
+                'Automatic Expiration Order Cancellation',
+            );
         }
     }
 

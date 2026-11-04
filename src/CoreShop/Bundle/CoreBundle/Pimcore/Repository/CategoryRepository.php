@@ -138,24 +138,11 @@ class CategoryRepository extends BaseCategoryRepository implements CategoryRepos
 
     private function setSortingForListing(Listing $list, CategoryInterface $category): void
     {
-        if (method_exists($category, 'getChildrenSortBy')) {
-            $list->setOrderKey(
-                sprintf('`%s` ASC', $category->getChildrenSortBy()),
-                false,
-            );
-        } else {
-            $list->setOrderKey(
-                '`key` ASC',
-                false,
-            );
-        }
+        $this->applyChildrenSorting($list, $category);
     }
 
     private function setSortingForListingWithoutCategory(Listing $list): void
     {
-        $list->setOrderKey(
-            '`index` ASC, `key` ASC',
-            false,
-        );
+        $this->applyDefaultSorting($list);
     }
 }

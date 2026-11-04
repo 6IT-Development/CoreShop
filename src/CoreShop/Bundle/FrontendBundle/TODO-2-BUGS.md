@@ -137,6 +137,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** look the currency up in `findActiveForStore($store)` and return 404 otherwise. Redirect to a local URL only (reuse the B-02 helper).
 
 ### B-18 — Search shows products from other stores (`stores LIKE '%<id>%'`), and the user's text is not escaped for `LIKE`
+- **Status:** fixed — the store condition is `stores LIKE '%,<id>,%'`, the same comma-delimited format `CoreBundle`'s `ProductRepository`/`CategoryRepository` already use, so store 1 no longer matches 10, 11 or 21. The search text is escaped with `addcslashes($text, '%_\\')`, so `%` and `_` match literally (MySQL's default `\\` escape). `Form/Type/SearchType.php` adds `NotBlank` and `Length(min: 2, max: 100)`; an empty or too short search fails validation and redirects home, as an unsubmitted form already did. `page` is read with `getIdParameterFromRequest()` (default 1). Moving to the index or full-text search is not part of this fix.
 - **Where:** `Controller/SearchController.php:52-67`.
 - **Problem:**
   - `'%' . $storeId . '%'` for store `1` also matches `10`, `11`, `21`, `100`, …, so products that belong only to other stores appear in the results. The `stores` field is a `coreShopStoreMultiselect`, stored comma-delimited in the query table. **Verify the exact format (`,1,10,`) before fixing.**

@@ -45,9 +45,12 @@ class SearchController extends FrontendController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $formData = $form->getData();
-            $text = $formData['text'];
-            $page = (int) $this->getParameterFromRequest($request, 'page', 1);
+            $text = (string) $formData['text'];
+            $page = $this->getIdParameterFromRequest($request, 'page') ?? 1;
             $itemsPerPage = 10;
+
+            // The user's text is matched literally: % and _ must not act as wildcards
+            $likeText = '%' . addcslashes($text, '%_\\') . '%';
 
             $query = [
                 'name LIKE ?',
@@ -56,11 +59,12 @@ class SearchController extends FrontendController
                 'sku LIKE ?',
             ];
             $queryParams = [
-                '%' . $text . '%',
-                '%' . $text . '%',
-                '%' . $text . '%',
-                '%' . $text . '%',
-                '%' . $this->container->get(StoreContextInterface::class)->getStore()->getId() . '%',
+                $likeText,
+                $likeText,
+                $likeText,
+                $likeText,
+                // stores is stored comma-delimited (",1,10,"), so store 1 must not match 10 or 21
+                '%,' . $this->container->get(StoreContextInterface::class)->getStore()->getId() . ',%',
             ];
 
             $list = $this->container->get('coreshop.repository.product')->getList();

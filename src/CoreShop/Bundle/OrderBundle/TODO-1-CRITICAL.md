@@ -43,6 +43,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - Fix the wrong exception class at the same time (TODO-2 **B-11**). Remove `cart_detail` or enforce it.
 
 ### C-02 — Voucher-code actions skip the configured `cart_price_rule` permission
+- **Status:** fixed — all custom `CartPriceRuleController` actions (voucher rule list, config, voucher code list/create/generate/export/delete) call `isGrantedOr403()` first, so they require `coreshop_permission_cart_price_rule` like the inherited CRUD actions. No functional 403 test added: the suite has no admin-controller harness.
 - **Where:** `Controller/CartPriceRuleController.php:38-224`: all custom actions (get `:77`, create `:104`, generate `:134`, export `:158`, delete `:205`). Routes are at `Resources/config/pimcore/routing.yml:1-46`, and the permission is configured at `DependencyInjection/Configuration.php:119`.
 - **Problem:** the inherited CRUD actions call `isGrantedOr403()`, but none of the custom voucher actions does. Any back-office user can generate or create discount voucher codes for any rule, including a 100 % rule, export all codes (GET is allowed), and delete codes.
 - **Fix:** call `$this->isGrantedOr403()` first in every custom action, and add a 403 functional test.

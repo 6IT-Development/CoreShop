@@ -37,6 +37,8 @@ class CartPriceRuleController extends ResourceController
 {
     public function listVoucherRulesAction(): JsonResponse
     {
+        $this->isGrantedOr403();
+
         /**
          * @var CartPriceRuleRepositoryInterface $repository
          */
@@ -49,6 +51,8 @@ class CartPriceRuleController extends ResourceController
 
     public function getConfigAction(Request $request): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $actions = $this->getConfigActions();
         $conditions = $this->getConfigConditions();
 
@@ -65,6 +69,8 @@ class CartPriceRuleController extends ResourceController
 
     public function getCartItemConfigAction(Request $request): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $itemActions = $this->getCartItemConfigActions();
         $itemConditions = $this->getCartItemConfigConditions();
 
@@ -76,6 +82,8 @@ class CartPriceRuleController extends ResourceController
 
     public function getVoucherCodesAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $id = $this->getParameterFromRequest($request, 'cartPriceRule');
         $cartPriceRule = $this->repository->find($id);
 
@@ -103,6 +111,8 @@ class CartPriceRuleController extends ResourceController
 
     public function createVoucherCodeAction(Request $request, FormFactoryInterface $formFactory, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository, FactoryInterface $cartPriceRuleVoucherCodeFactory): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $form = $formFactory->createNamed('', VoucherType::class);
         $handledForm = $form->handleRequest($request);
         if (in_array($request->getMethod(), ['POST', 'PUT', 'PATCH'], true) && $handledForm->isValid()) {
@@ -133,6 +143,8 @@ class CartPriceRuleController extends ResourceController
 
     public function generateVoucherCodesAction(Request $request, FormFactoryInterface $formFactory, CartPriceRuleVoucherCodeGenerator $cartPriceRuleVoucherCodeGenerator): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $form = $formFactory->createNamed('', VoucherGeneratorType::class);
 
         $handledForm = $form->handleRequest($request);
@@ -157,6 +169,8 @@ class CartPriceRuleController extends ResourceController
 
     public function exportVoucherCodesAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): void
     {
+        $this->isGrantedOr403();
+
         $id = $this->getParameterFromRequest($request, 'cartPriceRule');
         $priceRule = $this->repository->find($id);
 
@@ -204,6 +218,8 @@ class CartPriceRuleController extends ResourceController
 
     public function deleteVoucherCodeAction(Request $request, CartPriceRuleVoucherRepositoryInterface $cartPriceRuleVoucherCodeRepository): JsonResponse
     {
+        $this->isGrantedOr403();
+
         $cartPriceRuleId = $this->getParameterFromRequest($request, 'cartPriceRule');
         $id = $this->getParameterFromRequest($request, 'id');
         $cartPriceRule = $this->repository->find($cartPriceRuleId);

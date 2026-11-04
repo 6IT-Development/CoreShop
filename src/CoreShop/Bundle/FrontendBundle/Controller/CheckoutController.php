@@ -82,7 +82,7 @@ class CheckoutController extends FrontendController
             }
         }
 
-        $event = new CheckoutEvent($this->getCart(), ['step' => $step, 'step_identifier', $stepIdentifier]);
+        $event = new CheckoutEvent($this->getCart(), ['step' => $step, 'step_identifier' => $stepIdentifier]);
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_STEP_PRE);
 
@@ -134,7 +134,7 @@ class CheckoutController extends FrontendController
             'identifier' => $stepIdentifier,
         ]);
 
-        $event = new CheckoutEvent($this->getCart(), ['step' => $step, 'step_identifier', $stepIdentifier, 'step_params' => $dataForStep]);
+        $event = new CheckoutEvent($this->getCart(), ['step' => $step, 'step_identifier' => $stepIdentifier, 'step_params' => $dataForStep]);
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_STEP_POST);
 

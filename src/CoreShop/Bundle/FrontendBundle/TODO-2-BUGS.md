@@ -89,6 +89,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** use `::` (or a `ControllerReference`). Subscribe the three services. Use `usort(…, fn ($a, $b) => $a['price'] <=> $b['price'])`. Add a functional test that renders the cart summary with no shipping set.
 
 ### B-11 — Checkout events get a malformed argument array (`'step_identifier', $stepIdentifier`)
+- **Status:** fixed — both `CHECKOUT_STEP_PRE` and `CHECKOUT_STEP_POST` events get `'step_identifier' => $stepIdentifier`, so `getArgument('step_identifier')` works. The numeric keys `0`/`1` are not kept: nothing in the repository reads them.
 - **Where:** `Controller/CheckoutController.php:79` and `:131`: `['step' => $step, 'step_identifier', $stepIdentifier]`.
 - **Problem:** a comma where `=>` was intended. Listeners receive `[step => …, 0 => 'step_identifier', 1 => '<id>']`, so `$event->getArgument('step_identifier')` throws `InvalidArgumentException`, and `hasArgument()` is always false.
 - **Fix direction:** `'step_identifier' => $stepIdentifier`. Keep the numeric keys for one minor release if BC matters, otherwise just fix it.

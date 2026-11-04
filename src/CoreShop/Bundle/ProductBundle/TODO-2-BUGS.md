@@ -48,6 +48,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Controllers and routes
 
 ### B-06 — The `coreshop_product_unit_getConfig` route points to a method that does not exist
+- **Status:** fixed — the `additional_routes.config` block of `coreshop_admin_product_unit` is removed; the default resource routes stay. No JS, YAML, PHP or Twig file references the route (`grep` for the route name and the path). The YAML parses to `{alias: coreshop.product_unit}`, which `ResourceLoader` handles like any resource without additional routes. The routes were not dumped with a booted kernel.
 - **Where:** `Resources/config/pimcore/routing.yml:12-21`; `DependencyInjection/Configuration.php:203` (`product_unit` admin controller is the plain `ResourceController`).
 - **Problem:** the route resolves to `ResourceController::getConfigAction`, which does not exist. Calling `/admin/coreshop/product_units/get-config` returns a 500 ("controller is not callable"). The JS does not call it (`grep` over all bundles), so the route is dead.
 - **Fix:** remove the `additional_routes.config` block for `coreshop_admin_product_unit`.

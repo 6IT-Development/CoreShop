@@ -13,12 +13,6 @@ coreshop_admin_product_unit:
     type: coreshop.resources
     resource: |
       alias: coreshop.product_unit
-      additional_routes:
-        config:
-          path: get-config
-          action: getConfig
-          methods:
-            - GET
 
 coreshop_admin_product_unit_definitions:
     type: coreshop.resources

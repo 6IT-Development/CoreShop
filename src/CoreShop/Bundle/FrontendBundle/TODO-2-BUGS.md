@@ -110,6 +110,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** guard the transition with `can()` (flash and redirect to the cart otherwise). Pass `$order` to every event after the transition. Handle "stopped" the same way for all four events (extract a helper, see TODO-3 I-17).
 
 ### B-14 — Editing an address gives it a new Pimcore key every time
+- **Status:** fixed — `addressAction()` sets a key only when `$eventType === 'add'`, so an edited address keeps its key, path and version history. The key stays `uniqid()`: `CustomerTransformHelper::moveAddressToNewAddressStack()` already passes it through `getSaveKeyForMoving()`, which appends `-1`, `-2`, … when the path exists, so collisions are resolved there. `symfony/uid` is not a dependency of the bundle, so `Uuid::v7()` was not used.
 - **Where:** `Controller/CustomerController.php:187-192`: `$address->setPublished(true); $address->setKey(uniqid());` runs for `add` **and** `update`.
 - **Problem:** every edit renames the existing object. That breaks path-based references, makes the admin tree and version history confusing, and changes the object's full path in search indices. `uniqid()` is also not collision-safe under concurrency.
 - **Fix direction:** set the key only when `$eventType === 'add'`, and use `Pimcore\Model\Element\Service::getUniqueKey()` or a UUID (`Symfony\Component\Uid\Uuid::v7()`).

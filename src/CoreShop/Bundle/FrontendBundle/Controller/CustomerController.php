@@ -189,7 +189,15 @@ class CustomerController extends FrontendController
             if ($handledForm->isSubmitted() && $handledForm->isValid()) {
                 $address = $handledForm->getData();
                 $address->setPublished(true);
-                $address->setKey(uniqid());
+
+                /*
+                 * Only a new address gets a key. An edited one keeps its key (and so
+                 * its path and history); moving it to another holder's folder makes
+                 * the key unique there (CustomerTransformHelper::getSaveKeyForMoving()).
+                 */
+                if ($eventType === 'add') {
+                    $address->setKey(uniqid());
+                }
 
                 $address = $addressAssignmentManager->allocateAddressByAffiliation($customer, $address, $addressAffiliation);
 

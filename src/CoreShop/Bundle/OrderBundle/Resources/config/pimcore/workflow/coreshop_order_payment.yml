@@ -36,7 +36,7 @@ core_shop_workflow:
                     from: [awaiting_payment, authorized, partially_authorized]
                     to: cancelled
                 pay:
-                    from: [awaiting_payment, partially_paid, authorized]
+                    from: [awaiting_payment, partially_paid, authorized, partially_refunded]
                     to: paid
                 partially_refund:
                     from: [paid, partially_paid, partially_refunded]

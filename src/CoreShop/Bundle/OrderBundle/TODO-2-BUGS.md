@@ -183,6 +183,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** guard both calls with `can()`, and apply `request_*` first if needed. Better, move `request_*` into the transformer so every creation path runs it. Also resolve again on `coreshop_invoice.cancel` and `coreshop_shipment.cancel`.
 
 ### B-23 — Payment resolver: refunds are evaluated in isolation and return early
+- **Status:** fixed — a refunded payment leaves the `completed` state, so the completed total is the amount still captured. The resolver now checks that first: when it covers `paymentTotal` the target is `pay`, whatever was refunded. Otherwise, refunds give `refund` (nothing captured and refunds ≥ `paymentTotal`) or `partially_refund`, and only then `partially_pay`, authorize and process. `pay` is now also allowed from `partially_refunded` (`coreshop_order_payment.yml`), so the split-payment example returns to `paid`. In the duplicate-charge example the order stays `paid`. Not done: Currency TODO-1 **C-01** (amounts are still summed as stored).
 - **Where:** `StateResolver/OrderPaymentStateResolver.php:54-70`.
 - **Problem:**
   - Order of 100, paid by payment A (100); a duplicate charge B (100) is refunded. Refunded 100 ≥ `paymentTotal` 100, so the order is marked **refunded** although A's 100 is still captured.

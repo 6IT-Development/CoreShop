@@ -53,6 +53,20 @@ final class OrderPaymentStateResolver implements StateResolverInterface
 
     private function getTargetTransition(OrderInterface $order): ?string
     {
+        $completedPaymentTotal = 0;
+        $completedPayments = $this->getPaymentsWithState($order, PaymentInterface::STATE_COMPLETED);
+
+        foreach ($completedPayments as $payment) {
+            $completedPaymentTotal += $payment->getTotalAmount();
+        }
+
+        // A refunded payment is no longer completed, so the completed total is what is still captured.
+        // Decide on that first: refunding a duplicate charge must not mark a fully paid order as refunded.
+        $payments = $this->paymentRepository->findForPayable($order);
+        if ((count($completedPayments) > 0 && $completedPaymentTotal >= $order->getPaymentTotal()) || count($payments) === 0) {
+            return OrderPaymentTransitions::TRANSITION_PAY;
+        }
+
         $refundedPaymentTotal = 0;
         $refundedPayments = $this->getPaymentsWithState($order, PaymentInterface::STATE_REFUNDED);
 
@@ -61,24 +75,12 @@ final class OrderPaymentStateResolver implements StateResolverInterface
             $refundedPaymentTotal += $payment->getTotalAmount();
         }
 
-        if (count($refundedPayments) > 0 && $refundedPaymentTotal >= $order->getPaymentTotal()) {
-            return OrderPaymentTransitions::TRANSITION_REFUND;
-        }
+        if (count($refundedPayments) > 0) {
+            if ($completedPaymentTotal <= 0 && $refundedPaymentTotal >= $order->getPaymentTotal()) {
+                return OrderPaymentTransitions::TRANSITION_REFUND;
+            }
 
-        if ($refundedPaymentTotal < $order->getPaymentTotal() && 0 < $refundedPaymentTotal) {
             return OrderPaymentTransitions::TRANSITION_PARTIALLY_REFUND;
-        }
-
-        $completedPaymentTotal = 0;
-        $completedPayments = $this->getPaymentsWithState($order, PaymentInterface::STATE_COMPLETED);
-
-        foreach ($completedPayments as $payment) {
-            $completedPaymentTotal += $payment->getTotalAmount();
-        }
-
-        $payments = $this->paymentRepository->findForPayable($order);
-        if ((count($completedPayments) > 0 && $completedPaymentTotal >= $order->getPaymentTotal()) || count($payments) === 0) {
-            return OrderPaymentTransitions::TRANSITION_PAY;
         }
 
         if ($completedPaymentTotal < $order->getPaymentTotal() && $completedPaymentTotal > 0) {

@@ -303,6 +303,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** delete the Core override and fix the base: `return $this->getLoginIdentifier() ?: throw new \LogicException(...)`, or fall back to a stable value.
 
 ### B-41 — (plausible) `Category::getMetaDescription()` does not fall back when the Pimcore meta description is an empty string
+- **Status:** fixed — `Category::getMetaDescription()` treats an empty Pimcore meta description like `null` and falls back to the stripped `description`, and an empty `description` gives `null`. A description of `"0"` is still used (no `?:`). `getOGDescription()` uses the same method.
 - **Where:** `Model/Category.php:30-41`; compare `getMetaTitle()` and `Model/Product.php:44-47`, which use `?:`.
 - **Problem:** the method checks `null !== …`, but a cleared localized textarea is stored as `''`. The category then renders an empty `<meta name="description">` and an empty `og:description`, instead of falling back to the stripped `description`.
 - **Fix:** `return $this->getPimcoreMetaDescription($language) ?: (($d = $this->getDescription($language)) ? strip_tags($d) : null);`.

@@ -29,12 +29,14 @@ abstract class Category extends BaseCategory implements CategoryInterface
 
     public function getMetaDescription(?string $language = null): ?string
     {
-        if (null !== $this->getPimcoreMetaDescription($language)) {
-            return $this->getPimcoreMetaDescription($language);
+        $metaDescription = $this->getPimcoreMetaDescription($language);
+        if (null !== $metaDescription && '' !== $metaDescription) {
+            return $metaDescription;
         }
 
-        if (null !== $this->getDescription($language)) {
-            return strip_tags($this->getDescription($language));
+        $description = $this->getDescription($language);
+        if (null !== $description && '' !== $description) {
+            return strip_tags($description);
         }
 
         return null;

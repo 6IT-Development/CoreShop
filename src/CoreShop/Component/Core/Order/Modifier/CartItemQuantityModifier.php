@@ -47,7 +47,8 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
         $cleanTargetQuantity = $this->roundQuantity($item, $targetQuantity);
 
         $currentQuantity = $item->getQuantity();
-        if ((!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity) || $currentQuantity === $cleanTargetQuantity) {
+        // negative quantities are rejected even when zero is allowed
+        if (0 > $cleanTargetQuantity || (!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity) || $currentQuantity === $cleanTargetQuantity) {
             return;
         }
 

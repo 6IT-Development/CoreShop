@@ -45,7 +45,17 @@ class CartItemQuantityDataMapper implements DataMapperInterface
         foreach ($forms as $form) {
             if ('quantity' === $form->getName()) {
                 $targetQuantity = $form->getData();
-                $this->cartItemQuantityModifier->modify($viewData, (float) $targetQuantity);
+
+                // Like Symfony's own mapper: skip a field that was not submitted or could not be parsed,
+                // instead of turning it into quantity 0.
+                if ($form->isSubmitted() &&
+                    $form->isSynchronized() &&
+                    !$form->isDisabled() &&
+                    $form->getConfig()->getMapped() &&
+                    is_numeric($targetQuantity)
+                ) {
+                    $this->cartItemQuantityModifier->modify($viewData, (float) $targetQuantity);
+                }
 
                 continue;
             }

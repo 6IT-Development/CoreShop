@@ -20,9 +20,10 @@ namespace CoreShop\Bundle\OrderBundle\Form\Type;
 
 use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
 use Symfony\Component\Form\DataMapperInterface;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
+use Symfony\Component\Validator\Constraints\Positive;
 
 final class OrderItemType extends AbstractResourceType
 {
@@ -38,9 +39,14 @@ final class OrderItemType extends AbstractResourceType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('quantity', IntegerType::class, [
-                'attr' => ['min' => 1],
+            ->add('quantity', QuantityType::class, [
+                'attr' => ['min' => $options['allow_zero_quantity'] ? 0 : 1],
                 'label' => 'coreshop.ui.quantity',
+                'constraints' => [
+                    $options['allow_zero_quantity']
+                        ? new GreaterThanOrEqual(value: 0, groups: $this->validationGroups ?: ['Default'])
+                        : new Positive(groups: $this->validationGroups ?: ['Default']),
+                ],
             ])->setDataMapper($options['allow_zero_quantity'] ? $this->zeroQuantityDataMapper : $this->dataMapper)
         ;
     }

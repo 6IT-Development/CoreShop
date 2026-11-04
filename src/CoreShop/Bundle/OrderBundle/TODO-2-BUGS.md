@@ -241,6 +241,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Forms, data mappers and validation
 
 ### B-30 — (reproduced) The quantity data mappers turn invalid or missing input into quantity 0, and admin order edit saves it
+- **Status:** fixed — both quantity data mappers call `modify()` only when the `quantity` child is submitted, synchronized, enabled, mapped and `is_numeric()`, so `{}` and an unparsable value leave the quantity alone (the form is then invalid, and since B-03 nothing is saved). `OrderItemType` uses `QuantityType` (a `NumberType`, so `2.5` parses) instead of `IntegerType`, with `GreaterThanOrEqual(0)` when `allow_zero_quantity` is set (admin edit) and `Positive` otherwise, in the form's validation groups. `CartItemQuantityModifier` (Core component) now rejects negative targets even when zero is allowed.
 - **Where:**
   - `Form/DataMapper/BackendCartItemQuantityDataMapper.php:43-59` and `CartItemQuantityDataMapper.php:42-58`: `modify($viewData, (float) $form->getData())` runs unconditionally.
   - `Form/Type/OrderItemType.php:39-45` (`IntegerType`) and `OrderType.php:28-35`.

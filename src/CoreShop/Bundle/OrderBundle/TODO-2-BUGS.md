@@ -55,6 +55,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** validate first, wrap the steps in `Db::get()->transactional()`, and log the error while returning a generic message.
 
 ### B-07 — The admin UI switches language after an order is saved
+- **Status:** fixed — `updateAction` passes the admin user's language (`getPimcoreUser()?->getLanguage()`) to `getDetails()`, and `getInvoices()` / `getShipments()` pass `$locale` to `parseTransitions()`, as `getPayments()` already did.
 - **Where:** `Controller/OrderController.php:319` calls `getDetails()` without the locale; `:547-555` and `:579-588` call `parseTransitions()` without the locale.
 - **Problem:** after a save, labels come back in the default locale. Invoice and shipment transition labels always use the default locale.
 - **Fix:** pass the admin user's language in both places.

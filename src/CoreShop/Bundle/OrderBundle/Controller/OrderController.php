@@ -340,7 +340,7 @@ class OrderController extends PimcoreController
                 $previewOnly ? Events::ORDER_BACKEND_UPDATE_PREVIEW : Events::ORDER_BACKEND_UPDATE_SAVE,
             );
 
-            $json = $this->getDetails($order);
+            $json = $this->getDetails($order, $this->getPimcoreUser()?->getLanguage());
 
             return $this->viewHandler->handle(['success' => true, 'sale' => $json]);
         }
@@ -576,6 +576,7 @@ class OrderController extends PimcoreController
                 'cancel',
             ],
                 false,
+                $locale,
             );
 
             $data = $this->container->get('jms_serializer')->toArray($invoice);
@@ -609,6 +610,7 @@ class OrderController extends PimcoreController
                 'cancel',
             ],
                 false,
+                $locale,
             );
 
             $data = $this->container->get('jms_serializer')->toArray($shipment);

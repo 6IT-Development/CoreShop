@@ -18,11 +18,24 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\AddressBundle\Validator\Constraints;
 
+use Symfony\Component\Validator\Attribute\HasNamedArguments;
 use Symfony\Component\Validator\Constraint;
 
+#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]
 final class ValidAddressIdentifier extends Constraint
 {
     public string $message = 'Address Identifier "%address_identifier%" is not valid.';
+
+    #[HasNamedArguments]
+    public function __construct(
+        ?string $message = null,
+        ?array $groups = null,
+        mixed $payload = null,
+    ) {
+        parent::__construct(null, $groups, $payload);
+
+        $this->message = $message ?? $this->message;
+    }
 
     public function validatedBy(): string
     {

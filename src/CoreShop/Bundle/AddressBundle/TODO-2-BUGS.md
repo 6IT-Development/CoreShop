@@ -113,6 +113,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Packaging / Symfony 7.4 compatibility
 
 ### B-16 — `ValidAddressIdentifier` uses the options-array constraint API (deprecated in 7.3/7.4, removed in 8.0)
+- **Status:** fixed — `ValidAddressIdentifier` has a `#[HasNamedArguments]` constructor (`?string $message`, `?array $groups`, `mixed $payload`), like `StateBelongsToCountry`, and `#[\Attribute(TARGET_PROPERTY | TARGET_METHOD)]`. The YAML loader now passes `groups` as a named argument, so the options-array deprecation is gone; `validation/Address.yml` is unchanged.
 - **Where:** `Validator/Constraints/ValidAddressIdentifier.php`; `Resources/config/validation/Address.yml:18` (`{ groups: [coreshop] }`)
 - **Problem:** Since Symfony 7.3, custom constraints without named constructor arguments (`#[HasNamedArguments]`) trigger "Passing an array of options to configure the … constraint is deprecated". The YAML loader passes an options array, which emits the deprecation on Symfony 7.4 and breaks on 8.0. The class also has no `#[\Attribute]`, so it cannot be used as a PHP attribute.
 - **Fix:** add a constructor with `#[HasNamedArguments]` (`?string $message = null, ?array $groups = null, mixed $payload = null`) and `#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]`.

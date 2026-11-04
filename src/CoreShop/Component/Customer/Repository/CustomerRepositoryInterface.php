@@ -39,6 +39,8 @@ interface CustomerRepositoryInterface extends PimcoreRepositoryInterface
      *
      * Guests are not de-duplicated, so several guests can share one address; the most recently
      * created match (highest id) is returned.
+     *
+     * @throws \LogicException when the customer class has no user relation (CustomerBundle's own repository)
      */
     public function findUniqueByEmail(string $email, bool $isGuest): ?CustomerInterface;
 

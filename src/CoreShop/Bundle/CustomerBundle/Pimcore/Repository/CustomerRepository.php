@@ -42,30 +42,19 @@ class CustomerRepository extends PimcoreRepository implements CustomerRepository
     }
 
     /**
-     * Returns the most recently created matching customer (highest id). Guests are not de-duplicated,
-     * so several guests can share an address.
+     * The customer bundle's own class definition has no user relation, so it cannot tell registered
+     * customers from guests. CoreBundle's repository implements this on its `user` relation; a
+     * standalone setup with its own user relation must override it the same way.
+     *
+     * @throws \LogicException always
      */
     public function findUniqueByEmail(string $email, bool $isGuest): ?CustomerInterface
     {
-        $list = $this->getList();
-
-        $conditions = ['email = ?'];
-        $conditionsValues = [$email];
-
-        if (!$isGuest) {
-            $conditions[] = 'user__id IS NOT NULL';
-        } else {
-            $conditions[] = 'user__id IS NULL';
-        }
-
-        $list->setCondition(implode(' AND ', $conditions), $conditionsValues);
-        $list->setOrderKey('id');
-        $list->setOrder('DESC');
-        $list->setLimit(1);
-
-        $customer = $list->load()[0] ?? null;
-
-        return $customer instanceof CustomerInterface ? $customer : null;
+        throw new \LogicException(sprintf(
+            '%s() needs a customer class with a user relation; use %s or override it in your own repository.',
+            __METHOD__,
+            'CoreShop\\Bundle\\CoreBundle\\Pimcore\\Repository\\CustomerRepository',
+        ));
     }
 
     public function findGuestByEmail(string $email): ?CustomerInterface

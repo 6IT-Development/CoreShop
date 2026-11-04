@@ -125,7 +125,7 @@ class OrderEditController extends PimcoreController
             return new JsonResponse(['success' => false, 'message' => 'invalid items']);
         }
 
-        foreach ($items as $product) {
+        foreach ($items as $key => $product) {
             $productId = is_array($product) && is_array($product['cartItem'] ?? null) ? ($product['cartItem']['purchasable'] ?? null) : null;
 
             if (!is_scalar($productId)) {
@@ -142,7 +142,8 @@ class OrderEditController extends PimcoreController
 
             $cartItem = $orderItemFactory->createWithPurchasable($product);
 
-            $commands[] = $this->createAddToCart($addToCartFactory, $cart, $cartItem);
+            // keyed like the request, so every submitted entry finds its pre-built AddToCart
+            $commands[$key] = $this->createAddToCart($addToCartFactory, $cart, $cartItem);
         }
 
         $addMultipleAddToCarts = $this->createMultipleAddToCart($addMultipleToCartFactory, $commands);

@@ -30,7 +30,9 @@ final class AddMultipleToCartType extends AbstractResourceType
     {
         $builder->add('items', CollectionType::class, [
             'entry_type' => AddToCartType::class,
-            'allow_add' => true,
+            // entries are pre-built by the caller: AddToCart cannot be created without a cart and an item,
+            // so an unexpected key must be an extra-field error instead of a new entry
+            'allow_add' => false,
             'constraints' => [
                 new Valid(groups: $this->validationGroups),
             ],

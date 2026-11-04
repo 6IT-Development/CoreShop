@@ -53,6 +53,13 @@ final class StateChoiceType extends AbstractType
                      */
                     $states = [] === $criteria ? $this->countryRepository->findAll() : $this->countryRepository->findBy($criteria);
 
+                    // keep values that are no longer offered (e.g. a deactivated state of an existing address)
+                    foreach ($options['extra_choices'] as $extra) {
+                        if ($extra instanceof StateInterface && !in_array($extra->getId(), array_map(static fn (StateInterface $s) => $s->getId(), $states), true)) {
+                            $states[] = $extra;
+                        }
+                    }
+
                     usort($states, function (StateInterface $a, StateInterface $b): int {
                         return $a->getName() <=> $b->getName();
                     });
@@ -65,7 +72,9 @@ final class StateChoiceType extends AbstractType
                 'active' => true,
                 // only offer the states of this country; null offers the states of all countries
                 'country' => null,
+                'extra_choices' => [],
             ])
+            ->setAllowedTypes('extra_choices', 'array')
             ->setAllowedTypes('country', ['null', CountryInterface::class])
         ;
     }

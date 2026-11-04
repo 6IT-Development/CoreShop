@@ -58,6 +58,13 @@ final class CountryChoiceType extends AbstractType
                         $countries = $this->countryRepository->findBy(['active' => $options['active']]);
                     }
 
+                    // keep values that are no longer offered (e.g. a deactivated country of an existing address)
+                    foreach ($options['extra_choices'] as $extra) {
+                        if ($extra instanceof CountryInterface && !in_array($extra->getId(), array_map(static fn (CountryInterface $c) => $c->getId(), $countries), true)) {
+                            $countries[] = $extra;
+                        }
+                    }
+
                     usort($countries, function (CountryInterface $a, CountryInterface $b): int {
                         return $a->getName() <=> $b->getName();
                     });
@@ -68,7 +75,9 @@ final class CountryChoiceType extends AbstractType
                 'choice_label' => 'name',
                 'choice_translation_domain' => false,
                 'active' => true,
+                'extra_choices' => [],
             ])
+            ->setAllowedTypes('extra_choices', 'array')
         ;
     }
 

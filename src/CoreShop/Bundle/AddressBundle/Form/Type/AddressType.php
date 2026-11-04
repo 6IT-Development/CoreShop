@@ -38,9 +38,11 @@ final class AddressType extends AbstractResourceType
                 'label' => 'coreshop.form.address.company',
                 'required' => false,
             ])
-            ->add('salutation', SalutationChoiceType::class, [
-                'label' => 'coreshop.form.address.salutation',
-            ])
+        ;
+
+        $this->addSalutationField($builder, null);
+
+        $builder
             ->add('firstname', TextType::class, [
                 'label' => 'coreshop.form.address.firstname',
             ])
@@ -59,13 +61,10 @@ final class AddressType extends AbstractResourceType
             ->add('city', TextType::class, [
                 'label' => 'coreshop.form.address.city',
             ])
-            ->add('country', CountryChoiceType::class, [
-                'active' => true,
-                'label' => 'coreshop.form.address.country',
-            ])
         ;
 
-        $this->addStateField($builder, null);
+        $this->addCountryField($builder, null);
+        $this->addStateField($builder, null, null);
 
         $builder
             ->add('phoneNumber', TextType::class, [
@@ -74,17 +73,28 @@ final class AddressType extends AbstractResourceType
             ])
         ;
 
-        // offer only the states of the address's country, and of the submitted country on submit
+        // Offer only the states of the address's country (of the submitted country on submit), and
+        // keep the stored salutation, country and state selectable even when they are no longer
+        // offered, so editing an address does not silently replace them.
         $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event): void {
             $address = $event->getData();
+            $address = $address instanceof AddressInterface ? $address : null;
+            $form = $event->getForm();
 
-            $this->addStateField($event->getForm(), $address instanceof AddressInterface ? $address->getCountry() : null);
+            $this->addSalutationField($form, $address);
+            $this->addCountryField($form, $address);
+            $this->addStateField($form, $address, $address?->getCountry());
         });
         $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event): void {
             $data = $event->getData();
             $form = $event->getForm();
+            $address = $form->getData();
 
-            $this->addStateField($form, $this->getSubmittedCountry($form, is_array($data) ? ($data['country'] ?? null) : null));
+            $this->addStateField(
+                $form,
+                $address instanceof AddressInterface ? $address : null,
+                $this->getSubmittedCountry($form, is_array($data) ? ($data['country'] ?? null) : null),
+            );
         });
 
         if ($options['show_address_identifier_choice'] === true) {
@@ -95,11 +105,29 @@ final class AddressType extends AbstractResourceType
         }
     }
 
-    private function addStateField(FormBuilderInterface|FormInterface $form, ?CountryInterface $country): void
+    private function addSalutationField(FormBuilderInterface|FormInterface $form, ?AddressInterface $address): void
+    {
+        $form->add('salutation', SalutationChoiceType::class, [
+            'label' => 'coreshop.form.address.salutation',
+            'extra_choices' => array_filter([$address?->getSalutation()]),
+        ]);
+    }
+
+    private function addCountryField(FormBuilderInterface|FormInterface $form, ?AddressInterface $address): void
+    {
+        $form->add('country', CountryChoiceType::class, [
+            'active' => true,
+            'extra_choices' => array_filter([$address?->getCountry()]),
+            'label' => 'coreshop.form.address.country',
+        ]);
+    }
+
+    private function addStateField(FormBuilderInterface|FormInterface $form, ?AddressInterface $address, ?CountryInterface $country): void
     {
         $form->add('state', StateChoiceType::class, [
             'active' => true,
             'country' => $country,
+            'extra_choices' => array_filter([$address?->getState()]),
             'label' => 'coreshop.form.address.state',
             // The state is optional (Pimcore field not mandatory, no constraint). A required
             // single choice gets no empty option, so the browser would pre-select the first

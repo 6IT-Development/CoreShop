@@ -40,9 +40,20 @@ final class SalutationChoiceType extends AbstractType
             // is given, and would be cached with the OptionsResolver across requests.
             ->setDefault('country', fn (Options $options): CountryInterface => $this->countryContext->getCountry())
             ->setAllowedTypes('country', CountryInterface::class)
+            ->setDefault('extra_choices', [])
+            ->setAllowedTypes('extra_choices', 'array')
             ->setDefaults([
                 'choices' => function (Options $options) {
-                    $salutations = $options['country']->getSalutations();
+                    // simple_array column, null when the country has no salutations
+                    $salutations = $options['country']->getSalutations() ?? [];
+
+                    // keep values that are no longer offered (e.g. the salutation of an existing address)
+                    foreach ($options['extra_choices'] as $extra) {
+                        if (is_string($extra) && '' !== $extra && !in_array($extra, $salutations, true)) {
+                            $salutations[] = $extra;
+                        }
+                    }
+
                     $choices = [];
                     foreach ($salutations as $salutation) {
                         $translationKey = 'coreshop.form.customer.salutation.' . str_replace(' ', '_', strtolower(trim($salutation)));

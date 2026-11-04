@@ -1,4 +1,8 @@
 CoreShop\Component\Address\Model\Country:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity:
+            fields: [isoCode]
+            groups: [coreshop]
     properties:
         isoCode:
             - NotBlank: { groups: [coreshop] }

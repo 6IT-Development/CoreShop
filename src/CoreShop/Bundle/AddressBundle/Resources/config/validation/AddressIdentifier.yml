@@ -1,0 +1,11 @@
+CoreShop\Component\Address\Model\AddressIdentifier:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity:
+            fields: [name]
+            groups: [coreshop]
+    properties:
+        name:
+            - NotBlank: { groups: [coreshop] }
+            - Length: { max: 255, groups: [coreshop] }
+        active:
+            - Type: { type: boolean, groups: [coreshop] }

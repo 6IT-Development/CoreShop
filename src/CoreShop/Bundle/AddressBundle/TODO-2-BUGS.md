@@ -68,6 +68,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** validate the semantics: the value is `instanceof AddressIdentifierInterface`, it is persisted, and it is `active`. Build the message parameter from `getName()`. Use the Validator exception and `mixed $value`.
 
 ### B-08 — No validation for `AddressIdentifier`, and no uniqueness rules anywhere
+- **Status:** fixed — new `validation/AddressIdentifier.yml` (`UniqueEntity` on `name`, `NotBlank` + `Length(max: 255)` on `name`, boolean `active`). `UniqueEntity` is added to Country (`isoCode`), Zone (`name`) and State (`country` + `isoCode`, error on `isoCode`), all in group `coreshop`. These catch duplicates in the forms; the database constraints for country ISO code and identifier name are B-09 / B-10.
 - **Where:** `Resources/config/validation/` (no `AddressIdentifier.yml`); `Resources/config/services/form.yml:8` (validation groups defined for it)
 - **Problem:** An identifier can be saved with an empty or duplicate `name`. Countries (`isoCode`), zones (`name`) and states (`country` + `isoCode`) have no `UniqueEntity` constraint either. Duplicates then break the repository lookups in B-09 and B-10.
 - **Fix:** add `AddressIdentifier.yml` (NotBlank, UniqueEntity on `name`). Add `UniqueEntity` to Country, Zone and State.

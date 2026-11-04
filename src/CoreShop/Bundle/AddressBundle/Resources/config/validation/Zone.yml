@@ -1,4 +1,8 @@
 CoreShop\Component\Address\Model\Zone:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity:
+            fields: [name]
+            groups: [coreshop]
     properties:
         name:
             - NotBlank: { groups: [coreshop] }

@@ -488,11 +488,16 @@ class ProductUnitDefinitions extends Data implements
     {
         $data = $this->getDataFromObjectParam($object, $params);
 
-        if (!is_array($data) || empty($data)) {
+        // The value is an entity, not an array: serialize it like the version data.
+        if (!$data instanceof ProductUnitDefinitionsInterface) {
             return '{}';
         }
 
-        return json_encode($data);
+        $context = SerializationContext::create();
+        $context->setSerializeNull(false);
+        $context->setGroups(['Version']);
+
+        return json_encode($this->getSerializer()->toArray($data, $context), \JSON_THROW_ON_ERROR);
     }
 
     public function isDiffChangeAllowed(Concrete $object, array $params = []): bool

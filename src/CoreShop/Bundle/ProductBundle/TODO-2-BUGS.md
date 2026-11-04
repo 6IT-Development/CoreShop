@@ -130,6 +130,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** return `null` early when `!$object instanceof ProductInterface`.
 
 ### B-17 — `getForCsvExport()` always returns `'{}'`
+- **Status:** fixed — `getForCsvExport()` now checks for `ProductUnitDefinitionsInterface` (the actual value type) and serializes it with JMS group `Version`, `serializeNull: false`, then `json_encode(…, JSON_THROW_ON_ERROR)`. That is the same data as `marshalVersion()` and the same pattern as `CoreBundle` `StoreValues::getForCsvExport()`. Without definitions it still returns `'{}'`. Checked with a JMS serializer built from the bundle's YAML metadata and a stubbed product: a pc + box product exports its ID, default definition and both definitions (unit as `{"id": …}`, conversion rate, precision), and `null` gives `{}`. Units are exported by ID only, because the `Version` group of `ProductUnit` exposes only `id`. The key naming depends on the app's JMS naming strategy (snake_case in the standalone test).
 - **Where:** `CoreExtension/ProductUnitDefinitions.php:469-478`.
 - **Problem:** `getDataFromObjectParam()` returns a `ProductUnitDefinitionsInterface` object, not an array, so `!is_array($data)` is always true. A CSV export never contains the unit definitions, and `json_encode()` would not serialize the entity anyway.
 - **Fix:** serialize through JMS (`toArray($data, group List)`) and `json_encode(…, JSON_THROW_ON_ERROR)`, or return a readable string like `getVersionPreview()`.

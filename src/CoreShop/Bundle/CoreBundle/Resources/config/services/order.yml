@@ -96,6 +96,7 @@ services:
             - '@coreshop.order.number_generator.default'
             - '@CoreShop\Component\Pimcore\DataObject\ObjectClonerInterface'
             - '@CoreShop\Bundle\WorkflowBundle\Applier\StateMachineApplier'
+            - '@?Symfony\Component\Lock\LockFactory'
 
     CoreShop\Component\Order\Committer\QuoteCommitterInterface: '@CoreShop\Component\Core\Order\Committer\QuoteCommitter'
     CoreShop\Component\Core\Order\Committer\QuoteCommitter:
@@ -105,6 +106,7 @@ services:
             - '@coreshop.quote.number_generator.default'
             - '@CoreShop\Component\Pimcore\DataObject\ObjectClonerInterface'
             - '@CoreShop\Bundle\WorkflowBundle\Applier\StateMachineApplier'
+            - '@?Symfony\Component\Lock\LockFactory'
 
     CoreShop\Bundle\CoreBundle\Twig\AddToCartExtension:
         tags:

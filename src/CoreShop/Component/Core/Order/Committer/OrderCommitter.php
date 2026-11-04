@@ -36,20 +36,31 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use Pimcore\Db;
 use Pimcore\Model\DataObject\Service;
+use Symfony\Component\Lock\LockFactory;
 use Webmozart\Assert\Assert;
 
 class OrderCommitter implements OrderCommitterInterface
 {
+    use CommitLockTrait;
+
     public function __construct(
         protected CartManagerInterface $cartManager,
         protected FolderCreationServiceInterface $folderCreationService,
         protected NumberGeneratorInterface $numberGenerator,
         protected ObjectClonerInterface $objectCloner,
         protected StateMachineApplierInterface $stateMachineApplier,
+        protected ?LockFactory $lockFactory = null,
     ) {
     }
 
     public function commitOrder(OrderInterface $order): void
+    {
+        $this->commitLocked($order, function () use ($order): void {
+            $this->doCommitOrder($order);
+        });
+    }
+
+    protected function doCommitOrder(OrderInterface $order): void
     {
         /**
          * @var \CoreShop\Component\Core\Model\OrderInterface $order

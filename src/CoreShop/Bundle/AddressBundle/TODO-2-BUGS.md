@@ -76,6 +76,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Doctrine / repositories
 
 ### B-09 — `CountryRepository::findByCode()` can throw `NonUniqueResultException`
+- **Status:** fixed — `Country.orm.xml` maps `isoCode` as `nullable="false"` with the unique constraint `coreshop_country_iso_code` (replacing the plain `isoCode` index). `CoreBundle/Migrations/Version20261104140000` applies this. It **aborts with the offending ids/codes** if a country has no ISO code or a code is used twice, because those rows must be fixed by hand (addresses and states reference them). `findByCode()` also orders by id and uses `setMaxResults(1)`, so it can no longer throw `NonUniqueResultException` on data that was not migrated yet. `UniqueEntity` came with B-08.
 - **Where:** `Doctrine/ORM/CountryRepository.php:46-54`; `Resources/config/doctrine/model/Country.orm.xml:7-9, 15`
 - **Problem:** `isoCode` has a plain (non-unique) index and is `nullable`, yet `getOneOrNullResult()` is used. Duplicate codes crash `CoreBundle/Command/SetupStatesCommand.php:97` and `CountryFixture`. `nullable="true"` also contradicts `NotBlank` in `validation/Country.yml`.
 - **Fix:** add a unique constraint, make the column `NOT NULL`, and add `UniqueEntity` (B-08). Write a migration.

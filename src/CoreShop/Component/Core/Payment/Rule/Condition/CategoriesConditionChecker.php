@@ -63,6 +63,10 @@ final class CategoriesConditionChecker extends AbstractConditionChecker
         );
 
         foreach ($cartItems as $item) {
+            if ($item->getIsGiftItem()) {
+                continue;
+            }
+
             $product = $item->getProduct();
             if ($product instanceof ProductInterface) {
                 $categories = $product->getCategories();

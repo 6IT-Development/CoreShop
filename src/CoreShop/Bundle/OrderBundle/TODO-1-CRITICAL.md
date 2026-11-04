@@ -99,6 +99,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 - **Fix:** store the amount in the `paymentTotal` unit chosen under PaymentBundle B-05, compare against `getPaymentTotal()`, and use a `MoneyType` form with the store currency. The detail view should send the real factor, not `100`.
 
 ### C-08 — The default maintenance task cancels authorized, partially paid, partially refunded and already-shipped orders after 20 days
+- **Status:** fixed — `findExpiredOrders()` now selects only `orderState = new` orders whose payment state is `new`/`awaiting_payment` and whose shipping and invoice states are `new`/`ready` (`confirmed` and `initialized` are no longer selected). `OrderExpiration` skips orders with a `processing`, `authorized` or `completed` payment, and applies `cancel` and writes the history note only when `can()` is true, which also stops the per-run note spam of TODO-2 **B-17**. The upgrade note is in `docs/02_User_Documentation/10_Automation/index.md`. Still open: the default stays `order.days: 20` (not made opt-in), and the listing is still not paged (B-17).
 - **Where:**
   - `Pimcore/Repository/OrderRepository.php:197-224`: the condition at `:202` is `saleState = order AND orderState IN (new, confirmed, initialized) AND paymentState <> 'paid'`.
   - `Expiration/OrderExpiration.php:37-58` and `Expiration/OrderAndCartExpiration.php:31-35`.

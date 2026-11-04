@@ -9,7 +9,14 @@ automations are executed daily via maintenance jobs.
 
 ### Default Behavior
 
-CoreShop automatically cancels orders that are older than 20 days.
+CoreShop automatically cancels orders that are older than 20 days and were abandoned before payment: the order is
+still `new`, its payment state is `new` or `awaiting_payment`, nothing has been shipped or invoiced yet, and none of
+its payments is processing, authorized or completed. Confirmed orders (for example authorized, partially paid or
+partially refunded ones) are never cancelled automatically.
+
+> **Upgrade note**: older versions also cancelled confirmed, authorized, partially paid, partially refunded and
+> already shipped or invoiced orders that were not fully paid after 20 days. If your shop ran with the default
+> configuration, check the order history for "Automatic Expiration Order Cancellation" notes on such orders.
 
 ### Customizing Order Expiration
 

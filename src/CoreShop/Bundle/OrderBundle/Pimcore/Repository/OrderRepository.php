@@ -22,8 +22,10 @@ use Carbon\Carbon;
 use CoreShop\Bundle\ResourceBundle\Pimcore\PimcoreRepository;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Order\OrderInvoiceStates;
 use CoreShop\Component\Order\OrderPaymentStates;
 use CoreShop\Component\Order\OrderSaleStates;
+use CoreShop\Component\Order\OrderShipmentStates;
 use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
@@ -203,14 +205,29 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
         $daysTimestamp = Carbon::now();
         $daysTimestamp->subDays($days);
 
-        $conditions = ['IFNULL(orderDate,creationDate) < ? AND saleState = ? AND orderState IN (?, ?, ?) AND paymentState <> ?'];
+        // Only orders nobody has paid for, shipped or invoiced yet. Confirmed orders (authorized,
+        // partially paid, partially refunded) must never be cancelled automatically.
+        $conditions = [
+            'IFNULL(orderDate,creationDate) < ?',
+            'saleState = ?',
+            'orderState = ?',
+            'IFNULL(paymentState, ?) IN (?, ?)',
+            'IFNULL(shippingState, ?) IN (?, ?)',
+            'IFNULL(invoiceState, ?) IN (?, ?)',
+        ];
         $params = [];
         $params[] = $daysTimestamp->getTimestamp();
         $params[] = OrderSaleStates::STATE_ORDER;
         $params[] = OrderStates::STATE_NEW;
-        $params[] = OrderStates::STATE_CONFIRMED;
-        $params[] = OrderStates::STATE_INITIALIZED;
-        $params[] = OrderPaymentStates::STATE_PAID;
+        $params[] = OrderPaymentStates::STATE_NEW;
+        $params[] = OrderPaymentStates::STATE_NEW;
+        $params[] = OrderPaymentStates::STATE_AWAITING_PAYMENT;
+        $params[] = OrderShipmentStates::STATE_NEW;
+        $params[] = OrderShipmentStates::STATE_NEW;
+        $params[] = OrderShipmentStates::STATE_READY;
+        $params[] = OrderInvoiceStates::STATE_NEW;
+        $params[] = OrderInvoiceStates::STATE_NEW;
+        $params[] = OrderInvoiceStates::STATE_READY;
 
         $bind = ' AND ';
 

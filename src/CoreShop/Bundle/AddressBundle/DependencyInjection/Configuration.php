@@ -60,7 +60,7 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->addDefaultsIfNotSet()
                 ->children()
-                ->scalarNode('autoconfigure_with_attributes')->defaultFalse()->end()
+                ->booleanNode('autoconfigure_with_attributes')->defaultFalse()->end()
             ->end()
         ;
 

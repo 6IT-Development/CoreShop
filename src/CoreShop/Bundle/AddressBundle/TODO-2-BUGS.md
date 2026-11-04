@@ -99,6 +99,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **B-13** → moved to Component **CB-02** (resolver returning `null`).
 
 ### B-14 — `autoconfigure_with_attributes` is a `scalarNode` but is passed to a `bool` parameter under `strict_types`
+- **Status:** fixed — `autoconfigure_with_attributes` is a `booleanNode`, as in CustomerBundle (B-10) and ProductBundle (B-04). Values such as `1` or `"true"` are now rejected by the config validation (`InvalidTypeException`) instead of causing a `TypeError` in `Autoconfiguration::registerForAutoConfiguration()`. An `%env(bool:…)%` placeholder is still not supported, because autoconfiguration is decided at compile time.
 - **Where:** `DependencyInjection/Configuration.php:63`; `DependencyInjection/CoreShopAddressExtension.php:70, 78`
 - **Problem:** Values such as `1`, `"true"` or an env placeholder make container compilation fail with a `TypeError` in `Autoconfiguration::registerForAutoConfiguration(bool $autoconfigureWithAttributes)`.
 - **Fix:** use `booleanNode()->defaultFalse()`.

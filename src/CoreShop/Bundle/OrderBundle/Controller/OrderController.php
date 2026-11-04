@@ -711,12 +711,13 @@ class OrderController extends PimcoreController
 
         foreach ($history as $note) {
             $user = $note->getUser() ? User::getById($note->getUser()) : null;
-            $avatar = $user ? sprintf('/admin/user/get-image?id=%d', $user->getId()) : null;
-            $date = Carbon::createFromTimestamp($note->getDate());
+            $avatar = $user ? $this->generateUrl('pimcore_admin_user_getimage', ['id' => $user->getId()]) : null;
+            // createFromTimestamp() returns UTC unless a timezone is given.
+            $date = Carbon::createFromTimestamp($note->getDate(), date_default_timezone_get());
             $statesHistory[] = [
                 'icon' => 'coreshop_icon_orderstates',
                 'type' => $note->getType(),
-                'date' => $date->isoFormat('DD.MM.YYYY h:mm'),
+                'date' => $date->isoFormat('DD.MM.YYYY HH:mm'),
                 'avatar' => $avatar,
                 'user' => $user ? $user->getName() : null,
                 'description' => $note->getDescription(),

@@ -61,6 +61,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** pass the admin user's language in both places.
 
 ### B-08 — State-history times are shown in UTC on a 12-hour clock without AM/PM
+- **Status:** fixed — `getStatesHistory()` creates the date in `date_default_timezone_get()` and formats it as `DD.MM.YYYY HH:mm`. The avatar URL is generated from the `pimcore_admin_user_getimage` route.
 - **Where:** `Controller/OrderController.php:687-699`.
 - **Problem:** Carbon 3's `createFromTimestamp()` returns UTC (`vendor/nesbot/carbon/src/Carbon/Traits/Timestamp.php:30-37`). The format `h:mm` is a 12-hour clock without a meridiem. The avatar URL `/admin/user/get-image` is hard-coded.
 - **Fix:** pass the default timezone and use `HH:mm`. Generate the avatar URL from the route name.

@@ -291,6 +291,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** make both setters nullable (`?TaxRuleGroupInterface`, `?CountryInterface`, `: void`) and add `?…` return types to the getters.
 
 ### B-39 — (reproduced) `Payment::setCurrency(null)` crashes
+- **Status:** fixed — `Payment::setCurrency()` uses `$currency?->getIsoCode()`, so `null` clears both the currency and the currency code.
 - **Where:** `Model/Payment.php:55-59`.
 - **Problem:** the method calls `$currency->getIsoCode()` unconditionally, although `CurrencyAwareInterface` allows `null`. Callers pass `$order->getCurrency()` / `$order->getBaseCurrency()` (`Order/Payment/OrderPaymentProvider.php:58`, `OrderBundle/Controller/OrderPaymentController.php:112`), which are nullable Pimcore fields. The typing side is Currency **B-10**.
 - **Fix:** `$this->currency = $currency; $this->currencyCode = $currency?->getIsoCode();`.

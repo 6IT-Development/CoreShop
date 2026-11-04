@@ -54,7 +54,7 @@ class Payment extends BasePayment implements PaymentInterface
 
     public function setCurrency($currency)
     {
-        $this->currencyCode = $currency->getIsoCode();
+        $this->currencyCode = $currency?->getIsoCode();
         $this->currency = $currency;
     }
 }

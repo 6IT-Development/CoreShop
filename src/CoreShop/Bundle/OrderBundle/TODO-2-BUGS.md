@@ -20,6 +20,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** correct the formula, remove the base fee row, and key the summary entries by `key` instead of by position.
 
 ### B-02 — `getStatesAction` fills `tos` with the from-places
+- **Status:** fixed — `tos` is built from `getTos()`. Both lists are de-duplicated with `array_unique()` and re-indexed with `array_values()`, so they stay JSON arrays when a transition name is defined for several from-places.
 - **Where:** `Controller/OrderController.php:134-138`, which calls `$transition->getFroms()` where it should call `getTos()`.
 - **Fix:** use `getTos()`, and `array_unique()` both lists.
 

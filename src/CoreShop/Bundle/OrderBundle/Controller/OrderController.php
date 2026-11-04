@@ -131,16 +131,16 @@ class OrderController extends PimcoreController
                 }
 
                 $transitions[$identifier][$transition->getName()]['froms'] =
-                    array_merge(
+                    array_values(array_unique(array_merge(
                         $transitions[$identifier][$transition->getName()]['froms'],
                         $transition->getFroms(),
-                    );
+                    )));
 
                 $transitions[$identifier][$transition->getName()]['tos'] =
-                    array_merge(
+                    array_values(array_unique(array_merge(
                         $transitions[$identifier][$transition->getName()]['tos'],
-                        $transition->getFroms(),
-                    );
+                        $transition->getTos(),
+                    )));
             }
 
             $transitions[$identifier] = array_values($transitions[$identifier]);

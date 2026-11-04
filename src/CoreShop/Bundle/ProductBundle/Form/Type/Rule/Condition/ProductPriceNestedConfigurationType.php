@@ -20,6 +20,7 @@ namespace CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition;
 
 use CoreShop\Bundle\ProductBundle\Form\Type\ProductPriceRuleConditionCollectionType;
 use CoreShop\Bundle\RuleBundle\Form\Type\Rule\Condition\AbstractNestedConfigurationType;
+use CoreShop\Component\Rule\Model\ConditionInterface;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -46,14 +47,28 @@ final class ProductPriceNestedConfigurationType extends AbstractNestedConfigurat
             ])
         ;
 
-        $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+        /*
+         * The nested conditions are stored serialized inside this condition's configuration array.
+         * Hand clones to the collection: on submit it writes onto its entries, and the stored instances
+         * must stay untouched (they are also the original data Doctrine compares the configuration with).
+         * Entries that are not conditions cannot be mapped by the entry type and are dropped.
+         */
+        $builder->addEventListener(FormEvents::PRE_SET_DATA, static function (FormEvent $event): void {
             $data = $event->getData();
 
-            if (is_array($data)) {
-                $data['conditions'] = [];
-
-                $event->setData($data);
+            if (!is_array($data)) {
+                return;
             }
+
+            $conditions = [];
+            foreach (is_iterable($data['conditions'] ?? null) ? $data['conditions'] : [] as $condition) {
+                if ($condition instanceof ConditionInterface) {
+                    $conditions[] = clone $condition;
+                }
+            }
+
+            $data['conditions'] = $conditions;
+            $event->setData($data);
         });
     }
 

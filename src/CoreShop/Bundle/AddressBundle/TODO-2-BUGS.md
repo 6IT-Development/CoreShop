@@ -119,6 +119,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add a constructor with `#[HasNamedArguments]` (`?string $message = null, ?array $groups = null, mixed $payload = null`) and `#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]`.
 
 ### B-17 — The bundle `composer.json` does not describe its real requirements
+- **Status:** fixed (declarations only) — requires `"php": "^8.4"` (as CustomerBundle B-14), `coreshop/registry` `^4.1` (`Autoconfiguration`), `doctrine/orm` `^2.9` and `jms/serializer-bundle` `^4.0 | ^5.0` (as the root), `symfony/config`, `dependency-injection`, `doctrine-bridge` (`UniqueEntity`), `form`, `http-foundation`, `http-kernel`, `options-resolver` and `validator` at `^7.4`, and `twig/twig` `^3.0` (the root conflict rule still excludes 3.9–3.13). `six-it/pimcore-source` is `^2.1` as in the root. `require-dev` is aligned with the root (`phpstan ^2.1`, `phpstan-doctrine ^2.0`, `phpstan-webmozart-assert ^2.0`). `symfony/translation-contracts` is not added: no bundle class imports it (the translator is only injected into the Component's `AddressFormatter`). The `4.1-dev` branch alias is kept: all 65 packages of the monorepo use it. `composer validate` passes; the imports were collected with grep, not resolved with a standalone `composer install`.
 - **Where:** `composer.json:26-35`
 - **Problems:**
   1. No `"php": "^8.4"` constraint.

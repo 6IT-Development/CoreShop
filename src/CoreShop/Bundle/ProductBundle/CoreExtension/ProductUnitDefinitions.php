@@ -355,6 +355,13 @@ class ProductUnitDefinitions extends Data implements
         return null;
     }
 
+    /**
+     * Note: this flushes the whole default entity manager (`doctrine.orm.entity_manager`), not
+     * only the unit definitions of this product. Any other pending change in that unit of work
+     * is written as well, inside the Pimcore object save. A scoped flush through a separate entity manager is not used, because the
+     * entities stay managed by the default one and a later flush there would write them again
+     * (see TODO-2 B-21 and TODO-3 I-15).
+     */
     public function save(Concrete|Model\DataObject\Objectbrick\Data\AbstractData|Model\DataObject\Fieldcollection\Data\AbstractData|Model\DataObject\Localizedfield $object, array $params = []): void
     {
         if (!$object instanceof ProductInterface) {
@@ -386,6 +393,13 @@ class ProductUnitDefinitions extends Data implements
         }
     }
 
+    /**
+     * Note: this flushes the whole default entity manager (`doctrine.orm.entity_manager`), not
+     * only the unit definitions of this product. Any other pending change in that unit of work
+     * is written as well, inside the Pimcore object save. A scoped flush through a separate entity manager is not used, because the
+     * entities stay managed by the default one and a later flush there would write them again
+     * (see TODO-2 B-21 and TODO-3 I-15).
+     */
     public function delete(Concrete|Model\DataObject\Objectbrick\Data\AbstractData|Model\DataObject\Fieldcollection\Data\AbstractData|Model\DataObject\Localizedfield $object, array $params = []): void
     {
         if (!$object instanceof ProductInterface) {

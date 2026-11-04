@@ -28,11 +28,24 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class CustomerType extends AbstractResourceType
 {
+    /**
+     * @param array $guestValidationGroups deprecated and unused: guest checkout validates through
+     *                                     CoreBundle's GuestRegistrationType and its own parameter
+     */
     public function __construct(
         string $dataClass,
         array $validationGroups = [],
         protected array $guestValidationGroups = [],
     ) {
+        if ([] !== $guestValidationGroups) {
+            trigger_deprecation(
+                'coreshop/customer-bundle',
+                '4.1',
+                'Passing guest validation groups to "%s" is deprecated and has no effect; they were never applied. Configure "coreshop.form.type.guest_registration_type.validation_groups" for guest checkout instead.',
+                self::class,
+            );
+        }
+
         parent::__construct($dataClass, $validationGroups);
     }
 

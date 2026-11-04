@@ -1,5 +1,7 @@
 parameters:
     coreshop.form.type.customer.validation_groups: [coreshop]
+    # deprecated since 4.1 and unused: CustomerType never applied it; guest checkout uses
+    # coreshop.form.type.guest_registration_type.validation_groups (CoreBundle)
     coreshop.form.type.customer_guest.validation_groups: [coreshop_customer_guest]
 
 services:
@@ -10,7 +12,6 @@ services:
         arguments:
             - '%coreshop.model.customer.class%'
             - '%coreshop.form.type.customer.validation_groups%'
-            - '%coreshop.form.type.customer_guest.validation_groups%'
         tags:
             - { name: form.type }
 

@@ -57,7 +57,10 @@ class OrderItemExtractor implements TrackingExtractorInterface
             'category' => (is_array($categories) && count($categories) > 0) ? $categories[0]->getName() : '',
             'price' => $object->getItemPrice() / $this->decimalFactor,
             'quantity' => $object->getQuantity(),
-            'currency' => $order ? $order->getCurrency()->getIsoCode() : '',
+            /**
+             * The item price is in the base currency of the order, not in the currency the customer sees
+             */
+            'currency' => ($order?->getBaseCurrency() ?? $order?->getStore()?->getCurrency())?->getIsoCode() ?? '',
         ]);
     }
 }

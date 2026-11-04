@@ -54,7 +54,10 @@ class OrderExtractor implements TrackingExtractorInterface
                 'totalTax' => $this->parseAmount($object->getTotalTax()),
                 'shipping' => $this->parseAmount($object->getAdjustmentsTotal(AdjustmentInterface::SHIPPING)),
                 'discount' => $this->parseAmount($object->getAdjustmentsTotal(AdjustmentInterface::CART_PRICE_RULE)),
-                'currency' => $object->getCurrency()->getIsoCode(),
+                /**
+                 * The totals are in the base currency of the order, not in the currency the customer sees
+                 */
+                'currency' => ($object->getBaseCurrency() ?? $object->getStore()?->getCurrency())?->getIsoCode() ?? '',
                 'items' => $items,
             ],
         );

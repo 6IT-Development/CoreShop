@@ -59,7 +59,10 @@ class ProductExtractor implements TrackingExtractorInterface
                 $object,
                 $this->shopperContext->getContext(),
             ) / $this->decimalFactor,
-            'currency' => $this->shopperContext->getCurrency()->getIsoCode(),
+            /**
+             * The calculated price is in the base currency of the store, not in the currency the customer sees
+             */
+            'currency' => $this->shopperContext->getStore()->getCurrency()?->getIsoCode() ?? '',
             'categories' => array_map(static function (CategoryInterface $category) {
                 return [
                     'id' => $category->getId(),

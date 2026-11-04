@@ -25,6 +25,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `getTos()`, and `array_unique()` both lists.
 
 ### B-03 — `OrderController::updateAction` saves without checking that the form is valid
+- **Status:** fixed — after `handleRequest()` the action returns `success: false` with the `ErrorSerializer` messages unless the form is submitted and valid, for preview and save alike, so nothing is processed or persisted. The order detail panel now shows these messages as an error notification (before, a failed save or preview was silently ignored). Note: `OrderType` is still created with `allow_zero_quantity: true`, and the quantity mapper problem itself is B-30.
 - **Where:** `Controller/OrderController.php:248-310`.
 - **Problem:** after `handleRequest()` it goes straight to `getData()` and `persistCart()` and reports success. Invalid input, including the 0 or negative quantities from B-30, is persisted. `OrderEditController.php:71-76` does check validity.
 - **Fix:** require `isSubmitted() && isValid()` and return the form errors.

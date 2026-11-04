@@ -95,6 +95,8 @@ coreshop.order.order.detail.panel = Class.create({
 
                 if (res.success) {
                     me.updateSale(res.sale);
+                } else {
+                    me.showErrors(res.message);
                 }
 
                 me.setPreviewMode(false);
@@ -124,6 +126,8 @@ coreshop.order.order.detail.panel = Class.create({
 
                 if (res.success) {
                     me.updateSale(res.sale);
+                } else {
+                    me.showErrors(res.message);
                 }
 
                 me.setPreviewMode(true);
@@ -131,6 +135,18 @@ coreshop.order.order.detail.panel = Class.create({
                 me.layout.setLoading(false);
             }.bind(this)
         });
+    },
+
+    showErrors: function(message) {
+        var messages = Ext.isArray(message) ? message : [message];
+
+        messages = messages.filter(Boolean);
+
+        if (messages.length === 0) {
+            messages = [t('error')];
+        }
+
+        pimcore.helpers.showNotification(t('error'), messages.map(Ext.String.htmlEncode).join('<br>'), 'error');
     },
 
     updateSale: function(sale) {

@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use CoreShop\Bundle\OrderBundle\Events;
 use CoreShop\Bundle\OrderBundle\Form\Type\OrderType;
 use CoreShop\Bundle\ResourceBundle\Controller\PimcoreController;
+use CoreShop\Bundle\ResourceBundle\Form\Helper\ErrorSerializer;
 use CoreShop\Bundle\WorkflowBundle\History\HistoryLogger;
 use CoreShop\Bundle\WorkflowBundle\Manager\StateMachineManagerInterface;
 use CoreShop\Bundle\WorkflowBundle\StateManager\WorkflowStateInfoManagerInterface;
@@ -238,6 +239,7 @@ class OrderController extends PimcoreController
         OrderRepositoryInterface $orderRepository,
         OrderItemRepositoryInterface $orderItemRepository,
         FormFactoryInterface $formFactory,
+        ErrorSerializer $errorSerializer,
         CartManagerInterface $cartManager,
         CartProcessorInterface $cartProcessor,
     ): Response {
@@ -258,6 +260,13 @@ class OrderController extends PimcoreController
 
         if ($request->getMethod() === 'POST') {
             $handledForm = $form->handleRequest($request);
+
+            if (!$handledForm->isSubmitted() || !$handledForm->isValid()) {
+                return $this->viewHandler->handle([
+                    'success' => false,
+                    'message' => $errorSerializer->serializeErrorFromHandledForm($handledForm),
+                ]);
+            }
 
             /**
              * @var OrderInterface&DataObject\Concrete $order

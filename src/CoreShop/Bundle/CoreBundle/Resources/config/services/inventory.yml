@@ -3,6 +3,4 @@ services:
         public: true
 
     CoreShop\Component\Core\Inventory\Operator\OrderInventoryOperatorInterface: '@CoreShop\Component\Core\Inventory\Operator\OrderInventoryOperator'
-    CoreShop\Component\Core\Inventory\Operator\OrderInventoryOperator:
-        arguments:
-            - '@coreshop.manager.product'
+    CoreShop\Component\Core\Inventory\Operator\OrderInventoryOperator: ~

@@ -22,16 +22,13 @@ use CoreShop\Component\Core\Model\OrderInterface;
 use CoreShop\Component\Core\Model\OrderItemInterface;
 use CoreShop\Component\Inventory\Model\StockableInterface;
 use CoreShop\Component\Order\OrderPaymentStates;
-use Doctrine\Persistence\ObjectManager;
+use Pimcore\Db;
+use Pimcore\Model\Element\ElementInterface;
+use Pimcore\Model\Version;
 use Webmozart\Assert\Assert;
 
 final class OrderInventoryOperator implements OrderInventoryOperatorInterface
 {
-    public function __construct(
-        private ObjectManager $productEntityManager,
-    ) {
-    }
-
     public function cancel(OrderInterface $order): void
     {
         if (in_array(
@@ -49,6 +46,8 @@ final class OrderInventoryOperator implements OrderInventoryOperatorInterface
 
     public function hold(OrderInterface $order): void
     {
+        $products = [];
+
         /** @var OrderItemInterface $orderItem */
         foreach ($order->getItems() as $orderItem) {
             $product = $orderItem->getProduct();
@@ -62,14 +61,16 @@ final class OrderInventoryOperator implements OrderInventoryOperatorInterface
             }
 
             $product->setOnHold($product->getOnHold() + (int) ceil($orderItem->getDefaultUnitQuantity()));
-            $this->productEntityManager->persist($product);
+            $products[] = $product;
         }
 
-        $this->productEntityManager->flush();
+        $this->saveProducts($products);
     }
 
     public function sell(OrderInterface $order): void
     {
+        $products = [];
+
         /** @var OrderItemInterface $orderItem */
         foreach ($order->getItems() as $orderItem) {
             $product = $orderItem->getProduct();
@@ -102,14 +103,16 @@ final class OrderInventoryOperator implements OrderInventoryOperatorInterface
 
             $product->setOnHold($product->getOnHold() - (int) ceil($orderItem->getDefaultUnitQuantity()));
             $product->setOnHand($product->getOnHand() - (int) ceil($orderItem->getDefaultUnitQuantity()));
-            $this->productEntityManager->persist($product);
+            $products[] = $product;
         }
 
-        $this->productEntityManager->flush();
+        $this->saveProducts($products);
     }
 
     public function release(OrderInterface $order): void
     {
+        $products = [];
+
         /** @var OrderItemInterface $orderItem */
         foreach ($order->getItems() as $orderItem) {
             $product = $orderItem->getProduct();
@@ -131,14 +134,16 @@ final class OrderInventoryOperator implements OrderInventoryOperatorInterface
                 ),
             );
             $product->setOnHold($product->getOnHold() - (int) ceil($orderItem->getDefaultUnitQuantity()));
-            $this->productEntityManager->persist($product);
+            $products[] = $product;
         }
 
-        $this->productEntityManager->flush();
+        $this->saveProducts($products);
     }
 
     public function giveBack(OrderInterface $order): void
     {
+        $products = [];
+
         /** @var OrderItemInterface $orderItem */
         foreach ($order->getItems() as $orderItem) {
             $product = $orderItem->getProduct();
@@ -152,9 +157,47 @@ final class OrderInventoryOperator implements OrderInventoryOperatorInterface
             }
 
             $product->setOnHand($product->getOnHand() + (int) ceil($orderItem->getDefaultUnitQuantity()));
-            $this->productEntityManager->persist($product);
+            $products[] = $product;
         }
 
-        $this->productEntityManager->flush();
+        $this->saveProducts($products);
+    }
+
+    /**
+     * Saves only the changed products, in one transaction and without a version for every stock change.
+     * The shared Pimcore ObjectManager is not used, because its flush() would also save whatever other code
+     * persisted earlier, and it keeps its buffers when a save fails.
+     *
+     * @param StockableInterface[] $products
+     */
+    private function saveProducts(array $products): void
+    {
+        if ([] === $products) {
+            return;
+        }
+
+        $versioningEnabled = Version::isEnabled();
+        Version::disable();
+
+        $db = Db::get();
+        $db->beginTransaction();
+
+        try {
+            foreach ($products as $product) {
+                Assert::isInstanceOf($product, ElementInterface::class);
+
+                $product->save();
+            }
+
+            $db->commit();
+        } catch (\Throwable $exception) {
+            $db->rollBack();
+
+            throw $exception;
+        } finally {
+            if ($versioningEnabled) {
+                Version::enable();
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CustomerBundle\Pimcore\Repository;
 
 use CoreShop\Bundle\ResourceBundle\Pimcore\PimcoreRepository;
+use CoreShop\Component\Customer\Exception\NonUniqueResultException;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Customer\Repository\CustomerRepositoryInterface;
 
@@ -28,13 +29,16 @@ class CustomerRepository extends PimcoreRepository implements CustomerRepository
     {
         $list = $this->getList();
         $list->setCondition('newsletterToken = ?', [$newsletterToken]);
+        $list->setLimit(2);
         $objects = $list->load();
 
-        if (count($objects) === 1 && $objects[0] instanceof CustomerInterface) {
-            return $objects[0];
+        if (count($objects) > 1) {
+            throw NonUniqueResultException::forField('customer', 'newsletter token');
         }
 
-        return null;
+        $customer = $objects[0] ?? null;
+
+        return $customer instanceof CustomerInterface ? $customer : null;
     }
 
     /**

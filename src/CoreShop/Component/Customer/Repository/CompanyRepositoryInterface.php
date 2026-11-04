@@ -18,10 +18,14 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Customer\Repository;
 
+use CoreShop\Component\Customer\Exception\NonUniqueResultException;
 use CoreShop\Component\Customer\Model\CompanyInterface;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 
 interface CompanyRepositoryInterface extends PimcoreRepositoryInterface
 {
+    /**
+     * @throws NonUniqueResultException when several companies have this name (names are not unique)
+     */
     public function findCompanyByName(string $name): ?CompanyInterface;
 }

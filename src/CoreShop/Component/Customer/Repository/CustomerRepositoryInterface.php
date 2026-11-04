@@ -18,11 +18,15 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Customer\Repository;
 
+use CoreShop\Component\Customer\Exception\NonUniqueResultException;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Resource\Repository\PimcoreRepositoryInterface;
 
 interface CustomerRepositoryInterface extends PimcoreRepositoryInterface
 {
+    /**
+     * @throws NonUniqueResultException when several customers share the token (a data problem)
+     */
     public function findByNewsletterToken(string $newsletterToken): ?CustomerInterface;
 
     /**

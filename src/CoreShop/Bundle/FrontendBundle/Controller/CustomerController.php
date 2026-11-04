@@ -28,6 +28,7 @@ use CoreShop\Component\Address\Repository\AddressIdentifierRepositoryInterface;
 use CoreShop\Component\Core\Context\ShopperContextInterface;
 use CoreShop\Component\Core\Customer\Address\AddressAssignmentManagerInterface;
 use CoreShop\Component\Core\Model\CustomerInterface;
+use CoreShop\Component\Customer\Exception\NonUniqueResultException;
 use CoreShop\Component\Customer\Repository\CustomerRepositoryInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
@@ -35,6 +36,7 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Factory\FactoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use CoreShop\Component\User\Model\UserInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -328,7 +330,16 @@ class CustomerController extends FrontendController
         /**
          * @var CustomerInterface $customer
          */
-        $customer = $this->container->get('coreshop.repository.customer')->findByNewsletterToken($token);
+        try {
+            $customer = $this->container->get('coreshop.repository.customer')->findByNewsletterToken($token);
+        } catch (NonUniqueResultException $exception) {
+            // a token shared by several customers must not confirm any of them, but it has to be noticed
+            if ($this->container->has('logger')) {
+                $this->container->get('logger')->error('Newsletter confirmation token matches more than one customer.', ['exception' => $exception]);
+            }
+
+            $customer = null;
+        }
 
         if ($customer instanceof CustomerInterface) {
             $customer->setNewsletterConfirmed(true);
@@ -379,6 +390,7 @@ class CustomerController extends FrontendController
                 new SubscribedService('coreshop.factory.address', FactoryInterface::class, attributes: new Autowire(service: 'coreshop.factory.address')),
                 new SubscribedService('coreshop.repository.address_identifier', AddressIdentifierRepositoryInterface::class),
                 new SubscribedService('event_dispatcher', EventDispatcherInterface::class),
+                new SubscribedService('logger', LoggerInterface::class, nullable: true),
             ]);
     }
 

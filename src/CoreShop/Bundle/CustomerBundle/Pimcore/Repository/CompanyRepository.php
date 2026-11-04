@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CustomerBundle\Pimcore\Repository;
 
 use CoreShop\Bundle\ResourceBundle\Pimcore\PimcoreRepository;
+use CoreShop\Component\Customer\Exception\NonUniqueResultException;
 use CoreShop\Component\Customer\Model\CompanyInterface;
 use CoreShop\Component\Customer\Repository\CompanyRepositoryInterface;
 
@@ -28,12 +29,15 @@ class CompanyRepository extends PimcoreRepository implements CompanyRepositoryIn
     {
         $list = $this->getList();
         $list->setCondition('name = ?', [$name]);
+        $list->setLimit(2);
         $objects = $list->load();
 
-        if (count($objects) === 1 && $objects[0] instanceof CompanyInterface) {
-            return $objects[0];
+        if (count($objects) > 1) {
+            throw NonUniqueResultException::forField('company', 'name');
         }
 
-        return null;
+        $company = $objects[0] ?? null;
+
+        return $company instanceof CompanyInterface ? $company : null;
     }
 }

@@ -122,6 +122,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** wrap the saves in a transaction, and default the last name with `?? ''`.
 
 ### B-15 — Order detail can crash on a deleted payment provider or a null document state — (plausible)
+- **Status:** fixed — `getPayments()` uses `getPaymentProvider()?->getIdentifier()` (the grid shows an empty cell). The invoice, shipment and payment `getStateInfo()` calls fall back to `InvoiceStates`/`ShipmentStates`/`PaymentInterface::STATE_NEW`; the four order states already had `?? *_STATE_NEW`. Not covered: a provider proxy whose row is gone still throws `EntityNotFoundException` on load.
 - **Where:** `Controller/OrderController.php:741` (`getPaymentProvider()->getIdentifier()`); `:561,594,747` pass a nullable state to `getStateInfo()` without a fallback.
 - **Fix:** use `?->`, and `?? *_STATE_NEW` fallbacks.
 

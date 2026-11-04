@@ -30,6 +30,7 @@ use CoreShop\Component\Address\Formatter\AddressFormatterInterface;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Currency\Model\CurrencyInterface;
+use CoreShop\Component\Order\InvoiceStates;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
@@ -49,6 +50,8 @@ use CoreShop\Component\Order\Repository\OrderInvoiceRepositoryInterface;
 use CoreShop\Component\Order\Repository\OrderItemRepositoryInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Order\Repository\OrderShipmentRepositoryInterface;
+use CoreShop\Component\Order\ShipmentStates;
+use CoreShop\Component\Payment\Model\PaymentInterface;
 use CoreShop\Component\Payment\Repository\PaymentRepositoryInterface;
 use CoreShop\Component\Pimcore\DataObject\DataLoader;
 use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
@@ -603,7 +606,7 @@ class OrderController extends PimcoreController
 
             $data['stateInfo'] = $this->container->get(WorkflowStateInfoManagerInterface::class)->getStateInfo(
                 'coreshop_invoice',
-                $invoice->getState(),
+                $invoice->getState() ?? InvoiceStates::STATE_NEW,
                 false,
                 $locale,
             );
@@ -637,7 +640,7 @@ class OrderController extends PimcoreController
 
             $data['stateInfo'] = $this->container->get(WorkflowStateInfoManagerInterface::class)->getStateInfo(
                 'coreshop_shipment',
-                $shipment->getState(),
+                $shipment->getState() ?? ShipmentStates::STATE_NEW,
                 false,
                 $locale,
             );
@@ -785,13 +788,13 @@ class OrderController extends PimcoreController
             $return[] = [
                 'id' => $payment->getId(),
                 'datePayment' => $payment->getDatePayment() ? $payment->getDatePayment()->getTimestamp() : '',
-                'provider' => $payment->getPaymentProvider()->getIdentifier(),
+                'provider' => $payment->getPaymentProvider()?->getIdentifier(),
                 'paymentNumber' => $payment->getNumber(),
                 'details' => $details,
                 'amount' => $payment->getTotalAmount(),
                 'stateInfo' => $this->container->get(WorkflowStateInfoManagerInterface::class)->getStateInfo(
                     'coreshop_payment',
-                    $payment->getState(),
+                    $payment->getState() ?? PaymentInterface::STATE_NEW,
                     false,
                     $locale,
                 ),

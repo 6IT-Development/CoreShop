@@ -48,7 +48,14 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
 
         $currentQuantity = $item->getQuantity();
         // negative quantities are rejected even when zero is allowed
-        if (0 > $cleanTargetQuantity || (!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity) || $currentQuantity === $cleanTargetQuantity) {
+        if (0 > $cleanTargetQuantity || (!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity)) {
+            return;
+        }
+
+        if ($currentQuantity === $cleanTargetQuantity) {
+            // the unit may have changed without the quantity
+            $this->updateDefaultUnitQuantity($item);
+
             return;
         }
 
@@ -59,11 +66,7 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
 
         $item->setQuantity($cleanTargetQuantity);
 
-        if ($item->hasUnitDefinition()) {
-            $item->setDefaultUnitQuantity(($item->getUnitDefinition()?->getConversionRate() ?? 1.0) * $item->getQuantity());
-        } else {
-            $item->setDefaultUnitQuantity($item->getQuantity() ?? 1.0);
-        }
+        $this->updateDefaultUnitQuantity($item);
 
         $this->eventDispatcher?->dispatch(
             new GenericEvent($item, ['targetQuantity' => $cleanTargetQuantity]),
@@ -99,6 +102,15 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
         }
 
         return $targetQuantity;
+    }
+
+    protected function updateDefaultUnitQuantity(OrderItemInterface $item): void
+    {
+        if ($item->hasUnitDefinition()) {
+            $item->setDefaultUnitQuantity(($item->getUnitDefinition()?->getConversionRate() ?? 1.0) * $item->getQuantity());
+        } else {
+            $item->setDefaultUnitQuantity($item->getQuantity() ?? 1.0);
+        }
     }
 
     protected function getScale(OrderItemInterface $cartItem): ?int

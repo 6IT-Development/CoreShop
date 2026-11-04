@@ -40,22 +40,13 @@ class CartItemQuantityDataMapper implements DataMapperInterface
     public function mapFormsToData(\Traversable $forms, mixed &$viewData): void
     {
         $formsOtherThanQuantity = [];
+        $quantityForm = null;
 
-        //First map all the other fields, then map quantity.
+        // First map all the other fields, then map quantity: the quantity modifier needs the submitted
+        // unit definition to compute the default unit quantity.
         foreach ($forms as $form) {
             if ('quantity' === $form->getName()) {
-                $targetQuantity = $form->getData();
-
-                // Like Symfony's own mapper: skip a field that was not submitted or could not be parsed,
-                // instead of turning it into quantity 0.
-                if ($form->isSubmitted() &&
-                    $form->isSynchronized() &&
-                    !$form->isDisabled() &&
-                    $form->getConfig()->getMapped() &&
-                    is_numeric($targetQuantity)
-                ) {
-                    $this->cartItemQuantityModifier->modify($viewData, (float) $targetQuantity);
-                }
+                $quantityForm = $form;
 
                 continue;
             }
@@ -65,6 +56,23 @@ class CartItemQuantityDataMapper implements DataMapperInterface
 
         if (!empty($formsOtherThanQuantity)) {
             $this->propertyPathDataMapper->mapFormsToData(new \ArrayObject($formsOtherThanQuantity), $viewData);
+        }
+
+        if (null === $quantityForm) {
+            return;
+        }
+
+        $targetQuantity = $quantityForm->getData();
+
+        // Like Symfony's own mapper: skip a field that was not submitted or could not be parsed,
+        // instead of turning it into quantity 0.
+        if ($quantityForm->isSubmitted() &&
+            $quantityForm->isSynchronized() &&
+            !$quantityForm->isDisabled() &&
+            $quantityForm->getConfig()->getMapped() &&
+            is_numeric($targetQuantity)
+        ) {
+            $this->cartItemQuantityModifier->modify($viewData, (float) $targetQuantity);
         }
     }
 }

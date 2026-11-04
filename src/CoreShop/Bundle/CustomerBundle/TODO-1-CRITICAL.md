@@ -14,6 +14,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ---
 
 ## C-01 — (dependent) Registering with someone else's guest e-mail takes over their guest customer, including all of their past orders and addresses
+- **Status:** fixed — the merge is gone: `CustomerRegistrationFormSubscriber` was deleted by CoreBundle B-06 (`199e9b200`), so registering with a guest's e-mail always creates a new customer and never attaches the guest (or its orders and addresses) to the new user. `CustomerRepositoryInterface::findUniqueByEmail()`, `findGuestByEmail()` and `findCustomerByEmail()` now document that they are lookups only, not proof of ownership. The remaining callers are `RegisteredUserValidator` (an "already registered" check, no data access) and the Behat transform context. Not implemented: a verified "claim your guest orders" flow (signed link) and e-mail confirmation before activation, so guest history stays on the old guest record.
 
 - **Where:**
   - `CoreBundle/Form/EventSubscriber/CustomerRegistrationFormSubscriber.php:61-66`: `findGuestByEmail($rawData['email']['first'])`. If a guest exists, it calls `$existingCustomer->setUser($data->getUser())` and swaps the form data to that existing customer.

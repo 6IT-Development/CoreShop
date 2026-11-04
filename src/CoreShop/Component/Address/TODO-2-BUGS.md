@@ -40,6 +40,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Formatter
 
 ### CB-05 — `AddressFormatter` plain-text output is HTML-escaped; the non-Pimcore fallback sees no data
+- **Status:** partially fixed — item 3 is done with AddressBundle B-06 (`SalutationTranslationKey`, shared with `SalutationChoiceType`). Items 1 and 2 are still open.
 - **Where:** `Formatter/AddressFormatter.php:35-39, 49-53`
 - **Problems:**
   1. With Symfony's default `twig.autoescape: name`, a string template (`__string_template__…`, no file extension) is escaped as **html**. `formatAddress($address, asHtml: false)`, used in `OrderBundle/Controller/OrderController.php:377` for plain-text and JSON values, still returns `Müller &amp; Söhne`.

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\AddressBundle\Form\Type;
 
 use CoreShop\Component\Address\Context\CountryContextInterface;
+use CoreShop\Component\Address\Formatter\SalutationTranslationKey;
 use CoreShop\Component\Address\Model\CountryInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -56,8 +57,7 @@ final class SalutationChoiceType extends AbstractType
 
                     $choices = [];
                     foreach ($salutations as $salutation) {
-                        $translationKey = 'coreshop.form.customer.salutation.' . str_replace(' ', '_', strtolower(trim($salutation)));
-                        $choices[$translationKey] = $salutation;
+                        $choices[SalutationTranslationKey::fromSalutation((string) $salutation)] = $salutation;
                     }
 
                     return $choices;

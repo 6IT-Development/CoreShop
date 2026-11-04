@@ -46,6 +46,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add the transformer only when the bound data is a `Collection`, or expose an option for it. Declare the dependency.
 
 ### B-06 — `SalutationChoiceType` choice building is fragile and inconsistent with `AddressFormatter`
+- **Status:** fixed (items 1–3) — the `null` guard (`getSalutations() ?? []`) came with B-03. New `Component\Address\Formatter\SalutationTranslationKey::fromSalutation()` builds the key (`coreshop.form.customer.salutation.` + trimmed, `mb_strtolower`, spaces → `_`) and is used by both `SalutationChoiceType` and `AddressFormatter`, so `Mr` and `mr` now resolve to the same `…salutation.mr` key in the form and in formatted addresses. Item 4 (comma inside a salutation split by `simple_array`) needs the `json` storage change and stays open as I-18.
 - **Where:** `Form/Type/SalutationChoiceType.php:43-52`; `Component/Address/Formatter/AddressFormatter.php` (salutation translation); `Resources/config/doctrine/model/Country.orm.xml:18`
 - **Problems:**
   1. `getSalutations()` may return `null` (`simple_array`, `nullable="true"`), which makes `foreach` over `null` emit a warning.

@@ -42,8 +42,8 @@ class AddressFormatter implements AddressFormatterInterface
 
         //translate salutation
         if (!empty($address->getSalutation())) {
-            $translationKey = 'coreshop.form.customer.salutation.' . $address->getSalutation();
-            $objectVars['salutation'] = $this->translator->trans($translationKey);
+            // same key as the salutation form choices
+            $objectVars['salutation'] = $this->translator->trans(SalutationTranslationKey::fromSalutation($address->getSalutation()));
         }
 
         $convertedAddress = $this->twig->createTemplate($address->getCountry()->getAddressFormat())->render($objectVars);

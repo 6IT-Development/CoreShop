@@ -114,7 +114,9 @@ class OrderCreationController extends BaseOrderCreationController
 
         $result = parent::getCartSummary($cart);
 
-        array_splice($result, 6, 0, [
+        $totalIndex = array_search('total', array_column($result, 'key'), true);
+
+        array_splice($result, false === $totalIndex ? count($result) : $totalIndex, 0, [
             [
                 'key' => 'payment_provider_fee',
                 'value' => $cart->getPaymentProviderFee(),

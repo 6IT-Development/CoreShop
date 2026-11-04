@@ -11,6 +11,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Admin order controllers
 
 ### B-01 — Order-creation totals: wrong discount tax, and a bogus payment-fee row that appears twice with CoreBundle
+- **Status:** fixed — `discount_tax` is now `-(gross - net)`. The base `payment_provider_fee` row (the subtotal) is removed; only CoreBundle adds the real fee. CoreBundle inserts its fee and shipping rows before the `total` row, looked up by key (appended if missing), instead of at index 6. The JS grid renders the array in order and needs no change.
 - **Where:** `Controller/OrderCreationController.php:269-278`; `CoreBundle/Controller/OrderCreationController.php:108-140` (`array_splice` at index 6); JS `Resources/public/pimcore/js/order/create/step/totals.js:17-33`.
 - **Problem:**
   - `discount_tax` is computed as `-1 * gross - net` where it should be `-(gross - net)`. With gross −120 and net −100 the UI shows 220 instead of 20.

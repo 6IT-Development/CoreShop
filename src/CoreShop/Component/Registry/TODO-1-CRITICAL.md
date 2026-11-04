@@ -20,6 +20,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Attribute autoconfiguration
 
 ### C-01 — (reproduced, dependent) `Autoconfiguration::getProperties()` emits camelCase tag keys, but every compiler pass reads dashed keys: attribute registration either breaks container compilation or silently drops the form type
+- **Status:** fixed (with ProductBundle TODO-2 **B-01**) — `getProperties()` maps getter names to dashed tag keys (`formType` → `form-type`, `notificationType` → `notification-type`; one-word keys like `type`/`priority` are unchanged). No compiler pass read the camelCase spelling, so nothing else changes. Checked for `RegisterRegistryTypePass` with a `ContainerBuilder`; the Notification path (`AbstractNotificationRulePass` reads `notification-type`) was not run.
 - **Where:** `Autoconfiguration.php:49-54`, `:57-72` (`getFormType()` → `formType`, `getNotificationType()` → `notificationType`); `RegisterRegistryTypePass.php:58` (reads `$tag['form-type']`); `NotificationBundle/DependencyInjection/Compiler/AbstractNotificationRulePass.php:65`, `:94` (reads `notification-type`, `form-type`).
 - **Problem:**
   - The YAML tags in all bundles use `form-type` / `notification-type`. The attribute path writes `formType` / `notificationType`. No pass reads the camelCase spelling.

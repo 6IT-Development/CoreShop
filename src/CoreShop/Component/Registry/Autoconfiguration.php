@@ -63,11 +63,19 @@ final class Autoconfiguration
         foreach ($methods as $method) {
             $name = $method->getName();
             if (str_starts_with($name, 'get')) {
-                $key = lcfirst(substr($name, 3));
-                $getterMethods[$key] = $method->invoke($object);
+                $getterMethods[self::toTagKey(substr($name, 3))] = $method->invoke($object);
             }
         }
 
         return $getterMethods;
+    }
+
+    /**
+     * Compiler passes and YAML tags use dashed tag keys (`form-type`, `notification-type`),
+     * so the getter `getFormType()` must become `form-type`, not `formType`.
+     */
+    private static function toTagKey(string $getterSuffix): string
+    {
+        return strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $getterSuffix));
     }
 }

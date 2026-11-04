@@ -19,8 +19,13 @@ declare(strict_types=1);
 namespace CoreShop\Component\Customer\Context;
 
 use CoreShop\Component\Customer\Model\CustomerInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class FixedCustomerContext implements CustomerContextInterface
+/**
+ * Holds a customer set explicitly (tests, CLI, workers acting as a customer). It is reset between
+ * requests (kernel.reset), so a customer set once does not leak into later requests.
+ */
+final class FixedCustomerContext implements CustomerContextInterface, ResetInterface
 {
     private ?CustomerInterface $customer = null;
 
@@ -36,5 +41,15 @@ final class FixedCustomerContext implements CustomerContextInterface
         }
 
         throw new CustomerNotFoundException();
+    }
+
+    public function clearCustomer(): void
+    {
+        $this->customer = null;
+    }
+
+    public function reset(): void
+    {
+        $this->clearCustomer();
     }
 }

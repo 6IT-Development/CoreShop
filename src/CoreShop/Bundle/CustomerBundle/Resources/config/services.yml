@@ -15,11 +15,13 @@ services:
             - '@CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver'
             - '@request_stack'
         tags:
-            - { name: coreshop.context.customer }
+            # explicit priorities keep the order request-based > fixed > token-based (higher wins)
+            - { name: coreshop.context.customer, priority: 30 }
 
     CoreShop\Component\Customer\Context\FixedCustomerContext:
         tags:
-            - { name: coreshop.context.customer }
+            - { name: coreshop.context.customer, priority: 20 }
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Component\Customer\Context\RequestBased\RequestResolverInterface: '@CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver'
     CoreShop\Component\Customer\Context\RequestBased\CompositeRequestResolver:
@@ -29,4 +31,4 @@ services:
         arguments:
             - '@Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface'
         tags:
-            - { name: coreshop.context.customer }
+            - { name: coreshop.context.customer, priority: 10 }

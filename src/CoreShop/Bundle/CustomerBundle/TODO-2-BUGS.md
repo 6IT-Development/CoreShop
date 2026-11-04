@@ -159,6 +159,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** remove it, or back it with a real route (add a `list` additional route, or use `addStoreWithRoute()` with an existing route).
 
 ### B-20 — `grid-config.yml`: English configs are marked `language: de`, the class ids are stale, and the column positions are duplicated
+- **Status:** fixed — in both this bundle's `grid-config.yml` and CoreBundle's `grid-config-customer.yml` (the copy with the address columns, B-12): `customer_en` and `customer_group_en` use `language: en`, and the stale `classId: '12'` / `'11'` keys are removed (`GridConfigInstaller::installGridConfig()` sets `classId` from the installed class anyway). The duplicated `position: 11` is gone: in this bundle B-12 already dropped the address columns, so `Groups` is 10; in the CoreBundle copy `Groups` is 12 after `Address` (11). Checked by parsing: every config has unique, consecutive positions and no `classId`. Not reinstalled; already installed grid configs keep their German language until the installer runs again with overwrite. The en/de duplication is left to I-20.
 - **Where:** `Resources/install/pimcore/grid-config.yml:6,9,302-303,636-637,674,677,734,737`
 - **Problem:**
   - `customer_en` and `customer_group_en` have `language: de`, so the "English" overview renders localized fields in German.

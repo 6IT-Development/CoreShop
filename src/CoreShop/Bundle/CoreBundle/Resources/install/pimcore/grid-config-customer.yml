@@ -3,10 +3,9 @@ grid_config:
         name: 'Customer Overview'
         class: coreshop.customer
         data:
-            language: de
+            language: en
             pageSize: 25
             sortinfo: false
-            classId: '12'
             columns:
                 id:
                     name: id
@@ -300,7 +299,7 @@ grid_config:
                     isOperator: true
                 "#5e39a1e53b225":
                     name: "#5e39a1e53b225"
-                    position: 11
+                    position: 12
                     hidden: false
                     width: 200
                     fieldConfig:
@@ -340,7 +339,6 @@ grid_config:
             language: de
             pageSize: 25
             sortinfo: false
-            classId: '12'
             columns:
                 id:
                     name: id
@@ -634,7 +632,7 @@ grid_config:
                     isOperator: true
                 "#5e39a1e53b225":
                     name: "#5e39a1e53b225"
-                    position: 11
+                    position: 12
                     hidden: false
                     width: 200
                     fieldConfig:
@@ -671,10 +669,9 @@ grid_config:
         name: 'Customer Group Overview'
         class: coreshop.customer_group
         data:
-            language: de
+            language: en
             pageSize: 25
             sortinfo: false
-            classId: '11'
             columns:
                 "#5e39a078aa0ec":
                     name: "#5e39a078aa0ec"
@@ -734,7 +731,6 @@ grid_config:
             language: de
             pageSize: 25
             sortinfo: false
-            classId: '11'
             columns:
                 "#5e39a078aa0ec":
                     name: "#5e39a078aa0ec"

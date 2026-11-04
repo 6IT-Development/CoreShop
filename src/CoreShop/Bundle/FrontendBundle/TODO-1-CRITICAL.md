@@ -33,6 +33,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## C-02 — `coreshop:frontend:install` (the documented way to customise the storefront) writes templates whose `extends`/`include`/`import` paths do not resolve, so every storefront page fails afterwards
 
+- **Status:** fixed — `TemplatesInstaller` now rewrites `@CoreShopFrontend/` to `coreshop/` (the directory it copies into), so `extends`/`include`/`import` in the copied templates resolve to `templates/coreshop/…`. The prefix is the new `TemplatesInstaller::VIEW_PREFIX` constant, and `TemplateConfiguratorInstaller` writes the same constant as `view_prefix`, so the two cannot drift apart. The `--templatePath` problems stay open under TODO-2 B-23. No installer test was added (this checkout has no `vendor/`; checked with `php -l` and by reading the rewritten paths).
 - **Where:**
   - `Installer/TemplatesInstaller.php:43-54`: files are copied to `<templatePath>/coreshop/<relative path>`, but the content is rewritten with `str_replace(['@CoreShopFrontend/', 'bundles/coreshopfrontend/'], ['', 'coreshop/'], …)`.
   - `Installer/TemplateConfiguratorInstaller.php:30-47`: sets `core_shop_frontend.view_prefix: 'coreshop'`, so controllers render `coreshop/<Name>.html.twig`.

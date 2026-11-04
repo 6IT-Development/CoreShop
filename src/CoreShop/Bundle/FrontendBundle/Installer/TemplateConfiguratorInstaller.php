@@ -27,9 +27,10 @@ class TemplateConfiguratorInstaller implements FrontendInstallerInterface
     {
         $configFile = $rootPath . '/config/packages/coreshop_frontend.yaml';
 
+        $viewPrefix = TemplatesInstaller::VIEW_PREFIX;
         $configContent = <<<CONFIG
 core_shop_frontend:
-    view_prefix: 'coreshop'
+    view_prefix: '$viewPrefix'
 CONFIG;
         $fs = new Filesystem();
         if (!file_exists($configFile)) {
@@ -43,7 +44,7 @@ CONFIG;
         $content = Yaml::parse($configContent);
 
         if (!isset($content['core_shop_frontend']['view_prefix'])) {
-            $content['core_shop_frontend']['view_prefix'] = 'coreshop';
+            $content['core_shop_frontend']['view_prefix'] = $viewPrefix;
         }
 
         $configContent = Yaml::dump($content, 4, 2);

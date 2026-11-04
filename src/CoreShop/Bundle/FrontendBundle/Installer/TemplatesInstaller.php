@@ -23,6 +23,13 @@ use Symfony\Component\Finder\Finder;
 
 class TemplatesInstaller implements FrontendInstallerInterface
 {
+    /**
+     * Directory (below the template path) the templates are copied to. It is
+     * also the view_prefix TemplateConfiguratorInstaller writes, so the
+     * rewritten extends/include/import paths and the controllers agree.
+     */
+    public const VIEW_PREFIX = 'coreshop';
+
     public function installFrontend(string $frontendBundlePath, string $rootPath, string $templatePath): void
     {
         $finder = new Finder();
@@ -35,12 +42,14 @@ class TemplatesInstaller implements FrontendInstallerInterface
 
         $fs = new Filesystem();
 
-        if (!$fs->exists($templatePath . '/coreshop')) {
-            $fs->mkdir($templatePath . '/coreshop');
+        $targetDir = $templatePath . '/' . self::VIEW_PREFIX;
+
+        if (!$fs->exists($targetDir)) {
+            $fs->mkdir($targetDir);
         }
 
         foreach ($twigFiles as $twigFile) {
-            $newFileName = $templatePath . '/coreshop/' . $twigFile->getRelativePathname();
+            $newFileName = $targetDir . '/' . $twigFile->getRelativePathname();
 
             if ($fs->exists($newFileName)) {
                 continue;
@@ -49,7 +58,7 @@ class TemplatesInstaller implements FrontendInstallerInterface
             $twigContent = file_get_contents($twigFile->getRealPath());
             $twigContent = str_replace(
                 ['@CoreShopFrontend/', 'bundles/coreshopfrontend/'],
-                ['', 'coreshop/'],
+                [self::VIEW_PREFIX . '/', 'coreshop/'],
                 $twigContent,
             );
 

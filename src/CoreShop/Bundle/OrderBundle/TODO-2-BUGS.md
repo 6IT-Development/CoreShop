@@ -218,6 +218,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `(bool) ($config->highlightLabel ?? false)`, null-safe access, `htmlspecialchars()` on the label, and `array $context = []`.
 
 ### B-27 — `AssetOrderDocumentPdfRenderer` re-renders needlessly and races with itself — (plausible)
+- **Status:** fixed — the asset stores the modification date of the document it was rendered for (`coreshop_rendered_document_modification_date` property). It counts as current while that date is ≥ the document's. Assets without the property fall back to the old creation-date check. The asset is updated in place instead of being deleted and recreated. The document is saved only when its `renderedAsset` link changes (the first render, or a moved asset), and the asset is stamped again after that save, so a render from a GET no longer saves the document each time. Rendering runs under a Symfony lock `coreshop_order_document_pdf_<id>` (optional `@?lock.factory`; without it, unlocked as before), and the asset is checked again once the lock is held. Limit: an edit in the same second as the stamping save is not detected (timestamps have second precision).
 - **Where:** `Renderer/AssetOrderDocumentPdfRenderer.php:40-77`.
 - **Problem:**
   - It saves the asset, then the document. If the document save lands in a later second, the document looks newer than the asset, so the PDF is deleted and recreated on the next request.

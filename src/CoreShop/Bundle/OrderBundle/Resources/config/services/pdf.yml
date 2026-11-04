@@ -47,3 +47,4 @@ services:
         arguments:
             - '@CoreShop\Bundle\OrderBundle\Renderer\AssetOrderDocumentPdfRenderer.inner'
             - '%kernel.environment%'
+            - '@?lock.factory'

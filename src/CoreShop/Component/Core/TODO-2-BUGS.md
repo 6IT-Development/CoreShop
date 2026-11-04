@@ -279,6 +279,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Models
 
 ### B-37 — (reproduced) `Store::$configurations` is never initialised, so every configuration method on a new `Store` fails
+- **Status:** fixed — `Store` has its own constructor that calls the `CountriesAwareTrait` constructor (aliased as `countriesAwareConstructor`, as `Carrier` and `Country` do) and sets `$this->configurations = new ArrayCollection()`. Doctrine does not call the constructor when it hydrates, so loaded stores are unchanged.
 - **Where:** `Model/Store.php:45` (property), `:52-81`. The class has no constructor of its own; `CountriesAwareTrait::__construct()` initialises only `$countries`.
 - **Problem:** on a `Store` created with `new` (resource factory, fixtures, Behat `StoreContext`, tests), `hasConfigurations()` throws `Call to a member function isEmpty() on null`, and `addConfiguration()` / `hasConfiguration()` throw on `contains()`. Only stores loaded through Doctrine work.
 - **Fix:** add a constructor that calls the trait constructor (aliased, as `Carrier` and `Country` do) and sets `$this->configurations = new ArrayCollection()`.

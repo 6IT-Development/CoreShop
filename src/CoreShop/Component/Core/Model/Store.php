@@ -20,6 +20,7 @@ namespace CoreShop\Component\Core\Model;
 
 use CoreShop\Component\Address\Model\CountriesAwareTrait;
 use CoreShop\Component\Store\Model\Store as BaseStore;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 /**
@@ -27,7 +28,9 @@ use Doctrine\Common\Collections\Collection;
  */
 class Store extends BaseStore implements StoreInterface
 {
-    use CountriesAwareTrait;
+    use CountriesAwareTrait {
+        __construct as countriesAwareConstructor;
+    }
 
     /**
      * @var CountryInterface
@@ -48,6 +51,13 @@ class Store extends BaseStore implements StoreInterface
      * @var Collection|CountryInterface[]
      */
     protected $countries;
+
+    public function __construct(
+        ) {
+        $this->countriesAwareConstructor();
+
+        $this->configurations = new ArrayCollection();
+    }
 
     public function getConfigurations()
     {

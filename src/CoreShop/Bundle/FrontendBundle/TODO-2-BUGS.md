@@ -56,6 +56,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** require `saleState === order`, `orderState` not in `[cancelled, complete]` and `paymentState` in `[awaiting_payment, partially_paid?]`, otherwise return 404 or redirect. Mirror the check in `PaymentController::prepareCaptureAction()` (dependent).
 
 ### B-07 — `CheckoutController::thankYouAction()` exposes any order, cart or quote by token, and counts a conversion on every reload
+- **Status:** fixed — the thank-you page redirects home unless the token belongs to a placed order (`saleState === order`), and it ignores non-string tokens. `doCheckoutAction()` stores the order token in the session (`coreshop.checkout.track_complete_token`). `thankYouAction()` calls `trackCheckoutComplete()` only when that marker matches, and removes it, so reloads, bookmarks and mail links do not track again. The response is `private, no-store` with `X-Robots-Tag: noindex, nofollow`. An ownership check is not added (the 32-character token is still the access key), so a shared link still opens the page.
 - **Where:** `Controller/CheckoutController.php:279-298`.
 - **Problem:**
   - `findByToken()` does not check `saleState`, so a cart or quote token renders the thank-you page too. Carts and quotes have tokens, and shared storage lists expose their tokens.

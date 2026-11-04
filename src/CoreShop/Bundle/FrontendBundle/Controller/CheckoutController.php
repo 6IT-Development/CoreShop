@@ -42,6 +42,12 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class CheckoutController extends FrontendController
 {
+    /**
+     * Session key holding the token of the order whose checkout completion
+     * has not been tracked yet, so the thank-you page tracks it only once.
+     */
+    private const TRACK_COMPLETE_SESSION_KEY = 'coreshop.checkout.track_complete_token';
+
     public function processAction(Request $request): Response
     {
         $this->denyAccessUnlessGranted('CORESHOP_CHECKOUT');
@@ -231,6 +237,10 @@ class CheckoutController extends FrontendController
             $workflow->apply($order, OrderSaleTransitions::TRANSITION_ORDER);
         }
 
+        if ($request->hasSession()) {
+            $request->getSession()->set(self::TRACK_COMPLETE_SESSION_KEY, (string) $order->getToken());
+        }
+
         $event = new CheckoutEvent($this->getCart(), ['order' => $order]);
 
         $this->container->get('event_dispatcher')->dispatch($event, CheckoutEvents::CHECKOUT_PAYMENT_PRE);
@@ -290,21 +300,35 @@ class CheckoutController extends FrontendController
     {
         $orderToken = $this->getParameterFromRequest($request, 'token');
 
-        if (null === $orderToken) {
+        if (!is_string($orderToken) || '' === $orderToken) {
             return $this->redirectToRoute('coreshop_index');
         }
 
         $order = $this->container->get('coreshop.repository.order')->findByToken($orderToken);
 
-        if (null === $order) {
+        // carts and quotes have tokens too, only placed orders have a thank-you page
+        if (!$order instanceof OrderInterface || $order->getSaleState() !== OrderSaleStates::STATE_ORDER) {
             return $this->redirectToRoute('coreshop_index');
         }
 
-        $this->container->get(TrackerInterface::class)->trackCheckoutComplete($order);
+        // track the completion once, in the session that checked out, not on every reload
+        if ($request->hasSession() &&
+            $request->getSession()->get(self::TRACK_COMPLETE_SESSION_KEY) === $orderToken
+        ) {
+            $request->getSession()->remove(self::TRACK_COMPLETE_SESSION_KEY);
+            $this->container->get(TrackerInterface::class)->trackCheckoutComplete($order);
+        }
 
-        return $this->render($this->getTemplateConfigurator()->findTemplate('Checkout/thank-you.html'), [
+        $response = $this->render($this->getTemplateConfigurator()->findTemplate('Checkout/thank-you.html'), [
             'order' => $order,
         ]);
+
+        // the page shows personal data to whoever has the URL
+        $response->setPrivate();
+        $response->headers->addCacheControlDirective('no-store');
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+
+        return $response;
     }
 
     public static function getSubscribedServices(): array

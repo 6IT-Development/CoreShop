@@ -35,10 +35,11 @@ final class SalutationChoiceType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setDefault('country', $this->countryContext->getCountry())
-            ->setAllowedValues('country', function (mixed $country) {
-                return $country instanceof CountryInterface;
-            })
+            // Lazy default: resolved per form build and only when the caller does not pass a
+            // country. An eager value would throw without a country context even when "country"
+            // is given, and would be cached with the OptionsResolver across requests.
+            ->setDefault('country', fn (Options $options): CountryInterface => $this->countryContext->getCountry())
+            ->setAllowedTypes('country', CountryInterface::class)
             ->setDefaults([
                 'choices' => function (Options $options) {
                     $salutations = $options['country']->getSalutations();

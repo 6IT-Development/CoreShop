@@ -23,6 +23,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## C-02 — `SalutationChoiceType` resolves the country eagerly in `configureOptions()`
 
+- **Status:** fixed — the `country` default is now a lazy closure (`fn (Options $o) => $this->countryContext->getCountry()`), so the context is only asked when the caller passes no `country`, and it is resolved for each form build instead of being cached with the `OptionsResolver`. The allowed-values closure is replaced by `setAllowedTypes('country', CountryInterface::class)`. Without a passed country and without a resolvable context the type still throws `CountryNotFoundException`. Using the address's own country stays open as I-16.
 - **Where:** `Form/Type/SalutationChoiceType.php:38`
 - **Problem:** `->setDefault('country', $this->countryContext->getCountry())` runs **every time the options resolver is built**, before any option the caller passed is applied.
   1. When no country can be resolved (admin context, CLI, API, mail rendering, Messenger handlers, a store without a base country), `CountryNotFoundException` is thrown. This happens **even when the caller passes `country` explicitly**. The type is used by `AddressType`, `CoreBundle/Form/Type/CustomerRegistrationType.php:65` and `CoreBundle/Form/Extension/CustomerTypeExtension.php:32`.

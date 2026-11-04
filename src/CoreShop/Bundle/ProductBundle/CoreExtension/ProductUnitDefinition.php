@@ -19,11 +19,13 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\ProductBundle\CoreExtension;
 
 use CoreShop\Bundle\ResourceBundle\Pimcore\CacheMarshallerInterface;
+use CoreShop\Component\Product\Model\ProductInterface;
 use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use Pimcore\Model\DataObject\ClassDefinition\Data;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\Element\ValidationException;
 
 /**
  * @psalm-suppress InvalidReturnType, InvalidReturnStatement
@@ -184,9 +186,58 @@ class ProductUnitDefinition extends Data implements
         return $this->unmarshalVersion($concrete, $data);
     }
 
+    /**
+     * @throws ValidationException when the posted definition is neither the stored one nor one of the product's own
+     */
     public function getDataFromEditmode(mixed $data, ?Concrete $object = null, array $params = []): mixed
     {
-        return $this->getDataFromResource($data, $object, $params);
+        $definition = $this->getDataFromResource($data, $object, $params);
+
+        if (!$definition instanceof ProductUnitDefinitionInterface || !$object instanceof Concrete) {
+            return $definition;
+        }
+
+        // The editor shows the stored definition read-only and posts its ID back unchanged.
+        // On order items (the stock use) it is the ordered product's definition, so it cannot
+        // be checked against the object itself. Any other ID must belong to the product (or to
+        // a parent it inherits the unit definitions from).
+        if ($this->isStoredDefinition($object, $definition) || $this->belongsToProduct($object, $definition)) {
+            return $definition;
+        }
+
+        throw new ValidationException(sprintf(
+            '%s: unit definition %d does not belong to this object.',
+            $this->getName(),
+            (int) $definition->getId(),
+        ));
+    }
+
+    private function isStoredDefinition(Concrete $object, ProductUnitDefinitionInterface $definition): bool
+    {
+        $stored = $object->getObjectVar($this->getName());
+
+        if ($stored instanceof ProductUnitDefinitionInterface) {
+            $stored = $stored->getId();
+        }
+
+        return is_numeric($stored) && null !== $definition->getId() && (int) $stored === (int) $definition->getId();
+    }
+
+    private function belongsToProduct(Concrete $object, ProductUnitDefinitionInterface $definition): bool
+    {
+        $owner = $definition->getProductUnitDefinitions()?->getProduct();
+
+        if (!$owner instanceof ProductInterface || null === $owner->getId()) {
+            return false;
+        }
+
+        for ($product = $object; $product instanceof ProductInterface; $product = $product->getParent()) {
+            if ((int) $product->getId() === (int) $owner->getId()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getDataForEditmode(mixed $data, ?Concrete $object = null, array $params = []): mixed

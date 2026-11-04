@@ -213,6 +213,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** wrap the store lookup and rethrow as `CountryNotFoundException` (with `previous`). Throw `CountryNotFoundException` when the base country is `null`.
 
 ### B-28 — `StoreBasedCartContext` keeps the new cart in a shared service that is never reset
+- **Status:** fixed — `StoreBasedCartContext` implements `ResetInterface` (`$this->cart = null`) and is tagged `kernel.reset` in `CoreBundle/Resources/config/services/context.yml`, so the new cart, with its customer and addresses, is dropped between requests and Messenger messages. Within one request the same new cart is still returned. The memoisation is kept because callers expect repeated `getCart()` calls in one request to give the same unsaved object.
 - **Where:** `Context/StoreBasedCartContext.php:32`, `:45-79` (wired as the `-999` fallback of the cart composite, `CoreBundle/Resources/config/services/context.yml:38-42`).
 - **Problem:** the fresh cart, already holding the customer and their default addresses, stays in `$this->cart` for the lifetime of the container. In Messenger workers, long-running commands and worker runtimes (FrankenPHP, RoadRunner), the next visitor without a cart gets the same object, including the previous customer and their addresses. Related to Customer **B-04** and CoreBundle **I-23**, but not covered by them.
 - **Fix:** implement `ResetInterface` (`$this->cart = null`) and tag the service `kernel.reset`, or drop the memoisation.

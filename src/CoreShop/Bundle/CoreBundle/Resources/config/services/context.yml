@@ -40,6 +40,8 @@ services:
         arguments:
             - '@CoreShop\Component\Core\Context\StoreBasedCartContext.inner'
             - '@CoreShop\Component\Core\Context\ShopperContextInterface'
+        tags:
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Component\Core\Context\Country\StoreAwareCountryContext:
         decorates: CoreShop\Component\Address\Context\CountryContextInterface

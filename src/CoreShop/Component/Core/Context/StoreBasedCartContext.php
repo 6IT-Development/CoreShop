@@ -26,8 +26,9 @@ use CoreShop\Component\Order\Context\CartContextInterface;
 use CoreShop\Component\Order\Context\CartNotFoundException;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Store\Context\StoreNotFoundException;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class StoreBasedCartContext implements CartContextInterface
+final class StoreBasedCartContext implements CartContextInterface, ResetInterface
 {
     private ?OrderInterface $cart = null;
 
@@ -76,6 +77,15 @@ final class StoreBasedCartContext implements CartContextInterface
         $this->cart = $cart;
 
         return $cart;
+    }
+
+    /**
+     * The new cart holds the customer and their addresses, so it must not be handed to the next request
+     * of a long-running process (Messenger workers, worker runtimes).
+     */
+    public function reset(): void
+    {
+        $this->cart = null;
     }
 
     private function setCustomerAndAddressOnCart(OrderInterface $cart, CustomerInterface $customer): void

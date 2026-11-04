@@ -96,14 +96,14 @@ class CustomerController extends FrontendController
     {
         $this->denyAccessUnlessGranted('CORESHOP_CUSTOMER_PROFILE_ORDER_DETAIL');
 
-        $orderId = $this->getParameterFromRequest($request, 'order');
+        $orderId = $this->getIdParameterFromRequest($request, 'order');
         $customer = $this->getCustomer();
 
         if (!$customer instanceof CustomerInterface) {
             return $this->redirectToRoute('coreshop_index');
         }
 
-        $order = $this->container->get('coreshop.repository.order')->find($orderId);
+        $order = null !== $orderId ? $this->container->get('coreshop.repository.order')->find($orderId) : null;
 
         if (!$order instanceof OrderInterface) {
             return $this->redirectToRoute('coreshop_customer_orders');
@@ -142,7 +142,7 @@ class CustomerController extends FrontendController
             return $this->redirectToRoute('coreshop_index');
         }
 
-        $addressId = $this->getParameterFromRequest($request, 'address');
+        $addressId = $this->getIdParameterFromRequest($request, 'address');
         $address = null;
 
         if ($addressId) {
@@ -238,9 +238,8 @@ class CustomerController extends FrontendController
             return $this->redirectToRoute('coreshop_index');
         }
 
-        $address = $this->container->get('coreshop.repository.address')->find(
-            $this->getParameterFromRequest($request, 'address'),
-        );
+        $addressId = $this->getIdParameterFromRequest($request, 'address');
+        $address = null !== $addressId ? $this->container->get('coreshop.repository.address')->find($addressId) : null;
 
         if (!$address instanceof AddressInterface) {
             return $this->redirectToRoute('coreshop_customer_addresses');
@@ -334,7 +333,7 @@ class CustomerController extends FrontendController
     public function confirmNewsletterAction(Request $request): Response
     {
         $success = false;
-        $token = $this->getParameterFromRequest($request, 'token');
+        $token = $this->getStringParameterFromRequest($request, 'token');
         $newsletterUser = null;
 
         if (!$token) {

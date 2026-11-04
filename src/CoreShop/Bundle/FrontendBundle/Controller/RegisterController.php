@@ -131,7 +131,7 @@ class RegisterController extends FrontendController
 
     public function passwordResetAction(Request $request): Response
     {
-        $resetToken = $this->getParameterFromRequest($request, 'token');
+        $resetToken = $this->getStringParameterFromRequest($request, 'token');
 
         if ($resetToken) {
             /** @var UserRepositoryInterface $userRepository */

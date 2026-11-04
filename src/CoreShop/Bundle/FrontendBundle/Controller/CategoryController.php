@@ -83,9 +83,9 @@ class CategoryController extends FrontendController
 
     public function indexAction(Request $request): Response
     {
-        $id = $this->getParameterFromRequest($request, $this->requestIdentifier);
+        $id = $this->getStringParameterFromRequest($request, $this->requestIdentifier);
 
-        $category = $this->getRepository()->findOneBy([
+        $category = '' === $id ? null : $this->getRepository()->findOneBy([
             $this->repositoryIdentifier => $id,
             'pimcore_unpublished' => true,
         ]);
@@ -95,7 +95,7 @@ class CategoryController extends FrontendController
                 sprintf(
                     'category with identifier "%s" (%s) not found',
                     $this->repositoryIdentifier,
-                    $this->getParameterFromRequest($request, $this->requestIdentifier),
+                    $id,
                 ),
             );
         }

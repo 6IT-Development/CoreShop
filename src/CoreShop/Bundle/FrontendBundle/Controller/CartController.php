@@ -233,7 +233,8 @@ class CartController extends FrontendController
 
         $redirect = $this->getSafeRedirectTarget($request, $this->getParameterFromRequest($request, '_redirect'), $this->generateUrl('coreshop_index'));
 
-        $product = $this->container->get('coreshop.repository.stack.purchasable')->find($this->getParameterFromRequest($request, 'product'));
+        $productId = $this->getIdParameterFromRequest($request, 'product');
+        $product = null !== $productId ? $this->container->get('coreshop.repository.stack.purchasable')->find($productId) : null;
 
         if (!$product instanceof PurchasableInterface) {
             if ($request->isXmlHttpRequest()) {
@@ -347,7 +348,8 @@ class CartController extends FrontendController
             return $this->redirectToRoute('coreshop_cart_summary');
         }
 
-        $cartItem = $this->container->get('coreshop.repository.order_item')->find($this->getParameterFromRequest($request, 'cartItem'));
+        $cartItemId = $this->getIdParameterFromRequest($request, 'cartItem');
+        $cartItem = null !== $cartItemId ? $this->container->get('coreshop.repository.order_item')->find($cartItemId) : null;
 
         if (!$cartItem instanceof OrderItemInterface) {
             return $this->redirectToRoute('coreshop_index');
@@ -380,10 +382,10 @@ class CartController extends FrontendController
             return $this->redirectToRoute('coreshop_cart_summary');
         }
 
-        $code = $this->getParameterFromRequest($request, 'code');
+        $code = $this->getStringParameterFromRequest($request, 'code');
         $cart = $this->getCart();
 
-        $voucherCode = $this->getCartPriceRuleVoucherRepository()->findByCode($code);
+        $voucherCode = '' !== $code ? $this->getCartPriceRuleVoucherRepository()->findByCode($code) : null;
 
         if (!$voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
             return $this->redirectToRoute('coreshop_cart_summary');

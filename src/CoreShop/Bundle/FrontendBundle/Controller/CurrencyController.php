@@ -50,8 +50,8 @@ class CurrencyController extends FrontendController
             throw new MethodNotAllowedHttpException(['POST']);
         }
 
-        $currencyCode = $this->getParameterFromRequest($request, 'currencyCode');
-        $currency = $this->getCurrencyRepository()->getByCode($currencyCode);
+        $currencyCode = $this->getStringParameterFromRequest($request, 'currencyCode');
+        $currency = '' !== $currencyCode ? $this->getCurrencyRepository()->getByCode($currencyCode) : null;
 
         if (!$currency instanceof CurrencyInterface) {
             throw $this->createNotFoundException();

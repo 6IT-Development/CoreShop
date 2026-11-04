@@ -78,6 +78,45 @@ abstract class FrontendController extends AbstractController
     }
 
     /**
+     * Reads a parameter like getParameterFromRequest(), but only as a string.
+     * A missing parameter, or one that is not a scalar (for example ?token[]=x),
+     * gives $default, so it cannot reach a string-typed repository method.
+     */
+    protected function getStringParameterFromRequest(Request $request, string $key, string $default = ''): string
+    {
+        $value = $this->getParameterFromRequest($request, $key);
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return $default;
+    }
+
+    /**
+     * Reads a positive integer id. Anything else (missing, arrays, "abc",
+     * "0", "-1") gives null.
+     */
+    protected function getIdParameterFromRequest(Request $request, string $key): ?int
+    {
+        $value = $this->getParameterFromRequest($request, $key);
+
+        if (is_int($value)) {
+            return $value > 0 ? $value : null;
+        }
+
+        if (is_string($value) && ctype_digit($value) && (int) $value > 0) {
+            return (int) $value;
+        }
+
+        return null;
+    }
+
+    /**
      * Checks the "_token" CSRF token of a state-changing action. The token is
      * read from the query string first (buttons inside another form send it
      * in their formaction URL), then from the body.

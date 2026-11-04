@@ -36,7 +36,7 @@ class OrderController extends FrontendController
 {
     public function reviseAction(Request $request): Response
     {
-        $token = $this->getParameterFromRequest($request, 'token');
+        $token = $this->getStringParameterFromRequest($request, 'token');
         $payment = null;
 
         $order = is_string($token) && '' !== $token ? $this->getOrderRepository()->findOneBy(['token' => $token]) : null;

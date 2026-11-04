@@ -100,6 +100,8 @@ class ProductController extends FrontendController
 
     protected function getProductByRequest(Request $request): ?PurchasableInterface
     {
-        return $this->container->get('coreshop.repository.stack.purchasable')->find($this->getParameterFromRequest($request, 'product'));
+        $productId = $this->getIdParameterFromRequest($request, 'product');
+
+        return null !== $productId ? $this->container->get('coreshop.repository.stack.purchasable')->find($productId) : null;
     }
 }

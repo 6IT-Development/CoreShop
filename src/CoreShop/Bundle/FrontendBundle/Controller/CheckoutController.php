@@ -58,7 +58,7 @@ class CheckoutController extends FrontendController
 
         $checkoutManager = $this->getCheckoutManagerFactory()->createCheckoutManager($this->getCart());
 
-        $stepIdentifier = $this->getParameterFromRequest($request, 'stepIdentifier');
+        $stepIdentifier = $this->getStringParameterFromRequest($request, 'stepIdentifier');
         $step = $checkoutManager->getStep($stepIdentifier);
         $dataForStep = [];
         $cart = $this->getCart();
@@ -282,7 +282,7 @@ class CheckoutController extends FrontendController
 
     public function thankYouAction(Request $request): Response
     {
-        $orderToken = $this->getParameterFromRequest($request, 'token');
+        $orderToken = $this->getStringParameterFromRequest($request, 'token');
 
         if (!is_string($orderToken) || '' === $orderToken) {
             return $this->redirectToRoute('coreshop_index');

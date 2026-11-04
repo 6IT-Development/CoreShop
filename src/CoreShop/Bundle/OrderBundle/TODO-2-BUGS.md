@@ -157,6 +157,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** measure age by `modificationDate` (or `COALESCE(lastActivatedAt, modificationDate)`), have `--user` set `customer=true, anonymous=false` and `--anonymous` the reverse, add `??` defaults, return early when no group is selected, drop or rename the `days` shortcut, and delete in batches.
 
 ### B-19 — Disabling expiration (`expiration.enabled: false`) breaks the container build
+- **Status:** fixed (in StorageListBundle) — `CoreShopStorageListExtension` sets `coreshop.storage_list.expiration.<list>.days` and `.params` for every list, before and independent of the `expiration.enabled` check (and of the customer/store interface check it was nested in). With expiration disabled the maintenance task is not registered, and `coreshop:cart:expire` / `coreshop:order:expire` still run with the configured values.
 - **Where:** `Resources/config/services/commands.yml:8,15` use `%coreshop.storage_list.expiration.order.params%`. That parameter is only set inside `if ($list['expiration']['enabled'])` in `StorageListBundle/DependencyInjection/CoreShopStorageListExtension.php:317-345`.
 - **Problem:** the obvious way out of TODO-1 **C-08** makes compilation fail with `ParameterNotFoundException`, and the application no longer boots.
 - **Fix:** always set `.params` and `.days` (defaults `[]` and `0`) in the StorageList extension, or make the command arguments not depend on them.

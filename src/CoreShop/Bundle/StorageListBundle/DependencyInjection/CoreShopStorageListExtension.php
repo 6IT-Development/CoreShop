@@ -222,6 +222,10 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
             $simpleStorage = new Definition(SimpleStorageListStorage::class);
             $container->setDefinition('coreshop.storage_list.storage.' . $name, $simpleStorage);
 
+            // Always set, also with expiration disabled: the expire commands are wired with these.
+            $container->setParameter('coreshop.storage_list.expiration.' . $name . '.days', $list['expiration']['days']);
+            $container->setParameter('coreshop.storage_list.expiration.' . $name . '.params', $list['expiration']['params'] ?? []);
+
             if (interface_exists(CustomerAwareInterface::class) && interface_exists(StoreAwareInterface::class)) {
                 $implements = \class_implements($list['resource']['interface']);
 
@@ -339,9 +343,6 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                             ],
                         ],
                     ]);
-
-                    $container->setParameter('coreshop.storage_list.expiration.' . $name . '.days', $list['expiration']['days']);
-                    $container->setParameter('coreshop.storage_list.expiration.' . $name . '.params', $list['expiration']['params'] ?? []);
 
                     $container->setDefinition('coreshop.storage_list.expiration.task.' . $name, $expireTask);
                 }

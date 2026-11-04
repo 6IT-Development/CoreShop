@@ -95,6 +95,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** `'step_identifier' => $stepIdentifier`. Keep the numeric keys for one minor release if BC matters, otherwise just fix it.
 
 ### B-12 — `CheckoutEvents::CHECKOUT_DO_POST` is dispatched twice for zero-total orders
+- **Status:** fixed — the dispatch inside the zero-total branch is removed. `CHECKOUT_DO_POST` is now dispatched once for every order, after the branch, and a stopped event or its response is handled the same way for free and paid orders.
 - **Where:** `Controller/CheckoutController.php:242-257` (dispatch inside the `0 === $order->getTotal()` branch) and `:259-261` (an unconditional second dispatch).
 - **Problem:** listeners on `CHECKOUT_DO_POST` (confirmation mails, tracking, ERP export) run twice for free orders. The return value of the first dispatch (stopped or response) is also ignored.
 - **Fix direction:** remove the dispatch inside the branch, or skip the second one for this case. Treat the event the same way on both paths.

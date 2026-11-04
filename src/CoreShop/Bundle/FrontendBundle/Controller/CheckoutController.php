@@ -271,8 +271,6 @@ class CheckoutController extends FrontendController
                 $orderPaymentStateMachine->apply($order, OrderPaymentTransitions::TRANSITION_PAY);
             }
 
-            $this->container->get('event_dispatcher')->dispatch(new CheckoutEvent($this->getCart(), ['order' => $order]), CheckoutEvents::CHECKOUT_DO_POST);
-
             $response = $this->redirectToRoute('coreshop_checkout_thank_you', ['token' => $order->getToken()]);
         }
 

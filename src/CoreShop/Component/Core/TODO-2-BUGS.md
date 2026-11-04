@@ -191,6 +191,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** take a Symfony Lock per cart id around the `order` transition, reload the sale state inside the lock, and return early from `commitOrder()` when the order already has an order number or a non-cart sale state. Related: FrontendBundle **B-13**, OrderBundle **B-20**.
 
 ### B-25 — Every shipment gets the weight of the whole order, also partial shipments
+- **Status:** fixed — `OrderToShipmentTransformer` sets the shipment weight to the sum of item weight × shipped quantity over the `$itemsToTransform` (matched to the order items by `orderItemId`), the same formula the shipment items use, instead of the whole order weight. It is still set before the inner transformer, because the inner transformer saves the shipment. The unit conversion in that formula is **B-26**.
 - **Where:** `Order/Transformer/OrderToShipmentTransformer.php:38-40`.
 - **Problem:** the decorator sets `$document->setWeight($order->getWeight())` before the inner transformer adds only the items in `$itemsToTransform`. A partial shipment, or the second shipment of an order, gets the full order weight, and that value goes to carriers and labels.
 - **Fix:** after the inner transform, set the weight to the sum of the shipment items' weights.

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Order\Transformer;
 
+use CoreShop\Component\Core\Model\OrderItemInterface;
 use CoreShop\Component\Core\Model\OrderShipmentInterface;
 use CoreShop\Component\Order\Model\OrderDocumentInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
@@ -36,9 +37,33 @@ final class OrderToShipmentTransformer implements OrderDocumentTransformerInterf
         array $itemsToTransform,
     ): OrderDocumentInterface {
         if ($document instanceof OrderShipmentInterface && $order instanceof \CoreShop\Component\Core\Model\OrderInterface) {
-            $document->setWeight($order->getWeight());
+            $document->setWeight($this->getShipmentWeight($order, $itemsToTransform));
         }
 
         return $this->inner->transform($order, $document, $itemsToTransform);
+    }
+
+    /**
+     * A shipment may contain only some of the order items, or only a part of their quantity,
+     * so its weight is the weight of the items it ships, not the weight of the whole order.
+     */
+    private function getShipmentWeight(\CoreShop\Component\Core\Model\OrderInterface $order, array $itemsToTransform): float
+    {
+        $weight = 0.0;
+
+        foreach ($itemsToTransform as $itemToTransform) {
+            foreach ($order->getItems() ?? [] as $orderItem) {
+                if (
+                    $orderItem instanceof OrderItemInterface &&
+                    (int) $orderItem->getId() === (int) ($itemToTransform['orderItemId'] ?? 0)
+                ) {
+                    $weight += ($orderItem->getItemWeight() ?? 0.0) * (int) ($itemToTransform['quantity'] ?? 0);
+
+                    break;
+                }
+            }
+        }
+
+        return $weight;
     }
 }

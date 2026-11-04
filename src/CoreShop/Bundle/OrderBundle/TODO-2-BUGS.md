@@ -207,6 +207,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `getCurrency()` for `converted*` fields and `getBaseCurrency()` for the rest (or add an operator option), and skip non-int values.
 
 ### B-26 — The `OrderState` grid operator crashes on unexpected input
+- **Status:** fixed — `highlightLabel` is read as `(bool) ($config->highlightLabel ?? false)` and the language as `$this->context['language'] ?? null`. A null child result is returned as null, a child without `def` falls into the `--` branch, and a null, non-string or empty state value shows `--` instead of reaching `getStateInfo()`. The translated label is escaped with `htmlspecialchars()` in both branches. `OrderState` and `PriceFormatter` take `array $context = []`, as the parent and both factories do.
 - **Where:** `Pimcore/GridColumnConfig/Operator/OrderState.php:36,41,56,79`.
 - **Problem:**
   - `$config->highlightLabel` can be missing (the JS `getCopyNode()` does not set it), which gives a warning and then a `TypeError` on the `bool` property **(plausible)**.

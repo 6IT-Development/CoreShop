@@ -30,15 +30,15 @@ class OrderState extends AbstractOperator
     public function __construct(
         private WorkflowStateInfoManagerInterface $workflowManager,
         \stdClass $config,
-        $context = null,
+        array $context = [],
     ) {
         parent::__construct($config, $context);
-        $this->highlightLabel = $config->highlightLabel;
+        $this->highlightLabel = (bool) ($config->highlightLabel ?? false);
     }
 
     public function getLabeledValue(array|ElementInterface $element): ResultContainer|\stdClass|null
     {
-        $locale = $this->context['language'];
+        $locale = $this->context['language'] ?? null;
 
         $result = new \stdClass();
         $result->label = $this->label;
@@ -51,9 +51,13 @@ class OrderState extends AbstractOperator
         $c = $children[0];
         $result = $c->getLabeledValue($element);
 
+        if (null === $result) {
+            return null;
+        }
+
         $workflow = null;
 
-        switch ($result->def->name) {
+        switch ($result->def->name ?? null) {
             case 'orderState':
                 $workflow = 'coreshop_order';
 
@@ -76,7 +80,14 @@ class OrderState extends AbstractOperator
                 return $result;
         }
 
+        if (!is_string($result->value ?? null) || '' === $result->value) {
+            $result->value = '--';
+
+            return $result;
+        }
+
         $state = $this->workflowManager->getStateInfo($workflow, $result->value, false, $locale);
+        $label = htmlspecialchars((string) $state['label'], \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8');
 
         $rgb = $this->hex2rgb($state['color']);
         $opacity = $workflow === 'coreshop_order' ? '1' : '0.3';
@@ -84,9 +95,9 @@ class OrderState extends AbstractOperator
         if ($this->highlightLabel === true) {
             $textColor = $workflow === 'coreshop_order' ? $this->getContrastColor($rgb[0], $rgb[1], $rgb[2]) : 'black';
             $backgroundColor = implode(',', $rgb);
-            $result->value = '<span class="rounded-color" style="background-color: rgba(' . $backgroundColor . ', ' . $opacity . '); color: ' . $textColor . ';">' . $state['label'] . '</span>';
+            $result->value = '<span class="rounded-color" style="background-color: rgba(' . $backgroundColor . ', ' . $opacity . '); color: ' . $textColor . ';">' . $label . '</span>';
         } else {
-            $result->value = $state['label'];
+            $result->value = $label;
         }
 
         return $result;

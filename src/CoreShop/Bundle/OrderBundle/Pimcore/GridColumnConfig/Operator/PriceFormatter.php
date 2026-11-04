@@ -32,7 +32,7 @@ class PriceFormatter extends AbstractOperator
         private MoneyFormatterInterface $moneyFormatter,
         private LocaleContextInterface $localeService,
         \stdClass $config,
-        $context = null,
+        array $context = [],
     ) {
         parent::__construct($config, $context);
     }

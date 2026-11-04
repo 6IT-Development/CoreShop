@@ -13,8 +13,6 @@
 pimcore.registerNS('coreshop.customer.resource');
 coreshop.customer.resource = Class.create(coreshop.resource, {
     initialize: function () {
-        coreshop.global.addStore('coreshop_customergroups', 'coreshop/customer_groups');
-
         coreshop.broker.fireEvent('resource.register', 'coreshop.customer', this);
     },
 

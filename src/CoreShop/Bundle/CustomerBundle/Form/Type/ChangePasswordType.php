@@ -23,6 +23,8 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ChangePasswordType extends AbstractType
 {
@@ -40,6 +42,11 @@ class ChangePasswordType extends AbstractType
                 'invalid_message' => 'coreshop.form.customer.password.must_match',
                 'first_options' => ['label' => 'coreshop.form.customer.new_password'],
                 'second_options' => ['label' => 'coreshop.form.customer.new_password_repeat'],
+                // an empty submit would store a null password and lock the user out
+                'constraints' => [
+                    new NotBlank(),
+                    new Length(min: 8, max: 4096),
+                ],
             ])
         ;
     }

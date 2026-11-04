@@ -144,6 +144,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Admin UI, install data and serialization
 
 ### B-18 — Wrong or missing admin translations
+- **Status:** fixed — `coreshop_permission_customer_list` is `'CoreShop: Customer List'` in `admin.en.yml` (the German one was already right). `admin.de.yaml` gets the eight menu keys (`coreshop_customer*`, `coreshop_customer_group*`). A new `admin.it.yml` covers every key of `admin.en.yml`, like the other bundles' `admin.it.yml` files. Checked by parsing: de and it now have exactly the en key set. The Italian texts are my translations and were not reviewed by a native speaker. The legacy `password` / `is_guest` / `reset_password_hash` labels are kept (B-13 removed the fields from the standalone class, but existing installs still have them). The `.yml` / `.yaml` mix is left to I-18.
 - **Where:** `Resources/translations/admin.en.yml:34`; `Resources/translations/admin.de.yaml`
 - **Problem:**
   - `coreshop_permission_customer_list: 'CoreShop: Customer Group List'` is a copy-paste error, so the user-permission screen shows two "Customer Group List" checkboxes.

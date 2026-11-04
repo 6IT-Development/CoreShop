@@ -27,6 +27,7 @@ use CoreShop\Component\Order\Processable\ProcessableInterface;
 use CoreShop\Component\Order\Repository\OrderShipmentRepositoryInterface;
 use CoreShop\Component\Order\ShipmentStates;
 use CoreShop\Component\Order\StateResolver\StateResolverInterface;
+use Symfony\Component\Workflow\WorkflowInterface;
 
 final class OrderShippingStateResolver implements StateResolverInterface
 {
@@ -46,11 +47,25 @@ final class OrderShippingStateResolver implements StateResolverInterface
         $workflow = $this->stateMachineManager->get($order, OrderShipmentTransitions::IDENTIFIER);
 
         if ($this->allShipmentsInStateButOrderStateNotUpdated($order, ShipmentStates::STATE_SHIPPED, OrderShipmentStates::STATE_SHIPPED)) {
-            $workflow->apply($order, OrderShipmentTransitions::TRANSITION_SHIP);
+            $this->applyTransition($workflow, $order, OrderShipmentTransitions::TRANSITION_SHIP);
         }
 
         if ($this->isPartiallyShippedButOrderStateNotUpdated($order)) {
-            $workflow->apply($order, OrderShipmentTransitions::TRANSITION_PARTIALLY_SHIP);
+            $this->applyTransition($workflow, $order, OrderShipmentTransitions::TRANSITION_PARTIALLY_SHIP);
+        }
+    }
+
+    /**
+     * Documents created outside the admin controllers leave the order at "new", so request first.
+     */
+    private function applyTransition(WorkflowInterface $workflow, OrderInterface $order, string $transition): void
+    {
+        if (!$workflow->can($order, $transition) && $workflow->can($order, OrderShipmentTransitions::TRANSITION_REQUEST_SHIPMENT)) {
+            $workflow->apply($order, OrderShipmentTransitions::TRANSITION_REQUEST_SHIPMENT);
+        }
+
+        if ($workflow->can($order, $transition)) {
+            $workflow->apply($order, $transition);
         }
     }
 

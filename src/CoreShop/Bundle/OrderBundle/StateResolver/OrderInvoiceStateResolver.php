@@ -27,6 +27,7 @@ use CoreShop\Component\Order\OrderInvoiceTransitions;
 use CoreShop\Component\Order\Processable\ProcessableInterface;
 use CoreShop\Component\Order\Repository\OrderInvoiceRepositoryInterface;
 use CoreShop\Component\Order\StateResolver\StateResolverInterface;
+use Symfony\Component\Workflow\WorkflowInterface;
 
 final class OrderInvoiceStateResolver implements StateResolverInterface
 {
@@ -46,11 +47,25 @@ final class OrderInvoiceStateResolver implements StateResolverInterface
         $workflow = $this->stateMachineManager->get($order, OrderInvoiceTransitions::IDENTIFIER);
 
         if ($this->allInvoicesInStateButOrderStateNotUpdated($order, InvoiceStates::STATE_COMPLETE, OrderInvoiceStates::STATE_INVOICED)) {
-            $workflow->apply($order, OrderInvoiceTransitions::TRANSITION_INVOICE);
+            $this->applyTransition($workflow, $order, OrderInvoiceTransitions::TRANSITION_INVOICE);
         }
 
         if ($this->isPartiallyInvoicedButOrderStateNotUpdated($order)) {
-            $workflow->apply($order, OrderInvoiceTransitions::TRANSITION_PARTIALLY_INVOICE);
+            $this->applyTransition($workflow, $order, OrderInvoiceTransitions::TRANSITION_PARTIALLY_INVOICE);
+        }
+    }
+
+    /**
+     * Documents created outside the admin controllers leave the order at "new", so request first.
+     */
+    private function applyTransition(WorkflowInterface $workflow, OrderInterface $order, string $transition): void
+    {
+        if (!$workflow->can($order, $transition) && $workflow->can($order, OrderInvoiceTransitions::TRANSITION_REQUEST_INVOICE)) {
+            $workflow->apply($order, OrderInvoiceTransitions::TRANSITION_REQUEST_INVOICE);
+        }
+
+        if ($workflow->can($order, $transition)) {
+            $workflow->apply($order, $transition);
         }
     }
 

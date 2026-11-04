@@ -28,6 +28,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
   - Document the contract on `CustomerRepositoryInterface::findGuestByEmail()` ("lookup only: not proof of ownership") so that other callers do not repeat the pattern (see C-02).
 
 ## C-02 — (dependent) Guest checkout with another person's e-mail reuses and overwrites that person's existing guest customer
+- **Status:** fixed by CoreBundle C-07 (`18e3c1834`) — `GuestRegistrationType` no longer calls `findGuestByEmail()`. It reuses only the guest customer the form was given (the one already attached to the cart/session) and creates a new guest otherwise, so a typed e-mail never selects an existing record. The third bullet does not apply as written: `CustomerDataMapper` replaced the addresses rather than showing them (see CoreBundle C-07). Rechecked on the current branch; no further code change was needed.
 
 - **Where:**
   - `CoreBundle/Form/Type/GuestRegistrationType.php:90-114` (`PRE_SUBMIT` listener): `findGuestByEmail($data['email']['first'])`. If a guest customer exists and has no user, it runs `$form->setData($customer)`, and the submitted firstname, lastname, salutation and so on are mapped onto **that** object.

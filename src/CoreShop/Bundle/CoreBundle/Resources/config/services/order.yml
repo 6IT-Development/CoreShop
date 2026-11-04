@@ -85,6 +85,7 @@ services:
         decorates: 'CoreShop\Component\Order\Cart\CartContextResolver'
         arguments:
             - '@CoreShop\Component\Core\Cart\CartContextResolver.inner'
+            - '@CoreShop\Component\Core\Provider\AddressProviderInterface'
 
 
     CoreShop\Component\Order\Committer\OrderCommitterInterface: '@CoreShop\Component\Core\Order\Committer\OrderCommitter'

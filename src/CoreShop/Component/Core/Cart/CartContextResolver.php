@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Cart;
 
+use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Core\Model\StoreInterface;
+use CoreShop\Component\Core\Provider\AddressProviderInterface;
 use CoreShop\Component\Order\Cart\CartContextResolverInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use Webmozart\Assert\Assert;
@@ -27,6 +29,7 @@ final class CartContextResolver implements CartContextResolverInterface
 {
     public function __construct(
         private CartContextResolverInterface $inner,
+        private ?AddressProviderInterface $addressProvider = null,
     ) {
     }
 
@@ -42,8 +45,22 @@ final class CartContextResolver implements CartContextResolverInterface
         Assert::isInstanceOf($store, StoreInterface::class);
 
         $context['store'] = $store;
-        $context['country'] = $store->getBaseCountry();
+
+        if (!($context['country'] ?? null) instanceof CountryInterface) {
+            $context['country'] = $this->resolveCountry($cart, $store);
+        }
 
         return $context;
+    }
+
+    private function resolveCountry(OrderInterface $cart, StoreInterface $store): ?CountryInterface
+    {
+        foreach ([$cart->getShippingAddress(), $cart->getInvoiceAddress()] as $address) {
+            if ($address?->getCountry() instanceof CountryInterface) {
+                return $address->getCountry();
+            }
+        }
+
+        return $this->addressProvider?->getAddress($cart)?->getCountry() ?? $store->getBaseCountry();
     }
 }

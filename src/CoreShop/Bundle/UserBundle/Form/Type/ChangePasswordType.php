@@ -53,6 +53,7 @@ class ChangePasswordType extends AbstractType
 
     public function getBlockPrefix(): string
     {
-        return 'coreshop_change_password';
+        // not coreshop_change_password: that is CustomerBundle's ChangePasswordType, used by the storefront
+        return 'coreshop_user_change_password';
     }
 }

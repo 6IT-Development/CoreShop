@@ -24,6 +24,7 @@ final class CustomerSelectionType extends PimcoreResourceSelectionType
 {
     public function getBlockPrefix(): string
     {
-        return 'coreshop_customer';
+        // not coreshop_customer: that is CustomerType's prefix, and form themes match on it
+        return 'coreshop_customer_selection';
     }
 }

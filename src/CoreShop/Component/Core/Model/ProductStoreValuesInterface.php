@@ -27,6 +27,9 @@ interface ProductStoreValuesInterface extends ResourceInterface, StoreAwareInter
 {
     public function getPrice(): int;
 
+    /**
+     * Returns null only before the field name is set; it is required when the entity is persisted.
+     */
     public function getFieldName(): ?string;
 
     public function setFieldName(string $fieldName): void;

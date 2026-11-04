@@ -327,6 +327,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `return array_any($this->getItems() ?? [], static fn (OrderItemInterface $i) => $i->getDigitalProduct() !== true);` with a `bool` return type.
 
 ### B-45 — The `ProductStoreValues` contract allows a `null` field name that the mapping rejects
+- **Status:** fixed — `ProductStoreValues::setFieldName()` takes a `string`, like `ProductStoreValuesInterface`, so the implementation no longer accepts the `null` that the `NOT NULL` column rejects at flush. `getFieldName()` stays `?string` (documented: `null` only before it is set), because narrowing the interface would break other implementations, and a constructor argument would break every `new ProductStoreValues()` and the factory. `CoreExtension/StoreValues` always passes the field definition's name. BC: code that called `setFieldName(null)` now gets a `TypeError` instead of a DB error at flush.
 - **Where:** `Model/ProductStoreValuesInterface.php:30-32` (`getFieldName(): ?string`, `setFieldName(string)`), `Model/ProductStoreValues.php:36`, `:64-72` (`setFieldName(?string)`); `CoreBundle/Resources/config/doctrine/model/ProductStoreValues.orm.xml` (`fieldName` is `NOT NULL` and part of the unique key).
 - **Problem:** the model accepts `null`, but flushing it fails with a `NOT NULL` violation. The interface and the implementation also disagree about whether `null` is allowed. Only custom code and imports are affected today.
 - **Fix:** make the field required (`string`), or set it in the constructor.

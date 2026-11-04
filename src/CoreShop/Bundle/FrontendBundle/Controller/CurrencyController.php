@@ -51,7 +51,17 @@ class CurrencyController extends FrontendController
         }
 
         $currencyCode = $this->getStringParameterFromRequest($request, 'currencyCode');
-        $currency = '' !== $currencyCode ? $this->getCurrencyRepository()->getByCode($currencyCode) : null;
+        $store = $this->container->get(StoreContextInterface::class)->getStore();
+        $currency = null;
+
+        // Only the currencies the widget offers: active and assigned to the current store
+        foreach ($this->getCurrencyRepository()->findActiveForStore($store) as $activeCurrency) {
+            if ($activeCurrency instanceof CurrencyInterface && $activeCurrency->getIsoCode() === $currencyCode) {
+                $currency = $activeCurrency;
+
+                break;
+            }
+        }
 
         if (!$currency instanceof CurrencyInterface) {
             throw $this->createNotFoundException();
@@ -61,7 +71,6 @@ class CurrencyController extends FrontendController
         $cartContext = $this->container->get(CartContextInterface::class);
         $cart = $cartContext->getCart();
 
-        $store = $this->container->get(StoreContextInterface::class)->getStore();
         $this->container->get(CurrencyStorageInterface::class)->set($store, $currency);
 
         $cart->setCurrency($currency);
@@ -70,7 +79,11 @@ class CurrencyController extends FrontendController
             $cartManager->persistCart($cart);
         }
 
-        return new RedirectResponse($request->headers->get('referer', $request->getSchemeAndHttpHost()));
+        return new RedirectResponse($this->getSafeRedirectTarget(
+            $request,
+            $request->headers->get('referer'),
+            $this->generateUrl('coreshop_index'),
+        ));
     }
 
     protected function getCurrencyRepository(): CurrencyRepositoryInterface

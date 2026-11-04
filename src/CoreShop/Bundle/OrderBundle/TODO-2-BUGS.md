@@ -193,6 +193,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** compute `net = completed − refunded` and decide between `refund`, `partially_refund` and `pay` from that. Keep the currency consistent with Currency TODO-1 **C-01**.
 
 ### B-24 — A fully paid order can get stuck in `partially_authorized` — (plausible)
+- **Status:** fixed — `pay.from` now includes `partially_authorized` (and `partially_refunded`, from B-23). The same gap existed for a partial capture of a full authorization: `partially_pay.from` now includes `authorized`. `authorize`/`partially_authorize` had no gap: once something is captured the resolver no longer picks them. Not done: resolver tests for every reachable state.
 - **Where:** `Resources/config/pimcore/workflow/coreshop_order_payment.yml:38-40` (`pay.from: [awaiting_payment, partially_paid, authorized]`); `StateResolver/OrderPaymentStateResolver.php:29-34,62-64`.
 - **Problem:** if a first payment is partially authorized and a second payment completes the full total, the resolver picks `pay`, but `can()` is false from `partially_authorized`. The transition is skipped silently. The order never becomes paid or complete, inventory is never sold, and TODO-1 **C-08** later cancels it.
 - **Fix:** add `partially_authorized` to `pay.from` (and check `authorize`/`partially_pay` for the same gap). Add resolver tests for every reachable state.

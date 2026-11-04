@@ -5,7 +5,7 @@ CoreShop\Component\Customer\Model\Customer:
         id:
             serialized_name: id
             exp: object.getId()
-            type: string
+            type: integer
             groups: [Detailed]
         salutation:
             serialized_name: salutation

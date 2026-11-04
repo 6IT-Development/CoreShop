@@ -168,6 +168,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** set `language: en` for the `*_en` entries, remove the `classId` keys (or let the installer overwrite them), and renumber the positions to 11 and 12. See I-20 for removing the en/de duplication.
 
 ### B-21 — JMS metadata: `id` is declared as `string`, and `CustomerGroup` exposes no id
+- **Status:** fixed — `Model.Customer.yml` serializes `id` as `integer` (the type every other bundle's metadata uses for ids), and `Model.CustomerGroup.yml` gains an `id` virtual property (`object.getId()`, `integer`, group `Detailed`), so the nested `customerGroups` entries can be referenced. No `Company` metadata was added: the customer metadata exposes no company and nothing else in the repository serializes one. YAML parsed only; not serialized through JMS (no `vendor/` here). **BC:** API/admin consumers that compared the customer `id` as a string (`=== "42"`) now receive a number.
 - **Where:** `Resources/config/serializer/Model.Customer.yml:5-9`, `Model.CustomerGroup.yml`
 - **Problem:** `getId(): ?int` is serialized as a JSON string (`"42"`), so admin JS (or API consumers) comparing it with `===` to numeric ids from other endpoints get mismatches. `customerGroups` is serialized through `Model.CustomerGroup.yml`, which has no `id`, so clients receive the names and roles of the groups but cannot reference them.
 - **Fix direction:** `type: int` for `id`. Add `id` (`int`) to `CustomerGroup` (and add a `Company` metadata file if companies are serialized anywhere).

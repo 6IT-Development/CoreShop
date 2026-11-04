@@ -354,14 +354,30 @@ class OrderController extends PimcoreController
 
         $number = $this->getParameterFromRequest($request, 'number');
 
-        if ($number) {
-            $list = $orderRepository->getList();
-            $list->setCondition('orderNumber = ? OR id = ?', [$number, $number]);
+        if (!is_scalar($number) || '' === trim((string) $number)) {
+            return $this->viewHandler->handle(['success' => false]);
+        }
 
-            $orders = $list->getData();
+        $number = trim((string) $number);
 
-            if (count($orders) > 0) {
-                return $this->viewHandler->handle(['success' => true, 'id' => $orders[0]->getId()]);
+        // The order number wins. A combined "orderNumber = ? OR id = ?" let MySQL cast "2024-0001" to 2024.
+        $list = $orderRepository->getList();
+        $list->setCondition('orderNumber = ?', [$number]);
+        $list->setOrderKey('id');
+        $list->setOrder('ASC');
+        $list->setLimit(1);
+
+        $orders = $list->getData();
+
+        if (count($orders) > 0) {
+            return $this->viewHandler->handle(['success' => true, 'id' => $orders[0]->getId()]);
+        }
+
+        if (ctype_digit($number)) {
+            $order = $orderRepository->find((int) $number);
+
+            if ($order instanceof OrderInterface) {
+                return $this->viewHandler->handle(['success' => true, 'id' => $order->getId()]);
             }
         }
 

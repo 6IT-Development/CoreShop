@@ -67,6 +67,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** pass the default timezone and use `HH:mm`. Generate the avatar URL from the route name.
 
 ### B-09 — `findOrderAction` can return an unrelated order
+- **Status:** fixed — the order number is searched first, on its own (`orderNumber = ?`, ordered by id, limit 1). Only when nothing matches and the input is all digits (`ctype_digit()`) is it looked up as an id, through `$orderRepository->find((int) $number)`. Non-scalar or empty input returns `success: false`. The input is trimmed.
 - **Where:** `Controller/OrderController.php:331-341`.
 - **Problem:** the condition `orderNumber = ? OR id = ?` lets MySQL cast `'2024-0001'` to `2024`, so another order can match. There is no ordering, so `$orders[0]` is arbitrary.
 - **Fix:** match the order number first. Use the id only when `ctype_digit()` holds, and bind it as an int.

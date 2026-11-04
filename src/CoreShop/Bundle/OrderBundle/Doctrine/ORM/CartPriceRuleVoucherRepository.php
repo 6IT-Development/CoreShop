@@ -26,15 +26,37 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 
 class CartPriceRuleVoucherRepository extends EntityRepository implements CartPriceRuleVoucherRepositoryInterface
 {
-    public function findAllPaginator(CartPriceRuleInterface $cartPriceRule, int $offset, int $limit): Paginator
+    public function findAllPaginator(CartPriceRuleInterface $cartPriceRule, int $offset, int $limit, array $filters = [], array $orderBy = []): Paginator
     {
-        return new Paginator(
-            $this->createQueryBuilder('o')
+        $queryBuilder = $this->createQueryBuilder('o')
             ->where('o.cartPriceRule = :cartPriceRule')
             ->setParameter('cartPriceRule', $cartPriceRule)
             ->setMaxResults($limit)
-            ->setFirstResult($offset),
-        );
+            ->setFirstResult($offset);
+
+        foreach (array_values($filters) as $index => $filter) {
+            $field = 'o.' . $filter['field'];
+            $parameter = 'filter' . $index;
+
+            $expression = match ($filter['operator']) {
+                'like' => $queryBuilder->expr()->like($field, ':' . $parameter),
+                'lt' => $queryBuilder->expr()->lt($field, ':' . $parameter),
+                'gt' => $queryBuilder->expr()->gt($field, ':' . $parameter),
+                default => $queryBuilder->expr()->eq($field, ':' . $parameter),
+            };
+
+            $queryBuilder
+                ->andWhere($expression)
+                ->setParameter($parameter, $filter['operator'] === 'like' ? '%' . addcslashes((string) $filter['value'], '%_\\') . '%' : $filter['value']);
+        }
+
+        foreach ($orderBy as $field => $direction) {
+            $queryBuilder->addOrderBy('o.' . $field, $direction);
+        }
+
+        $queryBuilder->addOrderBy('o.id', 'ASC');
+
+        return new Paginator($queryBuilder);
     }
 
     public function findByCode(string $code): ?CartPriceRuleVoucherCodeInterface

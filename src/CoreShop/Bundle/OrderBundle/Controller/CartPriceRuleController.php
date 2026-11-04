@@ -23,7 +23,6 @@ use CoreShop\Bundle\OrderBundle\Form\Type\VoucherType;
 use CoreShop\Bundle\ResourceBundle\Controller\ResourceController;
 use CoreShop\Component\Order\Generator\CartPriceRuleVoucherCodeGenerator;
 use CoreShop\Component\Order\Model\CartPriceRuleInterface;
-use CoreShop\Component\Order\Model\CartPriceRuleVoucherCode;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleRepositoryInterface;
 use CoreShop\Component\Order\Repository\CartPriceRuleVoucherRepositoryInterface;
@@ -95,6 +94,8 @@ class CartPriceRuleController extends ResourceController
             $cartPriceRule,
             (int) $this->getParameterFromRequest($request, 'start', 0),
             (int) $this->getParameterFromRequest($request, 'limit', 50),
+            $this->getVoucherCodeFilters($request),
+            $this->getVoucherCodeOrderBy($request),
         );
 
         return $this->viewHandler->handle(
@@ -120,7 +121,7 @@ class CartPriceRuleController extends ResourceController
 
             $codeCheck = $cartPriceRuleVoucherCodeRepository->findOneBy(['code' => $resource->getCode()]);
 
-            if ($codeCheck instanceof CartPriceRuleVoucherCode) {
+            if ($codeCheck instanceof CartPriceRuleVoucherCodeInterface) {
                 return $this->viewHandler->handle(['success' => false, 'message' => 'voucher code already exists']);
             }
 
@@ -228,15 +229,90 @@ class CartPriceRuleController extends ResourceController
             throw new NotFoundHttpException();
         }
 
-        $code = $cartPriceRuleVoucherCodeRepository->find(['id' => $id]);
+        $code = is_scalar($id) ? $cartPriceRuleVoucherCodeRepository->find((int) $id) : null;
 
-        if ($code instanceof CartPriceRuleVoucherCode) {
+        if ($code instanceof CartPriceRuleVoucherCodeInterface && $code->getCartPriceRule()?->getId() === $cartPriceRule->getId()) {
             $cartPriceRuleVoucherCodeRepository->remove($code);
 
             return $this->viewHandler->handle(['success' => true, 'id' => $id]);
         }
 
         return $this->viewHandler->handle(['success' => false]);
+    }
+
+    /**
+     * Translates the grid's remote filters (pimcore.gridfilters, encoded as JSON) into repository filters.
+     * Unknown properties and operators are ignored.
+     *
+     * @return list<array{field: 'code'|'used'|'uses', operator: 'like'|'eq'|'lt'|'gt', value: mixed}>
+     */
+    protected function getVoucherCodeFilters(Request $request): array
+    {
+        $filterParam = $this->getParameterFromRequest($request, 'filter');
+        $filters = is_string($filterParam) ? json_decode($filterParam, true) : null;
+
+        if (!is_array($filters)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($filters as $filter) {
+            if (!is_array($filter) || !array_key_exists('value', $filter)) {
+                continue;
+            }
+
+            $value = $filter['value'];
+            $operator = $filter['operator'] ?? null;
+
+            switch ($filter['property'] ?? null) {
+                case 'code':
+                    if (is_string($value) && $value !== '') {
+                        $result[] = ['field' => 'code', 'operator' => 'like', 'value' => $value];
+                    }
+
+                    break;
+                case 'used':
+                    if (is_bool($value)) {
+                        $result[] = ['field' => 'used', 'operator' => 'eq', 'value' => $value];
+                    }
+
+                    break;
+                case 'uses':
+                    if (is_numeric($value) && in_array($operator, ['eq', 'lt', 'gt'], true)) {
+                        $result[] = ['field' => 'uses', 'operator' => $operator, 'value' => (int) $value];
+                    }
+
+                    break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<'code'|'used'|'uses'|'creationDate', 'ASC'|'DESC'>
+     */
+    protected function getVoucherCodeOrderBy(Request $request): array
+    {
+        $sortParam = $this->getParameterFromRequest($request, 'sort');
+        $sorters = is_string($sortParam) ? json_decode($sortParam, true) : null;
+
+        if (!is_array($sorters)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($sorters as $sorter) {
+            $property = is_array($sorter) ? ($sorter['property'] ?? null) : null;
+
+            if (in_array($property, ['code', 'used', 'uses', 'creationDate'], true)) {
+                $result[$property] = is_string($sorter['direction'] ?? null) && strtoupper($sorter['direction']) === 'DESC' ? 'DESC' : 'ASC';
+            }
+        }
+
+        return $result;
     }
 
     /**

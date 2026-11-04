@@ -25,7 +25,11 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 
 interface CartPriceRuleVoucherRepositoryInterface extends RepositoryInterface
 {
-    public function findAllPaginator(CartPriceRuleInterface $cartPriceRule, int $offset, int $limit): Paginator;
+    /**
+     * @param list<array{field: 'code'|'used'|'uses'|'creationDate', operator: 'like'|'eq'|'lt'|'gt', value: mixed}> $filters
+     * @param array<'code'|'used'|'uses'|'creationDate', 'ASC'|'DESC'>                                            $orderBy
+     */
+    public function findAllPaginator(CartPriceRuleInterface $cartPriceRule, int $offset, int $limit, array $filters = [], array $orderBy = []): Paginator;
 
     public function findByCode(string $code): ?CartPriceRuleVoucherCodeInterface;
 

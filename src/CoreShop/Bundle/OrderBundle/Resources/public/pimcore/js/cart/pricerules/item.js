@@ -184,6 +184,7 @@ coreshop.cart.pricerules.item = Class.create(coreshop.rules.item, {
                     {
                         text: t('coreshop_cart_pricerule_voucher_code'),
                         dataIndex: 'code',
+                        filter: 'string',
                         flex: 1
                     },
                     {
@@ -196,6 +197,7 @@ coreshop.cart.pricerules.item = Class.create(coreshop.rules.item, {
                         xtype: 'booleancolumn',
                         text: t('coreshop_cart_pricerule_used'),
                         dataIndex: 'used',
+                        filter: 'boolean',
                         flex: 1,
                         trueText: t('yes'),
                         falseText: t('no')
@@ -203,6 +205,7 @@ coreshop.cart.pricerules.item = Class.create(coreshop.rules.item, {
                     {
                         text: t('coreshop_cart_pricerule_uses'),
                         dataIndex: 'uses',
+                        filter: 'numeric',
                         flex: 1
                     },
                     {

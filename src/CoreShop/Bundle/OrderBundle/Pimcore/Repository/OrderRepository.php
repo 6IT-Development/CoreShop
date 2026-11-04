@@ -105,9 +105,11 @@ class OrderRepository extends PimcoreRepository implements OrderRepositoryInterf
     {
         $list = $this->getList();
         $list->setCondition('customer__id = ? AND store = ? AND saleState = ? ', [$customer->getId(), $store->getId(), OrderSaleStates::STATE_CART]);
-        // Prefer the cart the customer last activated
-        $list->setOrderKey(['lastActivatedAt', 'creationDate']);
-        $list->setOrder(['DESC', 'DESC']);
+        // Prefer the cart the customer last activated. Carts that never went through
+        // setForContext() (implicitly created, guest carts assigned at login, admin carts)
+        // have no lastActivatedAt and compete with their creation date instead of sorting last.
+        $list->setOrderKey('COALESCE(`lastActivatedAt`, `creationDate`) DESC, `id` DESC', false);
+        $list->setLimit(1);
         $list->load();
 
         $objects = $list->getObjects();

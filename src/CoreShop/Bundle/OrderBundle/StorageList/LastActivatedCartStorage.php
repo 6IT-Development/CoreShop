@@ -29,7 +29,8 @@ use Pimcore\Model\Version;
 /**
  * Records when a cart is explicitly selected by its logged-in customer so the
  * last-opened cart can be restored across sessions (see
- * CustomerAndStoreBasedStorageListContext, which orders by lastActivatedAt).
+ * CustomerAndStoreBasedStorageListContext, which orders by lastActivatedAt and
+ * falls back to the creation date for carts that were never stamped).
  *
  * Reads and removals are delegated untouched. Only setForContext stamps, and
  * only when a customer is present in the context — that is the explicit

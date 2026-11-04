@@ -58,6 +58,8 @@ class CustomerType extends AbstractResourceType
                     'coreshop.form.customer.gender.male' => 'male',
                     'coreshop.form.customer.gender.female' => 'female',
                 ],
+                // without a placeholder the select preselects "male" for customers stored as "unknown" ('')
+                'placeholder' => 'coreshop.form.customer.gender.placeholder',
             ])
             ->add('firstname', TextType::class, [
                 'label' => 'coreshop.form.customer.firstname',

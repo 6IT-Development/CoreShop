@@ -8,3 +8,6 @@ CoreShop\Component\Customer\Model\Customer:
             - NotBlank: { groups: [coreshop] }
         email:
             - NotBlank: { groups: [coreshop] }
+            # EmailType is only <input type=email>; admin customer creation posts JSON without browser checks
+            - Email: { mode: html5, groups: [coreshop] }
+            - Length: { max: 190, groups: [coreshop] }

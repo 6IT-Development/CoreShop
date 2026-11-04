@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\AddressBundle\Collector;
 
 use CoreShop\Component\Address\Context\CountryContextInterface;
-use CoreShop\Component\Address\Model\CountryInterface;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,9 +37,24 @@ final class CountryCollector extends DataCollector
         $this->reset();
     }
 
-    public function getCountry(): ?CountryInterface
+    public function hasCountry(): bool
     {
-        return $this->data['country'] ?? null;
+        return null !== ($this->data['country_name'] ?? null) || null !== ($this->data['country_iso_code'] ?? null);
+    }
+
+    public function getCountryId(): ?int
+    {
+        return $this->data['country_id'] ?? null;
+    }
+
+    public function getCountryIsoCode(): ?string
+    {
+        return $this->data['country_iso_code'] ?? null;
+    }
+
+    public function getCountryName(): ?string
+    {
+        return $this->data['country_name'] ?? null;
     }
 
     public function isCountryChangeSupported(): bool
@@ -52,17 +66,21 @@ final class CountryCollector extends DataCollector
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
     {
         if ($this->pimcoreContext->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_ADMIN)) {
-            $this->data['admin'] = true;
-
             return;
         }
 
         try {
-            $this->data['country'] = $this->countryContext->getCountry();
-            $this->data['country_name'] = $this->countryContext->getCountry()->getName();
+            $country = $this->countryContext->getCountry();
         } catch (\Exception) {
             //If something went wrong, we don't have any country, which we can safely ignore
+            return;
         }
+
+        // Only scalars: the profile is serialized, and a Doctrine entity (proxy class, lazy
+        // translations) cannot be restored reliably when a stored profile is loaded later.
+        $this->data['country_id'] = $country->getId();
+        $this->data['country_iso_code'] = null !== $country->getIsoCode() ? (string) $country->getIsoCode() : null;
+        $this->data['country_name'] = null !== $country->getName() ? (string) $country->getName() : null;
     }
 
     public function reset(): void
@@ -70,7 +88,9 @@ final class CountryCollector extends DataCollector
         // Restore the initial structure: kernel.reset (worker runtimes, Messenger, functional
         // tests) calls this between requests, and the getters rely on these keys.
         $this->data = [
-            'country' => null,
+            'country_id' => null,
+            'country_iso_code' => null,
+            'country_name' => null,
             'country_change_support' => $this->countryChangeSupport,
         ];
     }

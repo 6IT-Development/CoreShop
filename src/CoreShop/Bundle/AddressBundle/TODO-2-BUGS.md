@@ -29,6 +29,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** always include the bound value in the choices (a choice loader that merges the current data), or show a validation error instead of a silent swap.
 
 ### B-04 — `CountryCollector` stores a Doctrine entity in the serialized profile; other collector defects
+- **Status:** fixed — `CountryCollector` resolves the context once and stores only scalars (`country_id`, `country_iso_code`, `country_name`). `getCountry()` (which returned the entity) is replaced by `hasCountry()`, `getCountryId()`, `getCountryIsoCode()` and `getCountryName()`, and the toolbar template reads `collector.countryName` (falling back to the ISO code). The no-op self-assignment and the unused `admin` key are gone. The `country_change_support` flag is kept as a constructor argument for BC; it is still `false` in `profiler.yml` and has no UI.
 - **Where:** `Collector/CountryCollector.php:60-62`; `Resources/views/Collector/country.html.twig:7`; `Resources/config/services/profiler.yml:9`
 - **Problems:**
   1. `$this->data['country']` holds the entity, which is serialized into profiler storage. When a stored profile is loaded later, the Doctrine proxy class (`Proxies\__CG__…`) and the uninitialized translations may be unavailable: `__PHP_Incomplete_Class`, or the name renders as "Undefined".

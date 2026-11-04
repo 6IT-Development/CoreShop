@@ -222,7 +222,8 @@ coreshop.order.order.detail.blocks.comments = Class.create(coreshop.order.order.
                     url: Routing.generate('coreshop_admin_order_comments_delete'),
                     method: 'post',
                     params: {
-                        id: comment.id
+                        id: comment.id,
+                        orderId: me.sale.id
                     },
                     callback: function (request, success, response) {
                         me.layout.setLoading(false);

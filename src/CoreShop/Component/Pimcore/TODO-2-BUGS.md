@@ -218,6 +218,7 @@ Scope and markers: see the `DataObject/` section of [TODO-1-CRITICAL.md](TODO-1-
 - **Where:** `DataObject/NoteService.php:147-165` (`:163`). `storeNote()` uses `post_add` (`:141`).
 - **Latent:** no caller in the repository (OrderBundle deletes notes directly through the DAO, OrderBundle TODO-1). Any listener subscribed to `…post_delete` never runs.
 - **Fix:** dispatch `post_delete` (and keep `pot_delete` for one minor version, `@deprecated`). Move event names to constants. `method_exists($note, 'delete')` (`:157`) is always `true`; remove it.
+- **Update (OrderBundle C-05):** `method_exists($note, 'delete')` is in fact `false` (checked at runtime: `Note` forwards `delete()` to its DAO through `__call`), so `deleteNote()` never deleted anything. It now falls back to `getDao()->delete()`, and OrderBundle uses it. The `pot_delete` typo is still open.
 
 ### PB-25 — `getObjectNotes()` does not filter by element type; `storeNote()` contract and retry are inconsistent — (verified by reading) (new)
 - **Where:** `DataObject/NoteService.php:62-71` (only `type` and `cid`), `:92-145`, `NoteServiceInterface.php:40-43`.

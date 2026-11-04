@@ -96,15 +96,29 @@ class OrderCommentController extends PimcoreController
 
     public function deleteAction(Request $request): JsonResponse
     {
-        $commentId = $this->getParameterFromRequest($request, 'id');
+        $commentId = (int) $this->getParameterFromRequest($request, 'id');
+        $orderId = $this->getParameterFromRequest($request, 'orderId');
+
+        $order = $this->getOrderRepository()->find($orderId);
+
+        if (!$order instanceof OrderInterface) {
+            return $this->viewHandler->handle(['success' => false, 'message' => "Order with ID '$orderId' not found"]);
+        }
+
+        $this->checkSalePermission($order, 'save');
 
         $objectNoteService = $this->container->get(NoteServiceInterface::class);
-        $commentEntity = $objectNoteService->getNoteById((int) $commentId);
+        $commentEntity = $objectNoteService->getNoteById($commentId);
 
-        if ($commentEntity instanceof Note) {
-            /** @psalm-suppress InternalMethod */
-            $commentEntity->getDao()->delete();
+        if (!$commentEntity instanceof Note ||
+            $commentEntity->getType() !== Notes::NOTE_ORDER_COMMENT ||
+            $commentEntity->getCtype() !== 'object' ||
+            (int) $commentEntity->getCid() !== (int) $order->getId()
+        ) {
+            return $this->viewHandler->handle(['success' => false, 'message' => "Comment with ID '$commentId' not found"]);
         }
+
+        $objectNoteService->deleteNote($commentId, ['order' => $order]);
 
         return $this->viewHandler->handle(['success' => true]);
     }

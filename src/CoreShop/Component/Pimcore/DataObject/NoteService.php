@@ -156,6 +156,10 @@ class NoteService implements NoteServiceInterface
 
         if (method_exists($note, 'delete')) {
             $note->delete();
+        } else {
+            // Pimcore\Model\Element\Note has no delete(), only its Dao has
+            /** @psalm-suppress InternalMethod */
+            $note->getDao()->delete();
         }
 
         $this->eventDispatcher->dispatch(

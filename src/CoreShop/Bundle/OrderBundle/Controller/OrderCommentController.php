@@ -52,7 +52,7 @@ class OrderCommentController extends PimcoreController
         $parsedData = [];
         /** @var Note $note */
         foreach ($notes as $note) {
-            $user = User::getById($note->getUser());
+            $user = $note->getUser() ? User::getById($note->getUser()) : null;
             $noteData = $note->getData();
             $parsedData[] = [
                 'id' => $note->getId(),
@@ -80,15 +80,23 @@ class OrderCommentController extends PimcoreController
 
         $this->checkSalePermission($order, 'save');
 
+        if (!is_string($comment) || '' === trim($comment)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'The comment must not be empty']);
+        }
+
         try {
             $objectNoteService = $this->container->get(NoteServiceInterface::class);
             $commentEntity = $objectNoteService->createPimcoreNoteInstance($order, Notes::NOTE_ORDER_COMMENT);
             $commentEntity->setTitle('Order Comment');
-            $commentEntity->setDescription($this->toSafeHtml((string) $comment));
+            $commentEntity->setDescription($this->toSafeHtml($comment));
             $commentEntity->addData('submitAsEmail', 'bool', $submitAsEmail);
-            $comment = $objectNoteService->storeNote($commentEntity, ['order' => $order, 'submitAsEmail' => $submitAsEmail]);
+            $note = $objectNoteService->storeNote($commentEntity, ['order' => $order, 'submitAsEmail' => $submitAsEmail]);
 
-            return $this->viewHandler->handle(['success' => true, 'commentId' => $comment->getId()]);
+            if (!$note instanceof Note) {
+                return $this->viewHandler->handle(['success' => false, 'message' => 'The comment could not be saved']);
+            }
+
+            return $this->viewHandler->handle(['success' => true, 'commentId' => $note->getId()]);
         } catch (\Exception $ex) {
             return $this->viewHandler->handle(['success' => false, 'message' => $ex->getMessage()]);
         }

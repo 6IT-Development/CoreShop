@@ -119,9 +119,18 @@ class OrderEditController extends PimcoreController
         }
 
         $commands = [];
+        $items = $this->getParameterFromRequest($request, 'items', []);
 
-        foreach ($this->getParameterFromRequest($request, 'items', []) as $product) {
-            $productId = $product['cartItem']['purchasable'];
+        if (!is_array($items)) {
+            return new JsonResponse(['success' => false, 'message' => 'invalid items']);
+        }
+
+        foreach ($items as $product) {
+            $productId = is_array($product) && is_array($product['cartItem'] ?? null) ? ($product['cartItem']['purchasable'] ?? null) : null;
+
+            if (!is_scalar($productId)) {
+                return new JsonResponse(['success' => false, 'message' => 'invalid items']);
+            }
 
             $product = $purchasableStackRepository->find($productId);
 
@@ -200,7 +209,7 @@ class OrderEditController extends PimcoreController
             );
         }
 
-        if ($cartItem->getOrder()->getId() !== $cart->getId()) {
+        if ($cartItem->getOrder()?->getId() !== $cart->getId()) {
             return $this->viewHandler->handle(
                 ['success' => false, 'message' => 'Not allowed'],
             );

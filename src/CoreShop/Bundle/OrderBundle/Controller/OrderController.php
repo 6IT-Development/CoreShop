@@ -160,10 +160,14 @@ class OrderController extends PimcoreController
         $order = $orderRepository->find($orderId);
 
         if (!$order instanceof OrderInterface) {
-            throw new \Exception('invalid order');
+            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid order']);
         }
 
         $this->checkSalePermission($order, 'save');
+
+        if (!is_string($transition) || '' === $transition) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid transition']);
+        }
 
         //apply state machine
         $workflow = $stateMachineManager->get($order, 'coreshop_order');

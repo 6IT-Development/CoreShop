@@ -73,7 +73,7 @@ coreshop.order.order.create.step.totals = Class.create(coreshop.order.order.crea
                             width: 150,
                             align: 'right',
                             renderer: function (value, metaData, record) {
-                                return '<span style="font-weight:bold">' + coreshop.util.format.currency(me.sale.baseCurrency.isoCode, value) + '</span>';
+                                return '<span style="font-weight:bold">' + (me.sale.baseCurrency ? coreshop.util.format.currency(me.sale.baseCurrency.isoCode, value) : value) + '</span>';
                             }.bind(this)
                         },
                         {
@@ -82,7 +82,7 @@ coreshop.order.order.create.step.totals = Class.create(coreshop.order.order.crea
                             width: 150,
                             align: 'right',
                             renderer: function (value, metaData, record) {
-                                return '<span style="font-weight:bold">' + coreshop.util.format.currency(me.sale.currency.isoCode, value) + '</span>';
+                                return '<span style="font-weight:bold">' + (me.sale.currency ? coreshop.util.format.currency(me.sale.currency.isoCode, value) : value) + '</span>';
                             }.bind(this)
                         }
                     ]

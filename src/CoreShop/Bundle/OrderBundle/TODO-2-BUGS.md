@@ -73,6 +73,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** match the order number first. Use the id only when `ctype_digit()` holds, and bind it as an int.
 
 ### B-10 — Missing or invalid request parameters cause a `TypeError` / 500 instead of a JSON error
+- **Status:** fixed —
+  - The four `updateStateAction`s / `updateOrderStateAction` return `success: false` ("invalid transition") unless `transition` is a non-empty string. `updateOrderStateAction` returns a JSON error instead of throwing `\Exception('invalid order')`. The invoice action no longer says "invalid shipment".
+  - `saleType` was already whitelisted in `getFolderConfigurationAction` (with C-01), and `getObjectNotes(null)` can no longer happen: the comment actions check the order first (C-01/C-05). The repository `find()` casts the id to int, so a non-scalar id ends in "not found", not a `TypeError`.
+  - `OrderCommentController`: `User::getById()` is only called when the note has a user; `addAction` rejects a non-string or empty comment (the `nl2br(null)` case) and checks the `?Note` returned by `storeNote()`.
+  - `OrderEditController::addItemsAction` checks that `items` is an array and that every entry has a scalar `cartItem.purchasable`; `removeItemAction` uses `getOrder()?->getId()`.
+  - `OrderCreationController::getCartDetails()` returns `null` for `currency` / `baseCurrency` when the cart has no store (and no currency); the totals grid then shows the raw value.
+  - Not done: request DTOs with `#[MapRequestPayload]` / `#[MapQueryParameter]`.
 - **Where:**
   - `OrderController.php:153,162`: a null transition is passed to `Workflow::can()` under `strict_types`.
   - `OrderController.php:157`: throws a bare `\Exception('invalid order')`.

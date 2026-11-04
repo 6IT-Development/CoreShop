@@ -67,6 +67,10 @@ class OrderPaymentController extends PimcoreController
 
         $this->checkSalePermission($order, 'save');
 
+        if (!is_string($transition) || '' === $transition) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid transition']);
+        }
+
         //apply state machine
         $workflow = $this->getStateMachineManager()->get($payment, 'coreshop_payment');
         if (!$workflow->can($payment, $transition)) {

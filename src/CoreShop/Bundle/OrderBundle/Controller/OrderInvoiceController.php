@@ -192,10 +192,14 @@ class OrderInvoiceController extends PimcoreController
         $transition = $this->getParameterFromRequest($request, 'transition');
 
         if (!$invoice instanceof OrderInvoiceInterface) {
-            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid shipment']);
+            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid invoice']);
         }
 
         $this->checkDocumentPermission($invoice, 'save');
+
+        if (!is_string($transition) || '' === $transition) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'invalid transition']);
+        }
 
         //apply state machine
         $workflow = $this->getStateMachineManager()->get($invoice, InvoiceStates::IDENTIFIER);

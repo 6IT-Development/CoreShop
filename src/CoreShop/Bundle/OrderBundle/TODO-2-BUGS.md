@@ -340,6 +340,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** rename them to `coreshop_cart_creation_cart_item`, `coreshop_cart_price_rule_condition_choice` and the cart-item equivalent, with an UPGRADE note.
 
 ### B-41 — Voucher generator validation messages: wrong translation domain, and two texts swapped — (plausible)
+- **Status:** fixed — the generator keys (`amount.not_blank`, `length.not_blank`, `length.range`, `possible_generation_amount`) moved from FrontendBundle's `messages.{en,de,it}.yaml` (the `messages` domain) into OrderBundle's `validators.{en,de}.yml`, the domain the validator translates in. So the admin now shows texts instead of raw keys. `amount.not_blank` now has the "Please enter…" text that was under `amount.min`. `amount.min` (and the Italian `length.min`/`length.max`, which had empty values) are dropped, because since B-35 the amount `Range` uses the new `amount.range` key. Italian had no texts, so it gets none.
 - **Where:** `Resources/config/validation/CartPriceRuleVoucherGenerator.yml:13-17`; `Validator/Constraints/VoucherAmount.php:25`. The keys exist only in `FrontendBundle/Resources/translations/messages.en.yaml:232-236`.
 - **Problem:** the keys are not in the `validators` domain, so the admin shows raw keys. The `amount.not_blank` and `amount.min` texts are swapped.
 - **Fix:** move the keys into OrderBundle's `validators` translations and swap the two texts.

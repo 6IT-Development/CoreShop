@@ -99,6 +99,7 @@ final class Configuration implements ConfigurationInterface
                                 ->variableNode('options')->end()
                                 ->scalarNode('permission')->defaultValue('customer_list')->cannotBeOverwritten()->end()
                                 ->arrayNode('path')
+                                    ->addDefaultsIfNotSet()
                                     ->children()
                                         ->scalarNode('customer')->defaultValue('customers')->end()
                                         ->scalarNode('guest')->defaultValue('guests')->end()

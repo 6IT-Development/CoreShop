@@ -20,9 +20,8 @@ namespace CoreShop\Component\Customer\Model;
 
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Resource\Pimcore\Model\PimcoreModelInterface;
-use Symfony\Component\Security\Core\User\EquatableInterface;
 
-interface CompanyInterface extends ResourceInterface, PimcoreModelInterface, EquatableInterface
+interface CompanyInterface extends ResourceInterface, PimcoreModelInterface
 {
     public function getId(): ?int;
 

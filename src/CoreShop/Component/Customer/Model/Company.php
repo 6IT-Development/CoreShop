@@ -23,8 +23,13 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 abstract class Company extends AbstractPimcoreModel implements CompanyInterface
 {
+    /**
+     * A company is not a security user, so CompanyInterface no longer extends EquatableInterface.
+     * Kept for BC only: two unsaved companies (no id) are never equal.
+     */
+    #[\Deprecated(message: 'compare the ids of saved companies instead', since: 'coreshop/customer 4.1')]
     public function isEqualTo(UserInterface $user): bool
     {
-        return $user instanceof self && $user->getId() === $this->getId();
+        return $user instanceof self && null !== $this->getId() && $user->getId() === $this->getId();
     }
 }

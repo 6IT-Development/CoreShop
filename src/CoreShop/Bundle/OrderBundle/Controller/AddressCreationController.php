@@ -27,6 +27,8 @@ use CoreShop\Component\Address\Model\AddressesAwareInterface;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectServiceInterface;
+use Pimcore\Db;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -40,6 +42,7 @@ class AddressCreationController extends PimcoreController
         Request $request,
         ObjectServiceInterface $objectService,
         ErrorSerializer $errorSerializer,
+        LoggerInterface $logger,
     ): Response {
         $this->checkAnySaleCreatePermission();
 
@@ -61,25 +64,44 @@ class AddressCreationController extends PimcoreController
                  */
                 $address = $data['address'];
 
-                $address->setPublished(true);
-                $address->setKey(uniqid());
-                $address->setParent($objectService->createFolderByPath(sprintf(
-                    '/%s/%s',
-                    $customer->getFullPath(),
-                    (string) $this->getParameter('coreshop.folder.address'),
-                )));
-                $address->save();
+                // The saves below must not leave a half-created customer or address behind.
+                $db = Db::get();
+                $db->beginTransaction();
 
-                if ($customer instanceof AddressesAwareInterface) {
-                    $customer->addAddress($address);
+                try {
+                    $address->setPublished(true);
+                    $address->setKey(uniqid());
+                    $address->setParent($objectService->createFolderByPath(sprintf(
+                        '/%s/%s',
+                        $customer->getFullPath(),
+                        (string) $this->getParameter('coreshop.folder.address'),
+                    )));
+                    $address->save();
+
+                    if ($customer instanceof AddressesAwareInterface) {
+                        $customer->addAddress($address);
+                    }
+
+                    $this->container->get('event_dispatcher')->dispatch(
+                        new AdminAddressCreationEvent($address, $customer, $data),
+                        Events::ADMIN_ADDRESS_CREATION,
+                    );
+
+                    $customer->save();
+
+                    $db->commit();
+                } catch (\Throwable $ex) {
+                    if ($db->isTransactionActive()) {
+                        $db->rollBack();
+                    }
+
+                    $logger->error('CoreShop: creating an address in the admin failed: {message}', [
+                        'message' => $ex->getMessage(),
+                        'exception' => $ex,
+                    ]);
+
+                    return $this->viewHandler->handle(['success' => false, 'message' => 'The address could not be created.']);
                 }
-
-                $this->container->get('event_dispatcher')->dispatch(
-                    new AdminAddressCreationEvent($address, $customer, $data),
-                    Events::ADMIN_ADDRESS_CREATION,
-                );
-
-                $customer->save();
 
                 return $this->viewHandler->handle(['success' => true, 'id' => $address->getId()]);
             }

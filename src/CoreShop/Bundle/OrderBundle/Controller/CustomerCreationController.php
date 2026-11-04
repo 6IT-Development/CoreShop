@@ -28,8 +28,10 @@ use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Address\Model\DefaultAddressAwareInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
+use Pimcore\Db;
 use Pimcore\File;
 use Pimcore\Model\DataObject\Service;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -43,6 +45,7 @@ class CustomerCreationController extends PimcoreController
         Request $request,
         FolderCreationServiceInterface $folderCreationService,
         ErrorSerializer $errorSerializer,
+        LoggerInterface $logger,
     ): Response {
         $this->checkAnySaleCreatePermission();
 
@@ -64,46 +67,65 @@ class CustomerCreationController extends PimcoreController
                  */
                 $address = $data['address'];
 
-                $customer->setParent(
-                    $folderCreationService->createFolderForResource(
-                        $customer,
-                        [
-                            'path' => 'guest',
-                            'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
-                        ],
-                    ),
-                );
+                // The saves below must not leave a half-created customer or address behind.
+                $db = Db::get();
+                $db->beginTransaction();
 
-                $customer->setPublished(true);
-                $customer->setKey(File::getValidFilename($customer->getEmail()));
-                /** @psalm-suppress InvalidArgument */
-                $customer->setKey(Service::getUniqueKey($customer));
-                $customer->save();
+                try {
+                    $customer->setParent(
+                        $folderCreationService->createFolderForResource(
+                            $customer,
+                            [
+                                'path' => 'guest',
+                                'suffix' => mb_strtoupper(mb_substr($customer->getLastname() ?? '', 0, 1)),
+                            ],
+                        ),
+                    );
 
-                $address->setPublished(true);
-                $address->setKey(uniqid());
-                $address->setParent(
-                    $folderCreationService->createFolderForResource(
-                        $address,
-                        ['prefix' => $customer->getFullPath()],
-                    ),
-                );
-                $address->save();
+                    $customer->setPublished(true);
+                    $customer->setKey(File::getValidFilename($customer->getEmail()));
+                    /** @psalm-suppress InvalidArgument */
+                    $customer->setKey(Service::getUniqueKey($customer));
+                    $customer->save();
 
-                if ($customer instanceof DefaultAddressAwareInterface) {
-                    $customer->setDefaultAddress($address);
+                    $address->setPublished(true);
+                    $address->setKey(uniqid());
+                    $address->setParent(
+                        $folderCreationService->createFolderForResource(
+                            $address,
+                            ['prefix' => $customer->getFullPath()],
+                        ),
+                    );
+                    $address->save();
+
+                    if ($customer instanceof DefaultAddressAwareInterface) {
+                        $customer->setDefaultAddress($address);
+                    }
+
+                    if ($customer instanceof AddressesAwareInterface) {
+                        $customer->addAddress($address);
+                    }
+
+                    $this->container->get('event_dispatcher')->dispatch(
+                        new AdminCustomerCreationEvent($customer, $data),
+                        Events::ADMIN_CUSTOMER_CREATION,
+                    );
+
+                    $customer->save();
+
+                    $db->commit();
+                } catch (\Throwable $ex) {
+                    if ($db->isTransactionActive()) {
+                        $db->rollBack();
+                    }
+
+                    $logger->error('CoreShop: creating a customer in the admin failed: {message}', [
+                        'message' => $ex->getMessage(),
+                        'exception' => $ex,
+                    ]);
+
+                    return $this->viewHandler->handle(['success' => false, 'message' => 'The customer could not be created.']);
                 }
-
-                if ($customer instanceof AddressesAwareInterface) {
-                    $customer->addAddress($address);
-                }
-
-                $this->container->get('event_dispatcher')->dispatch(
-                    new AdminCustomerCreationEvent($customer, $data),
-                    Events::ADMIN_CUSTOMER_CREATION,
-                );
-
-                $customer->save();
 
                 return $this->viewHandler->handle(['success' => true, 'id' => $customer->getId()]);
             }

@@ -116,6 +116,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** return a `StreamedResponse` that writes with `fputcsv()`, sanitise the cells, and build the header with `HeaderUtils::makeDisposition()`.
 
 ### B-14 — Admin customer and address creation are not atomic
+- **Status:** fixed — `CustomerCreationController::createCustomerAction` (folder, customer, address, event, second customer save) and `AddressCreationController::createAddressAction` (folder, address, event, customer save) run in one `Db` transaction. On any `\Throwable` it is rolled back, the exception is logged and the UI gets "The customer/address could not be created." The folder suffix uses `getLastname() ?? ''`. Side effects outside the database (version files, mails from event listeners, Pimcore's runtime cache) are not rolled back. Not done: the "guest" folder for admin-created customers (Customer Component TODO-1 **C-01**).
 - **Where:** `Controller/CustomerCreationController.php:63-102`, `Controller/AddressCreationController.php:60-78`.
 - **Problem:** the customer, address and second customer saves run without a transaction, so a failure leaves half-created data. `mb_substr(null)` is possible when the last name is optional **(plausible)**. Admin-created customers land in the "guest" folder (related to Customer Component TODO-1 **C-01**).
 - **Fix:** wrap the saves in a transaction, and default the last name with `?? ''`.

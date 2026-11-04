@@ -61,6 +61,11 @@ final class AddressType extends AbstractResourceType
             ->add('state', StateChoiceType::class, [
                 'active' => true,
                 'label' => 'coreshop.form.address.state',
+                // The state is optional (Pimcore field not mandatory, no constraint). A required
+                // single choice gets no empty option, so the browser would pre-select the first
+                // state and save it on every address, including countries without states.
+                'required' => false,
+                'placeholder' => '',
             ])
             ->add('phoneNumber', TextType::class, [
                 'label' => 'coreshop.form.address.phone_number',

@@ -13,6 +13,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## C-01 — `AddressType::state` is required → a random state is saved on every storefront address
 
+- **Status:** fixed — `AddressType` adds `state` with `required: false` and an empty placeholder, so the browser no longer pre-selects the first state, an empty submit stores `null`, and a fresh install without states no longer blocks the form through HTML5 `valueMissing`. Still open and tracked separately: filtering the states by the selected country and the "state belongs to country" constraint (B-02), and keeping a deactivated bound value (B-03). Project themes that render `form.state` themselves get the empty option automatically.
 - **Where:** `Form/Type/AddressType.php:61-64`; rendered by `FrontendBundle/Resources/views/Customer/address.html.twig:58` (`form_end` renders the rest of the form)
 - **Problem:** `state` is added as `StateChoiceType` without `'required' => false`. In Symfony, a non-multiple, non-expanded `ChoiceType` with `required: true` gets **no empty placeholder**, so the browser pre-selects the first option. The storefront template never renders `form.state` itself. `form_end()` still prints it at the bottom of the form, so it gets submitted.
   - Result: once any states exist (for example after `coreshop:setup:states`), every address created or edited in the storefront is saved with the first active state in alphabetical order, even for countries that have no states. An existing correct state is overwritten in the same way.

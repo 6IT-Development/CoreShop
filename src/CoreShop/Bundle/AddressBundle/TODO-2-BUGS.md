@@ -88,6 +88,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** add a unique constraint and `UniqueEntity` (B-08). Write a migration.
 
 ### B-11 — `Country.addressFormat` is a `VARCHAR(255)` but is edited as a multi-line Twig template
+- **Status:** fixed — `Country.orm.xml` maps `addressFormat` as `type="text"`. `CoreBundle/Migrations/Version20261104160000` changes the column to `LONGTEXT NOT NULL` (skipped when it is already a text column, e.g. a schema created from the new mapping). `down()` goes back to `VARCHAR(255)` and aborts with the country ids whose format is longer than 255 characters instead of truncating them.
 - **Where:** `Resources/config/doctrine/model/Country.orm.xml:17`; `Form/Type/CountryType.php:42` (`TextareaType`)
 - **Problem:** Longer formats are truncated, or fail with "Data too long" in strict SQL mode.
 - **Fix:** map the field as `type="text"` and write a migration.

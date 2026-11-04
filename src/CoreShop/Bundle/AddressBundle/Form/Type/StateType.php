@@ -42,6 +42,6 @@ final class StateType extends AbstractResourceType
 
     public function getBlockPrefix(): string
     {
-        return 'coreshop_zone';
+        return 'coreshop_state';
     }
 }

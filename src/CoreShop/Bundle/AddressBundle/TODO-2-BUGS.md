@@ -11,6 +11,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Forms
 
 ### B-01 — `StateType::getBlockPrefix()` returns `coreshop_zone` (copy-paste)
+- **Status:** fixed — `StateType::getBlockPrefix()` returns `coreshop_state`. The admin creates resource forms with an empty name (`ResourceFormFactory::createNamed('', …)`), so the admin payload does not change; only theme blocks and the default form name of `StateType` move from `coreshop_zone*` to `coreshop_state*`.
 - **Where:** `Form/Type/StateType.php:43-46` (same value as `Form/Type/ZoneType.php:36-39`)
 - **Problem:** Two form types share one block prefix, which means they also share a default form name. Form-theme blocks (`coreshop_zone_widget`/`_row`) apply to both. The CSRF token id (derived from the form name) and request payload keys collide.
 - **Fix:** return `coreshop_state`.

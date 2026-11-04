@@ -25,6 +25,13 @@ interface OrderInventoryOperatorInterface
     public function hold(OrderInterface $order): void;
 
     /**
+     * Gives the stock back for a paid or refunded order, otherwise releases the held stock.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function cancel(OrderInterface $order): void;
+
+    /**
      * @throws \InvalidArgumentException
      */
     public function sell(OrderInterface $order): void;

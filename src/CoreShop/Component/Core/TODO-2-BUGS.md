@@ -245,6 +245,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Inventory, index, customer
 
 ### B-32 — `OrderInventoryOperator::cancel()` is not on the interface that the workflow calls
+- **Status:** fixed — `cancel(OrderInterface $order): void` is declared on `OrderInventoryOperatorInterface`, so the `cancel_inventory` workflow callback works with any implementation behind the interface alias. BC: a custom implementation of the interface must now implement `cancel()`.
 - **Where:** `Inventory/Operator/OrderInventoryOperator.php:35-48`, `Inventory/Operator/OrderInventoryOperatorInterface.php`; `CoreBundle/Resources/config/pimcore/workflow.yml:12` (`['@…\OrderInventoryOperatorInterface', 'cancel']`).
 - **Problem:** the `cancel_inventory` callback targets the **interface** service id but calls a method that only the concrete class has. If a project points the alias to its own implementation, or decorates it, cancelling an order fails with "undefined method", and the cancel transition fails.
 - **Fix:** add `cancel(OrderInterface $order): void` to the interface (with a BC note), or point the callback at the concrete class.

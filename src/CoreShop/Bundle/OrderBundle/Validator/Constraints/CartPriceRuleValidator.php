@@ -53,23 +53,34 @@ final class CartPriceRuleValidator extends ConstraintValidator
 
         foreach ($ruleItems as $ruleItem) {
             if (!$ruleItem instanceof PriceRuleItemInterface) {
-                return;
+                continue;
             }
 
+            $code = $ruleItem->getVoucherCode();
             $cartRule = $ruleItem->getCartPriceRule();
 
             if (!$cartRule instanceof CartPriceRuleInterface) {
-                //Add violation?
-                return;
+                // an automatic rule that was deleted is removed by the cart processor, a voucher stays in the cart
+                if (null !== $code) {
+                    $this->context->addViolation($constraint->unknownVoucherMessage, ['%code%' => $code]);
+                }
+
+                continue;
             }
 
             if (!$cartRule->getIsVoucherRule()) {
                 continue;
             }
 
-            $voucherCode = $this->voucherCodeRepository->findByCode($ruleItem->getVoucherCode());
+            $voucherCode = null !== $code ? $this->voucherCodeRepository->findByCode($code) : null;
 
-            if ($voucherCode && !$this->ruleValidationProcessor->isValidCartRule($value, $cartRule, $voucherCode)) {
+            if (null === $voucherCode) {
+                $this->context->addViolation($constraint->unknownVoucherMessage, ['%code%' => (string) $code]);
+
+                continue;
+            }
+
+            if (!$this->ruleValidationProcessor->isValidCartRule($value, $cartRule, $voucherCode)) {
                 $this->context->addViolation(
                     $constraint->message,
                     ['%rule%' => $cartRule->getName()],

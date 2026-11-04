@@ -277,6 +277,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** map the other fields first, then the quantity. In the modifier, always recompute `defaultUnitQuantity`.
 
 ### B-34 — `CartPriceRuleValidator` stops early, treats deleted voucher codes as valid, and can throw a `TypeError`
+- **Status:** fixed — the loop uses `continue` instead of `return`, so one odd entry no longer skips the remaining voucher rules. `findByCode()` is called only with a non-null code. A voucher rule item whose code no longer exists, or whose rule was deleted, gets a new `unknownVoucherMessage` violation. An automatic (non-voucher) item with a deleted rule is skipped, because `CartRuleAutoProcessor` removes it. Both messages are translation keys (`coreshop.cart_price_rule.not_valid` / `unknown_voucher`) with English and German texts in OrderBundle's `validators.*.yml`.
 - **Where:** `Validator/Constraints/CartPriceRuleValidator.php:54-79`.
 - **Problem:**
   - `:55-57` and `:61-64` `return` where they should `continue`. One non-`PriceRuleItem` entry, or one item whose rule was deleted, skips validation of all remaining voucher rules.

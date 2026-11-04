@@ -5,3 +5,6 @@ coreshop:
             numeric: 'Die Menge muss eine Zahl sein.'
             min: 'Die Menge muss größer als 0 sein.'
             min_zero: 'Die Menge darf nicht negativ sein.'
+    cart_price_rule:
+        not_valid: 'Gutschein "%rule%" ist nicht mehr gültig.'
+        unknown_voucher: 'Gutscheincode "%code%" existiert nicht mehr.'

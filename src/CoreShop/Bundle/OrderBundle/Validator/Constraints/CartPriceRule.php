@@ -22,7 +22,9 @@ use Symfony\Component\Validator\Constraint;
 
 final class CartPriceRule extends Constraint
 {
-    public string $message = 'Voucher "%rule%" is not valid anymore.';
+    public string $message = 'coreshop.cart_price_rule.not_valid';
+
+    public string $unknownVoucherMessage = 'coreshop.cart_price_rule.unknown_voucher';
 
     public function validatedBy(): string
     {

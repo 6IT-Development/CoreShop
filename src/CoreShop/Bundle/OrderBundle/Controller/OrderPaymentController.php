@@ -24,6 +24,7 @@ use CoreShop\Bundle\WorkflowBundle\Manager\StateMachineManager;
 use CoreShop\Bundle\WorkflowBundle\Manager\StateMachineManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderPaymentInterface;
+use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Payment\Model\PaymentInterface;
 use CoreShop\Component\Payment\Model\PaymentProviderInterface;
@@ -36,6 +37,7 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderPaymentController extends PimcoreController
@@ -82,9 +84,6 @@ class OrderPaymentController extends PimcoreController
 
         $orderId = $this->getParameterFromRequest($request, 'id');
         $order = $this->getSaleRepository()->find($orderId);
-        $amount = (int) round((float) $this->getParameterFromRequest($request, 'amount', 0) * self::PAYMENT_AMOUNT_FACTOR);
-
-        $paymentProviderId = $this->getParameterFromRequest($request, 'paymentProvider');
 
         if (!$order instanceof OrderInterface) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'Order with ID "' . $orderId . '" not found']);
@@ -92,24 +91,53 @@ class OrderPaymentController extends PimcoreController
 
         $this->checkSalePermission($order, 'save');
 
+        $rawAmount = $this->getParameterFromRequest($request, 'amount', 0);
+
+        if (!is_numeric($rawAmount)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'The amount has to be a number']);
+        }
+
+        $amount = (int) round((float) $rawAmount * self::PAYMENT_AMOUNT_FACTOR);
+
         if ($amount <= 0) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'The amount has to be greater than 0']);
         }
 
-        $payments = $this->getPaymentRepository()->findForPayable($order);
-        $paymentProvider = $this->getPaymentProviderRepository()->find($paymentProviderId);
-        $totalPayed = array_sum(array_map(static function (PaymentInterface $payment) {
-            $state = $payment->getState();
-            if ($state === PaymentInterface::STATE_CANCELLED ||
-                $state === PaymentInterface::STATE_FAILED ||
-                $state === PaymentInterface::STATE_REFUNDED) {
-                return 0;
-            }
+        if (in_array($order->getOrderState(), [OrderStates::STATE_CANCELLED, OrderStates::STATE_COMPLETE], true)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'Payments cannot be added to a cancelled or complete order']);
+        }
 
-            return $payment->getTotalAmount();
-        }, $payments));
+        $paymentProviderId = $this->getParameterFromRequest($request, 'paymentProvider');
+        $paymentProvider = is_scalar($paymentProviderId) ? $this->getPaymentProviderRepository()->find($paymentProviderId) : null;
 
-        if ($paymentProvider instanceof PaymentProviderInterface) {
+        if (!$paymentProvider instanceof PaymentProviderInterface) {
+            return $this->viewHandler->handle(
+                [
+                    'success' => false,
+                    'message' => sprintf('Payment Provider %s not found', is_scalar($paymentProviderId) ? $paymentProviderId : ''),
+                ],
+            );
+        }
+
+        // Without a lock, two concurrent requests could both pass the overpayment check.
+        $lock = $this->container->has('lock.factory')
+            ? $this->container->get('lock.factory')->createLock(sprintf('coreshop_order_payment_%s', $order->getId()))
+            : null;
+        $lock?->acquire(true);
+
+        try {
+            $payments = $this->getPaymentRepository()->findForPayable($order);
+            $totalPayed = array_sum(array_map(static function (PaymentInterface $payment) {
+                $state = $payment->getState();
+                if ($state === PaymentInterface::STATE_CANCELLED ||
+                    $state === PaymentInterface::STATE_FAILED ||
+                    $state === PaymentInterface::STATE_REFUNDED) {
+                    return 0;
+                }
+
+                return $payment->getTotalAmount();
+            }, $payments));
+
             $totalPaymentWouldBe = $totalPayed + $amount;
 
             if ($totalPaymentWouldBe > (int) $order->getPaymentTotal()) {
@@ -147,19 +175,14 @@ class OrderPaymentController extends PimcoreController
 
             $workflow = $this->getStateMachineManager()->get($payment, 'coreshop_payment');
             $workflow->apply($payment, PaymentTransitions::TRANSITION_PROCESS);
-
-            return $this->viewHandler->handle([
-                'success' => true,
-                'totalPayed' => $totalPayed,
-            ]);
+        } finally {
+            $lock?->release();
         }
 
-        return $this->viewHandler->handle(
-            [
-                'success' => false,
-                'message' => sprintf('Payment Provider %s not found', $this->getParameterFromRequest($request, 'paymentProvider')),
-            ],
-        );
+        return $this->viewHandler->handle([
+            'success' => true,
+            'totalPayed' => $totalPayed,
+        ]);
     }
 
     private function getPaymentRepository(): PaymentRepositoryInterface
@@ -201,6 +224,7 @@ class OrderPaymentController extends PimcoreController
                 new SubscribedService('doctrine.orm.entity_manager', EntityManager::class, attributes: new Autowire(service:'doctrine.orm.entity_manager')),
                 new SubscribedService('coreshop.repository.payment_provider', PaymentProviderRepositoryInterface::class),
                 new SubscribedService('coreshop.factory.payment', FactoryInterface::class, attributes: new Autowire(service:'coreshop.factory.payment')),
+                new SubscribedService('lock.factory', LockFactory::class, nullable: true),
             ]);
     }
 }

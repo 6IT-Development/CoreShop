@@ -37,6 +37,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** inject `OrderEditPossibleInterface` and reject the request unless `isOrderEditable()` is true.
 
 ### B-05 — Manual payments accept zero or negative amounts and cancelled or complete orders, and the overpayment guard is not race-safe
+- **Status:** fixed — the `> 0` check already came with C-07. `addPaymentAction` now also rejects a non-numeric `amount` (before, an array was cast to 1), rejects cancelled and complete orders (the rule that was only in the UI), and checks the payment provider before anything else. The overpayment check, the insert and the `process` transition run under a Symfony lock per order (`coreshop_order_payment_<id>`, optional `lock.factory` subscribed service; without it the action works as before, unlocked). Not done: a Symfony form for the input (the `TODO: Use Form here` stays).
 - **Where:** `Controller/OrderPaymentController.php:63-141`; the UI-only rule is at `OrderController.php:502-505`.
 - **Problem:**
   - A negative amount passes the guard and creates a negative payment.

@@ -368,6 +368,14 @@ class ProductUnitDefinitions extends Data implements
 
             $this->getEntityManager()->persist($productUnitDefinitions);
             $this->getEntityManager()->flush();
+
+            return;
+        }
+
+        // The field was cleared (editor or API set it to null). Only act when the value was
+        // actually loaded or set: an untouched lazy field is also null, but must be kept.
+        if (null === $productUnitDefinitions && $object->isLazyKeyLoaded($this->getName())) {
+            $this->delete($object, $params);
         }
     }
 

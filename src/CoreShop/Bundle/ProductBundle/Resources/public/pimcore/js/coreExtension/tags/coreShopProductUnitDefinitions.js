@@ -125,6 +125,11 @@ pimcore.object.tags.coreShopProductUnitDefinitions = Class.create(pimcore.object
     getValue: function () {
         var values = this.unitBuilder.getValues();
 
+        // No default unit: the units were cleared, send null so the server deletes them.
+        if (values === null) {
+            return null;
+        }
+
         if (this.data !== null && is_numeric(this.data.id)) {
             values['id'] = this.data.id;
         }

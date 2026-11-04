@@ -281,7 +281,12 @@ class ProductSpecificPriceRules extends Data implements
         ];
 
         if ($object instanceof ProductInterface) {
-            $prices = $this->load($object, ['force' => true]);
+            // $data is the value of the object that is edited: the stored rules for the
+            // published object (preGetData() loads them), or the rules of the version when the
+            // admin opens a draft or an older version (unmarshalVersion()). Reloading from the
+            // database here would show the published rules instead and drop draft changes.
+            // Labels are not part of the version data; existing rules keep their stored labels.
+            $prices = is_array($data) ? $data : $this->load($object, ['force' => true]);
 
             $context = SerializationContext::create();
             $context->setSerializeNull(true);

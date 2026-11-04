@@ -21,6 +21,9 @@ namespace CoreShop\Bundle\FrontendBundle\Controller;
 use CoreShop\Bundle\CoreBundle\Form\Type\Order\PaymentType;
 use CoreShop\Component\Core\Model\OrderInterface;
 use CoreShop\Component\Core\Model\PaymentInterface as CorePaymentInterface;
+use CoreShop\Component\Order\OrderPaymentStates;
+use CoreShop\Component\Order\OrderSaleStates;
+use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Payment\Model\PaymentInterface;
 use CoreShop\Component\Payment\Repository\PaymentRepositoryInterface;
@@ -36,8 +39,17 @@ class OrderController extends FrontendController
         $token = $this->getParameterFromRequest($request, 'token');
         $payment = null;
 
-        /** @var OrderInterface $order */
-        $order = $this->getOrderRepository()->findOneBy(['token' => $token]);
+        $order = is_string($token) && '' !== $token ? $this->getOrderRepository()->findOneBy(['token' => $token]) : null;
+
+        if (!$order instanceof OrderInterface) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isOrderPayable($order)) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.order_not_payable'));
+
+            return $this->redirectToRoute('coreshop_index');
+        }
 
         if ($request->query->has('paymentId')) {
             $paymentObject = $this->getPaymentRepository()->find($request->query->getInt('paymentId'));
@@ -86,6 +98,18 @@ class OrderController extends FrontendController
         ];
 
         return $this->render($this->getTemplateConfigurator()->findTemplate('Order/revise.html'), $args);
+    }
+
+    /**
+     * Only a placed order that is neither cancelled nor complete and still
+     * waits for (the rest of) its payment may change its payment provider and
+     * be paid again. Carts and quotes have tokens too.
+     */
+    protected function isOrderPayable(OrderInterface $order): bool
+    {
+        return $order->getSaleState() === OrderSaleStates::STATE_ORDER &&
+            !in_array($order->getOrderState(), [OrderStates::STATE_CANCELLED, OrderStates::STATE_COMPLETE], true) &&
+            in_array($order->getPaymentState(), [OrderPaymentStates::STATE_AWAITING_PAYMENT, OrderPaymentStates::STATE_PARTIALLY_PAID], true);
     }
 
     protected function getOrderRepository(): OrderRepositoryInterface

@@ -24,6 +24,9 @@ use CoreShop\Bundle\PayumBundle\Factory\ResolveNextRouteFactoryInterface;
 use CoreShop\Component\Core\Model\PaymentInterface;
 use CoreShop\Component\Core\Model\PaymentProviderInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Order\OrderPaymentStates;
+use CoreShop\Component\Order\OrderSaleStates;
+use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\Payment\OrderPaymentProviderInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use Payum\Core\Model\GatewayConfigInterface;
@@ -63,6 +66,10 @@ class PaymentController extends AbstractController
             throw new NotFoundHttpException(sprintf('Order with %s "%s" does not exist.', $property, $identifier));
         }
 
+        if (!$this->isOrderPayable($order)) {
+            throw new NotFoundHttpException(sprintf('Order with %s "%s" cannot be paid in its current state.', $property, $identifier));
+        }
+
         /**
          * @var PaymentInterface $payment
          */
@@ -92,6 +99,17 @@ class PaymentController extends AbstractController
         $this->getPayum()->getHttpRequestVerifier()->invalidate($token);
 
         return $this->redirectToRoute($resolveNextRoute->getRouteName(), $resolveNextRoute->getRouteParameters());
+    }
+
+    /**
+     * Only a placed order that is neither cancelled nor complete and still
+     * waits for (the rest of) its payment can start a new payment. Carts and quotes have tokens too.
+     */
+    protected function isOrderPayable(OrderInterface $order): bool
+    {
+        return $order->getSaleState() === OrderSaleStates::STATE_ORDER &&
+            !in_array($order->getOrderState(), [OrderStates::STATE_CANCELLED, OrderStates::STATE_COMPLETE], true) &&
+            in_array($order->getPaymentState(), [OrderPaymentStates::STATE_AWAITING_PAYMENT, OrderPaymentStates::STATE_PARTIALLY_PAID], true);
     }
 
     protected function getPayum(): Payum

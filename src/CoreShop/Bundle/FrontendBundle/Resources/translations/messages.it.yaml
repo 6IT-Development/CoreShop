@@ -172,6 +172,7 @@ coreshop.ui.additional_units: 'Unità aggiuntive'
 coreshop.ui.price.per_unit_name: 'per %s'
 coreshop.ui.price.per_unit_name_and_quantity_factor: 'per %d %s'
 coreshop.ui.error.order_already_paid: "L'ordine è già stato pagato."
+coreshop.ui.error.order_not_payable: 'Questo ordine non può essere pagato nel suo stato attuale.'
 coreshop.ui.payment_total: 'Totale da pagare'
 coreshop.cart_item.quantity.min: "La quantità di un articolo nel carrello non può essere inferiore a 1."
 coreshop.form.address.choose_address: 'Scegli indirizzo'

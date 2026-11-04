@@ -79,6 +79,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** check against `CarrierInterface` / `TaxRuleGroupInterface`. Log or throw when the configured strategy is not registered.
 
 ### B-11 — `TaxCalculatorFactory` ignores the `active` flags, and its result depends on undefined row order
+- **Status:** partly fixed — the row order is fixed: `TaxCalculatorFactory` sorts the rules most specific first (state, then country, then wildcard), then by id, and `findForCountryAndState()` orders by id, so the combine behaviour and the `DISABLE_METHOD` cut-off no longer depend on the database. **Open:** the `active` filter is not applied yet. `ToggleableTrait` defaults `active` to `false`, the admin form drops an unchecked flag, and `TaxRuleType` lists inactive rates on purpose, so existing shops (and the Behat suite: 89 features never activate their rates or groups) are likely to have inactive rates in use. Filtering them would silently drop VAT, so this needs a decision (filter plus a migration that activates existing rates and groups, or declare the flag UI-only).
 - **Where:** `Taxation/TaxCalculatorFactory.php:39-64`. **(dependent)** `CoreBundle/Doctrine/ORM/TaxRuleRepository.php` (`findForCountryAndState()` has no `ORDER BY` and no `active` filter).
 - **Problem:**
   - `TaxRate` and `TaxRuleGroup` both have an `active` column that the admin UI can switch off (`TaxationBundle/.../tax/item.js:94`). Nothing checks it, so a deactivated rate or group is still charged.

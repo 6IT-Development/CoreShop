@@ -38,6 +38,7 @@ class TaxRuleRepository extends BaseTaxRuleRepository implements TaxRuleReposito
             ->setParameter('taxRuleGroup', $taxRuleGroup->getId())
             ->setParameter('country', $country ? $country->getId() : 0)
             ->setParameter('state', $state ? $state->getId() : 0)
+            ->orderBy('o.id', 'ASC')
             ->getQuery()
             ->getResult()
         ;

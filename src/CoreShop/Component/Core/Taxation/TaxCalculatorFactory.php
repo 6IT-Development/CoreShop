@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Core\Taxation;
 
 use CoreShop\Component\Address\Model\AddressInterface;
+use CoreShop\Component\Core\Model\TaxRuleInterface;
 use CoreShop\Component\Core\Repository\TaxRuleRepositoryInterface;
 use CoreShop\Component\Taxation\Calculator\TaxCalculatorInterface;
 use CoreShop\Component\Taxation\Calculator\TaxRulesTaxCalculator;
@@ -41,6 +42,19 @@ class TaxCalculatorFactory implements TaxCalculatorFactoryInterface
             $address->getCountry(),
             $address->getState(),
         );
+
+        // Most specific rules first (state, then country, then wildcard), then by id, so the
+        // behaviour taken from the first rule and the DISABLE_METHOD cut-off do not depend on row order.
+        usort($taxRules, static fn (TaxRuleInterface $a, TaxRuleInterface $b): int => [
+            null === $a->getState(),
+            null === $a->getCountry(),
+            $a->getId() ?? \PHP_INT_MAX,
+        ] <=> [
+            null === $b->getState(),
+            null === $b->getCountry(),
+            $b->getId() ?? \PHP_INT_MAX,
+        ]);
+
         $taxRates = [];
         $firstRow = true;
         $behavior = TaxRulesTaxCalculator::COMBINE_METHOD;

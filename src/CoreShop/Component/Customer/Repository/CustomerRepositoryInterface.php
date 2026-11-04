@@ -33,8 +33,8 @@ interface CustomerRepositoryInterface extends PimcoreRepositoryInterface
      * account based on the address alone. Linking guest data needs proof of ownership first, such as
      * a signed, expiring link sent to that address.
      *
-     * Guests are not de-duplicated, so several guests can share one address; which one is returned
-     * is not defined.
+     * Guests are not de-duplicated, so several guests can share one address; the most recently
+     * created match (highest id) is returned.
      */
     public function findUniqueByEmail(string $email, bool $isGuest): ?CustomerInterface;
 

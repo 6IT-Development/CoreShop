@@ -37,6 +37,10 @@ class CustomerRepository extends PimcoreRepository implements CustomerRepository
         return null;
     }
 
+    /**
+     * Returns the most recently created matching customer (highest id). Guests are not de-duplicated,
+     * so several guests can share an address.
+     */
     public function findUniqueByEmail(string $email, bool $isGuest): ?CustomerInterface
     {
         $list = $this->getList();
@@ -51,15 +55,13 @@ class CustomerRepository extends PimcoreRepository implements CustomerRepository
         }
 
         $list->setCondition(implode(' AND ', $conditions), $conditionsValues);
-        $list->load();
+        $list->setOrderKey('id');
+        $list->setOrder('DESC');
+        $list->setLimit(1);
 
-        $users = $list->getObjects();
+        $customer = $list->load()[0] ?? null;
 
-        if (count($users) > 0 && $users[0] instanceof CustomerInterface) {
-            return $users[0];
-        }
-
-        return null;
+        return $customer instanceof CustomerInterface ? $customer : null;
     }
 
     public function findGuestByEmail(string $email): ?CustomerInterface

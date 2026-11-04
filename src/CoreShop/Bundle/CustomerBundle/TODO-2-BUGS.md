@@ -49,6 +49,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Repositories and models
 
 ### B-06 — `findUniqueByEmail()` returns an arbitrary match and loads every matching row
+- **Status:** fixed — `findUniqueByEmail()` orders by `id DESC` with `setLimit(1)`, so it hydrates one object and deterministically returns the most recently created match. It returns `null` only when there is no match. The behaviour is documented on the class and on `CustomerRepositoryInterface`; the method is not renamed (BC). Remaining callers: `RegisteredUserValidator` (registered customers) and the Behat transform context. The duplicate-guest design itself is unchanged (see C-01/C-02). Not run against a DB; `id` is the Pimcore 11 object column the order repository already sorts by.
 - **Where:** `Pimcore/Repository/CustomerRepository.php:40-63`
 - **Problem:**
   - Guests are never de-duplicated (see C-02), so one e-mail address can have dozens of guest rows. The listing has no `ORDER BY` and no limit, so `$users[0]` is whichever row the database returns first, and the result can change between calls. It decides which customer `GuestRegistrationType`, `CustomerRegistrationFormSubscriber` and `RegisteredUserValidator` act on.

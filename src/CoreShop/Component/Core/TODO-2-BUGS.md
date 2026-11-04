@@ -333,6 +333,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** make the field required (`string`), or set it in the constructor.
 
 ### B-46 — (reproduced) `ProductStoreValues::__toString()` fails for an entity without a store
+- **Status:** fixed — `__toString()` uses `$this->getStore()?->getId() ?? '-'`, so an entity without a store (or with an unsaved one) gives `Price: 0 (Store: -)` instead of an `Error`. Checked with a PHP 8.4 script. The nullable mapping stays CoreBundle **I-07**.
 - **Where:** `Model/ProductStoreValues.php:124-127`.
 - **Problem:** `$this->getStore()->getId()` on a new or detached entity throws on `null`. `__toString()` is called implicitly by Pimcore version previews, log contexts, the dump/profiler and form choice labels. The nullable mapping is CoreBundle **I-07**.
 - **Fix:** `sprintf('Price: %d (Store: %s)', $this->price, $this->store?->getId() ?? '-')`.

@@ -123,6 +123,6 @@ class ProductStoreValues extends AbstractResource implements ProductStoreValuesI
 
     public function __toString(): string
     {
-        return sprintf('Price: %s (Store: %d)', $this->getPrice(), $this->getStore()->getId());
+        return sprintf('Price: %s (Store: %s)', $this->getPrice(), $this->getStore()?->getId() ?? '-');
     }
 }

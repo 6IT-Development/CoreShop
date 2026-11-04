@@ -42,6 +42,12 @@ class OrderPaymentController extends PimcoreController
 {
     use SalePermissionTrait;
 
+    /**
+     * Payment amounts and the order's paymentTotal are stored in "× 100" units
+     * (see CartPaymentProcessor and OrderPaymentProvider), independent of the decimal_factor.
+     */
+    private const PAYMENT_AMOUNT_FACTOR = 100;
+
     public function updateStateAction(Request $request): JsonResponse
     {
         $payment = $this->getPaymentRepository()->find($this->getParameterFromRequest($request, 'id'));
@@ -76,7 +82,7 @@ class OrderPaymentController extends PimcoreController
 
         $orderId = $this->getParameterFromRequest($request, 'id');
         $order = $this->getSaleRepository()->find($orderId);
-        $amount = (int) round($this->getParameterFromRequest($request, 'amount', 0) * $this->getParameter('coreshop.currency.decimal_factor'));
+        $amount = (int) round((float) $this->getParameterFromRequest($request, 'amount', 0) * self::PAYMENT_AMOUNT_FACTOR);
 
         $paymentProviderId = $this->getParameterFromRequest($request, 'paymentProvider');
 
@@ -85,6 +91,10 @@ class OrderPaymentController extends PimcoreController
         }
 
         $this->checkSalePermission($order, 'save');
+
+        if ($amount <= 0) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'The amount has to be greater than 0']);
+        }
 
         $payments = $this->getPaymentRepository()->findForPayable($order);
         $paymentProvider = $this->getPaymentProviderRepository()->find($paymentProviderId);
@@ -102,7 +112,7 @@ class OrderPaymentController extends PimcoreController
         if ($paymentProvider instanceof PaymentProviderInterface) {
             $totalPaymentWouldBe = $totalPayed + $amount;
 
-            if ($totalPaymentWouldBe > $order->getTotal()) {
+            if ($totalPaymentWouldBe > (int) $order->getPaymentTotal()) {
                 return $this->viewHandler->handle([
                     'success' => false,
                     'message' => 'Payed Amount is greater than order amount',

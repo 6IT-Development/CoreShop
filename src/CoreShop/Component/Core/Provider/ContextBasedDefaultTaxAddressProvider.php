@@ -27,15 +27,17 @@ class ContextBasedDefaultTaxAddressProvider implements DefaultTaxAddressProvider
 {
     public function __construct(
         private PimcoreFactoryInterface $addressFactory,
+        private ?AddressProviderInterface $cartAddressProvider = null,
     ) {
     }
 
     public function getAddress(array $context = []): ?AddressInterface
     {
+        // Same address as the cart processors use: the shipping address, then the cart fallback address
         if (array_key_exists('cart', $context) && $context['cart'] instanceof OrderInterface) {
-            $invoiceAddress = $context['cart']->getInvoiceAddress();
-            if ($invoiceAddress instanceof AddressInterface) {
-                return $invoiceAddress;
+            $address = $context['cart']->getShippingAddress() ?: $this->cartAddressProvider?->getAddress($context['cart']);
+            if ($address instanceof AddressInterface) {
+                return $address;
             }
         }
 

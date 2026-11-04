@@ -56,7 +56,14 @@ services:
         arguments:
             - '@coreshop.registry.product.discount_calculators'
 
-    CoreShop\Component\Product\Calculator\ProductCustomAttributeCalculatorInterface: '@CoreShop\Component\Product\Calculator\CompositeProductCustomAttributesCalculator'
+    CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInterface: '@CoreShop\Component\Product\Calculator\CompositeProductCustomAttributesCalculator'
+    # Misspelled id (no such interface), kept for BC.
+    CoreShop\Component\Product\Calculator\ProductCustomAttributeCalculatorInterface:
+        alias: CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInterface
+        deprecated:
+            package: 'coreshop/product-bundle'
+            version: '4.1'
+            message: 'The "%alias_id%" service alias is deprecated and will be removed in CoreShop 5.0, use "CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInterface" instead.'
     CoreShop\Component\Product\Calculator\CompositeProductCustomAttributesCalculator:
         arguments:
             - '@coreshop.registry.product.custom_attributes_calculators'
@@ -135,7 +142,7 @@ services:
             - '@CoreShop\Component\Product\Calculator\ProductRetailPriceCalculatorInterface'
             - '@CoreShop\Component\Product\Calculator\ProductDiscountPriceCalculatorInterface'
             - '@CoreShop\Component\Product\Calculator\ProductDiscountCalculatorInterface'
-            - '@CoreShop\Component\Product\Calculator\ProductCustomAttributeCalculatorInterface'
+            - '@CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInterface'
 
     CoreShop\Bundle\ProductBundle\EventListener\CategoryPersistEventListener:
         tags:

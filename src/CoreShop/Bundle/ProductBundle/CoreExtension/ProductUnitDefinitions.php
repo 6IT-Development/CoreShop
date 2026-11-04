@@ -221,27 +221,34 @@ class ProductUnitDefinitions extends Data implements
         $property->setAccessible(true);
         $property->setValue($newData, null);
 
-        $newDefaultDefinition = clone $data->getDefaultUnitDefinition();
-        $reflectionClass = new \ReflectionClass($newDefaultDefinition);
-        $property = $reflectionClass->getProperty('id');
-        $property->setAccessible(true);
-        $property->setValue($newDefaultDefinition, null);
+        // The default definition is nullable (on-delete SET NULL). setDefaultUnitDefinition()
+        // also needs a unit to look the definition up by name.
+        $defaultDefinition = $data->getDefaultUnitDefinition();
+        $hasDefault = $defaultDefinition instanceof ProductUnitDefinitionInterface &&
+            $defaultDefinition->getUnit() instanceof ProductUnitInterface;
 
-        $newData->setDefaultUnitDefinition($newDefaultDefinition);
+        if ($hasDefault) {
+            $newData->setDefaultUnitDefinition($this->copyUnitDefinition($defaultDefinition));
+        }
 
-        foreach ($data->getAdditionalUnitDefinitions() as $unitDefinition) {
-            $newUnitDefinition = clone $unitDefinition;
+        // Without a default, getAdditionalUnitDefinitions() is empty: copy all definitions then.
+        $otherDefinitions = $hasDefault ? $data->getAdditionalUnitDefinitions() : $data->getUnitDefinitions();
 
-            $reflectionClass = new \ReflectionClass($newUnitDefinition);
-            $property = $reflectionClass->getProperty('id');
-            $property->setAccessible(true);
-            $property->setValue($newUnitDefinition, null);
-
-            $newUnitDefinition->setProductUnitDefinitions($newData);
-            $newData->addAdditionalUnitDefinition($newUnitDefinition);
+        foreach ($otherDefinitions as $unitDefinition) {
+            $newData->addUnitDefinition($this->copyUnitDefinition($unitDefinition));
         }
 
         return $newData;
+    }
+
+    private function copyUnitDefinition(ProductUnitDefinitionInterface $unitDefinition): ProductUnitDefinitionInterface
+    {
+        $newUnitDefinition = clone $unitDefinition;
+
+        $property = new \ReflectionProperty($newUnitDefinition, 'id');
+        $property->setValue($newUnitDefinition, null);
+
+        return $newUnitDefinition;
     }
 
     public function marshalVersion(Concrete $object, mixed $data): mixed

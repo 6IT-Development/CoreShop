@@ -50,14 +50,22 @@ final class ProductUnitDefinitionsType extends AbstractResourceType
         $unitDefinitions = $event->getData();
         $form = $event->getForm();
 
+        // SUBMIT runs before validation: a definition without a unit (empty or unknown unit posted)
+        // is skipped here. The NotNull constraint on its "unit" field reports it as a form error.
         $defaultDefinition = $form->get('defaultUnitDefinition')->getData();
-        if ($defaultDefinition) {
+        if ($defaultDefinition instanceof ProductUnitDefinitionInterface && null !== $defaultDefinition->getUnit()) {
             $unitDefinitions->setDefaultUnitDefinition($defaultDefinition);
         }
 
         /** @var ProductUnitDefinitionInterface[] $additionalUnitDefinitions */
-        $additionalUnitDefinitions = $form->get('additionalUnitDefinitions')->getData();
+        $additionalUnitDefinitions = $form->get('additionalUnitDefinitions')->getData() ?? [];
         foreach ($additionalUnitDefinitions as $key => $unitDefinition) {
+            if (!$unitDefinition instanceof ProductUnitDefinitionInterface || null === $unitDefinition->getUnit()) {
+                unset($additionalUnitDefinitions[$key]);
+
+                continue;
+            }
+
             $existingDefinition = $unitDefinitions->getUnitDefinition($unitDefinition->getUnitName());
             if ($existingDefinition) {
                 $unitDefinitions->addAdditionalUnitDefinition($unitDefinition);

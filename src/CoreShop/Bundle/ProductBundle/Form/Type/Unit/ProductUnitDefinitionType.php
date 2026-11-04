@@ -22,16 +22,37 @@ use CoreShop\Bundle\ResourceBundle\Form\Type\AbstractResourceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\NotNull;
 
 final class ProductUnitDefinitionType extends AbstractResourceType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('unit', ProductUnitChoiceType::class)
+            ->add('unit', ProductUnitChoiceType::class, [
+                'constraints' => [
+                    new NotNull(groups: $this->getConstraintGroups($options)),
+                ],
+            ])
             ->add('conversionRate', NumberType::class)
             ->add('precision', IntegerType::class)
         ;
+    }
+
+    /**
+     * The constraint must be in the groups the form is validated with ("coreshop" by default).
+     *
+     * @return string[]|null
+     */
+    private function getConstraintGroups(array $options): ?array
+    {
+        $groups = $options['validation_groups'] ?? null;
+
+        if (is_array($groups) && [] !== $groups && array_filter($groups, 'is_string') === $groups) {
+            return $groups;
+        }
+
+        return null;
     }
 
     public function getBlockPrefix(): string

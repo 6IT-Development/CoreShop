@@ -26,6 +26,7 @@ use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\Element\ElementInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -39,6 +40,8 @@ class ProductUnitDefinitionsController extends ResourceController
         $product = $coreshopProductStackRepository->find($this->getParameterFromRequest($request, 'productId'));
 
         if ($product instanceof ProductInterface) {
+            $this->denyAccessUnlessProductViewable($product);
+
             $definitions = $this->getUnitDefinitionsForProduct($product, 'all');
         }
 
@@ -52,6 +55,10 @@ class ProductUnitDefinitionsController extends ResourceController
         /** @var ProductInterface $product */
         $product = $coreshopProductStackRepository->find($this->getParameterFromRequest($request, 'productId'));
 
+        if ($product instanceof ProductInterface) {
+            $this->denyAccessUnlessProductViewable($product);
+        }
+
         if ($product instanceof Concrete) {
             $product = VersionHelper::getLatestVersion($product);
         }
@@ -61,6 +68,13 @@ class ProductUnitDefinitionsController extends ResourceController
         }
 
         return $this->viewHandler->handle($definitions);
+    }
+
+    protected function denyAccessUnlessProductViewable(ProductInterface $product): void
+    {
+        if ($product instanceof ElementInterface && !$product->isAllowed('view')) {
+            throw $this->createAccessDeniedException();
+        }
     }
 
     protected function getUnitDefinitionsForProduct(ProductInterface $product, string $type = 'all'): Collection

@@ -24,6 +24,7 @@ coreshop_admin_product_unit_definitions:
     type: coreshop.resources
     resource: |
       alias: coreshop.product_unit_definitions
+      no_default_routes: true
       additional_routes:
         product_unit_definitions:
           path: get-product-unit-definitions

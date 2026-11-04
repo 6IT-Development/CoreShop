@@ -234,6 +234,7 @@ final class Configuration implements ConfigurationInterface
                             ->addDefaultsIfNotSet()
                             ->children()
                                 ->variableNode('options')->end()
+                                ->scalarNode('permission')->defaultValue('product_unit')->cannotBeOverwritten()->end()
                                 ->arrayNode('graphql')
                                     ->addDefaultsIfNotSet()
                                     ->children()

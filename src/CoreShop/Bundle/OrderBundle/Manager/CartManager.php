@@ -26,6 +26,9 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\StorageListManagerInterface;
+use Pimcore\Db;
+use Pimcore\Model\DataObject\Folder;
+use Symfony\Component\Lock\LockFactory;
 use Webmozart\Assert\Assert;
 
 final class CartManager implements CartManagerInterface, StorageListManagerInterface
@@ -33,6 +36,7 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
     public function __construct(
         private CartProcessorInterface $cartProcessor,
         private FolderCreationServiceInterface $folderCreationService,
+        private ?LockFactory $lockFactory = null,
     ) {
     }
 
@@ -58,6 +62,33 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
             $params = func_get_arg(1) ?? [];
         }
 
+        // Concurrent persists of the same cart (double-click, two tabs) are serialized, and
+        // the 2N+2 saves of one persist are stored together or not at all.
+        $lock = $cart->getId() && $this->lockFactory !== null
+            ? $this->lockFactory->createLock(sprintf('coreshop_cart_persist_%s', $cart->getId()))
+            : null;
+        $lock?->acquire(true);
+
+        $db = Db::get();
+        $db->beginTransaction();
+
+        try {
+            $this->saveCart($cart, $cartsFolder, $params['enable_versioning'] ?? false);
+
+            $db->commit();
+        } catch (\Throwable $exception) {
+            if ($db->isTransactionActive()) {
+                $db->rollBack();
+            }
+
+            throw $exception;
+        } finally {
+            $lock?->release();
+        }
+    }
+
+    private function saveCart(OrderInterface $cart, Folder $cartsFolder, bool $enableVersioning): void
+    {
         VersionHelper::useVersioning(function () use ($cart, $cartsFolder) {
             if (!$cart->getId()) {
                 $tempItems = $cart->getItems();
@@ -112,6 +143,6 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
             }
 
             $cart->save();
-        }, $params['enable_versioning'] ?? false);
+        }, $enableVersioning);
     }
 }

@@ -54,7 +54,7 @@ coreshop.order.order.create.step.products = Class.create(coreshop.order.order.cr
         }.bind(this));
 
         this.cartPanelGrid.on('beforeedit', function (editor, context, eOpts) {
-            context.record.set('customItemPrice', context.record.get('customItemPrice') / 100);
+            context.record.set('customItemPrice', context.record.get('customItemPrice') / pimcore.globalmanager.get('coreshop.currency.decimal_factor'));
         }.bind(this));
 
         return this.cartPanelGrid;
@@ -66,7 +66,7 @@ coreshop.order.order.create.step.products = Class.create(coreshop.order.order.cr
         var discount = editor.editor.form.findField('customItemDiscount');
 
         context.record.set('quantity', qty.getValue());
-        context.record.set('customItemPrice', customItemPrice.getValue() * 100);
+        context.record.set('customItemPrice', Math.round((customItemPrice.getValue() || 0) * pimcore.globalmanager.get('coreshop.currency.decimal_factor')));
         context.record.set('customItemDiscount', discount.getValue());
 
         this.products = this.getCartProducts();
@@ -124,7 +124,8 @@ coreshop.order.order.create.step.products = Class.create(coreshop.order.order.cr
                     }.bind(this),
                     field : {
                         xtype: 'numberfield',
-                        decimalPrecision : 2
+                        decimalPrecision : pimcore.globalmanager.get('coreshop.currency.decimal_precision'),
+                        minValue: 0
                     }
                 },
                 {

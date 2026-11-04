@@ -29,15 +29,28 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\NotNull;
 
 final class CartCreationType extends AbstractResourceType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('customer', CustomerSelectionType::class)
-            ->add('store', StoreChoiceType::class)
-            ->add('currency', CurrencyChoiceType::class)
+            ->add('customer', CustomerSelectionType::class, [
+                'constraints' => [
+                    new NotNull(groups: $this->validationGroups),
+                ],
+            ])
+            ->add('store', StoreChoiceType::class, [
+                'constraints' => [
+                    new NotNull(groups: $this->validationGroups),
+                ],
+            ])
+            ->add('currency', CurrencyChoiceType::class, [
+                'constraints' => [
+                    new NotNull(groups: $this->validationGroups),
+                ],
+            ])
             ->add('localeCode', LocaleChoiceType::class)
             ->add('items', CollectionType::class, [
                 'entry_type' => CartCreationCartItemType::class,

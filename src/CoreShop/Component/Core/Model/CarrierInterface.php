@@ -25,9 +25,9 @@ use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
 interface CarrierInterface extends BaseCarrierInterface, StoresAwareInterface
 {
     /**
-     * @return TaxRuleGroupInterface
+     * @return TaxRuleGroupInterface|null
      */
     public function getTaxRule();
 
-    public function setTaxRule(TaxRuleGroupInterface $taxRule);
+    public function setTaxRule(?TaxRuleGroupInterface $taxRule);
 }

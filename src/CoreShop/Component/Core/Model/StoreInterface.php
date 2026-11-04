@@ -35,11 +35,11 @@ interface StoreInterface extends BaseStoreInterface, CountriesAwareInterface
     public function setUseGrossPrice($useGrossPrice);
 
     /**
-     * @return CountryInterface
+     * @return CountryInterface|null
      */
     public function getBaseCountry();
 
-    public function setBaseCountry(CountryInterface $baseCountry);
+    public function setBaseCountry(?CountryInterface $baseCountry);
 
     /**
      * @return Collection|ConfigurationInterface[]

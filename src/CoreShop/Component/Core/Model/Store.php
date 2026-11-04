@@ -33,7 +33,7 @@ class Store extends BaseStore implements StoreInterface
     }
 
     /**
-     * @var CountryInterface
+     * @var CountryInterface|null
      */
     private $baseCountry;
 
@@ -95,7 +95,7 @@ class Store extends BaseStore implements StoreInterface
         return $this->baseCountry;
     }
 
-    public function setBaseCountry(CountryInterface $baseCountry)
+    public function setBaseCountry(?CountryInterface $baseCountry)
     {
         $this->baseCountry = $baseCountry;
     }

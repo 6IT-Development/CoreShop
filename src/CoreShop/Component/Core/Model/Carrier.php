@@ -32,7 +32,7 @@ class Carrier extends BaseCarrier implements CarrierInterface, \Stringable
     }
 
     /**
-     * @var TaxRuleGroupInterface
+     * @var TaxRuleGroupInterface|null
      */
     private $taxRule;
 
@@ -47,7 +47,7 @@ class Carrier extends BaseCarrier implements CarrierInterface, \Stringable
         return $this->taxRule;
     }
 
-    public function setTaxRule(TaxRuleGroupInterface $taxRule)
+    public function setTaxRule(?TaxRuleGroupInterface $taxRule)
     {
         $this->taxRule = $taxRule;
     }

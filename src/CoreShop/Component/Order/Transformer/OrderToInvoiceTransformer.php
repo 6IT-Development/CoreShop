@@ -60,6 +60,8 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
         Assert::isInstanceOf($order, OrderInterface::class);
         Assert::isInstanceOf($document, OrderInvoiceInterface::class);
 
+        $orderItems = $this->getOrderItemsToTransform($order, $itemsToTransform);
+
         $this->eventDispatcher->dispatchPreEvent('invoice', $document, ['order' => $order, 'items' => $itemsToTransform]);
 
         $documentFolder = $this->folderCreationService->createFolderForResource($document, ['prefix' => $order->getFullPath()]);
@@ -89,23 +91,14 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
         /**
          * @var array<string, mixed> $item
          */
-        foreach ($itemsToTransform as $item) {
-            Assert::keyExists($item, 'quantity');
-            Assert::keyExists($item, 'orderItemId');
-
-            $documentItem = $this->invoiceItemFactory->createNew();
-            $orderItem = $this->orderItemRepository->find($item['orderItemId']);
-            $quantity = $item['quantity'];
-
-            if ($orderItem instanceof OrderItemInterface) {
-                $items[] = $this->orderItemToInvoiceItemTransformer->transform(
-                    $document,
-                    $orderItem,
-                    $documentItem,
-                    (int) $quantity,
-                    $item,
-                );
-            }
+        foreach ($itemsToTransform as $index => $item) {
+            $items[] = $this->orderItemToInvoiceItemTransformer->transform(
+                $document,
+                $orderItems[$index],
+                $this->invoiceItemFactory->createNew(),
+                (float) $item['quantity'],
+                $item,
+            );
         }
 
         $document->setItems($items);
@@ -119,6 +112,32 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
         $this->eventDispatcher->dispatchPostEvent('invoice', $document, ['order' => $order, 'items' => $itemsToTransform]);
 
         return $document;
+    }
+
+    /**
+     * Resolves and validates all items before anything is saved: every item must belong to the order
+     * and have a positive quantity.
+     *
+     * @return array<array-key, OrderItemInterface>
+     */
+    private function getOrderItemsToTransform(OrderInterface $order, array $itemsToTransform): array
+    {
+        $orderItems = [];
+
+        foreach ($itemsToTransform as $index => $item) {
+            Assert::keyExists($item, 'quantity');
+            Assert::keyExists($item, 'orderItemId');
+
+            $orderItem = $this->orderItemRepository->find($item['orderItemId']);
+
+            Assert::isInstanceOf($orderItem, OrderItemInterface::class, sprintf('Order item %s not found', $item['orderItemId']));
+            Assert::same($orderItem->getOrder()?->getId(), $order->getId(), sprintf('Order item %s does not belong to order %s', $item['orderItemId'], $order->getId()));
+            Assert::greaterThan((float) $item['quantity'], 0, sprintf('Invalid quantity for order item %s', $item['orderItemId']));
+
+            $orderItems[$index] = $orderItem;
+        }
+
+        return $orderItems;
     }
 
     private function calculateInvoice(OrderInvoiceInterface $document): void

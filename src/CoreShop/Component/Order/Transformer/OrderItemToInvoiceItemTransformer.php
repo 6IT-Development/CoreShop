@@ -38,7 +38,7 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         OrderDocumentInterface $orderDocument,
         OrderItemInterface $orderItem,
         OrderDocumentItemInterface $documentItem,
-        int $quantity,
+        float $quantity,
         array $options = [],
     ): OrderDocumentItemInterface {
         Assert::isInstanceOf($documentItem, OrderInvoiceItemInterface::class);
@@ -63,11 +63,11 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         $documentItem->setOrderItem($orderItem);
         $documentItem->setQuantity($quantity);
 
-        $documentItem->setTotal($orderItem->getItemPrice(true) * $quantity, true);
-        $documentItem->setTotal($orderItem->getItemPrice(false) * $quantity, false);
+        $documentItem->setTotal((int) round($orderItem->getItemPrice(true) * $quantity), true);
+        $documentItem->setTotal((int) round($orderItem->getItemPrice(false) * $quantity), false);
 
-        $documentItem->setConvertedTotal($orderItem->getConvertedItemPrice(true) * $quantity, true);
-        $documentItem->setConvertedTotal($orderItem->getConvertedItemPrice(false) * $quantity, false);
+        $documentItem->setConvertedTotal((int) round($orderItem->getConvertedItemPrice(true) * $quantity), true);
+        $documentItem->setConvertedTotal((int) round($orderItem->getConvertedItemPrice(false) * $quantity), false);
 
         VersionHelper::useVersioning(function () use ($documentItem) {
             $documentItem->save();

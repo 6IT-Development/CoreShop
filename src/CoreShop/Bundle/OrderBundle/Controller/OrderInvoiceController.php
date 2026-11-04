@@ -47,6 +47,7 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderInvoiceController extends PimcoreController
 {
+    use ProcessableItemsValidationTrait;
     use SalePermissionTrait;
 
     public function getInvoiceAbleItemsAction(Request $request): JsonResponse
@@ -128,6 +129,12 @@ class OrderInvoiceController extends PimcoreController
             }
 
             $this->checkSalePermission($order, 'save');
+
+            $itemsError = $this->validateProcessableItems($this->getProcessableHelper(), $order, $resource['items'] ?? null);
+
+            if (null !== $itemsError) {
+                return $this->viewHandler->handle(['success' => false, 'message' => $itemsError]);
+            }
 
             try {
                 // request invoice ready state from order, if it's our first invoice.

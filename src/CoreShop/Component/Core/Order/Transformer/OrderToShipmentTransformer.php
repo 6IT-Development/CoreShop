@@ -58,7 +58,7 @@ final class OrderToShipmentTransformer implements OrderDocumentTransformerInterf
                     (int) $orderItem->getId() === (int) ($itemToTransform['orderItemId'] ?? 0)
                 ) {
                     $weight += ($orderItem->getItemWeight() ?? 0.0) *
-                        (int) ($itemToTransform['quantity'] ?? 0) *
+                        (float) ($itemToTransform['quantity'] ?? 0) *
                         (float) ($orderItem->getUnitDefinition()?->getConversionRate() ?? 1.0);
 
                     break;

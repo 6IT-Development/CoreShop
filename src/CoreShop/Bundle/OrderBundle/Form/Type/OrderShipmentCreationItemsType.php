@@ -19,16 +19,23 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\OrderBundle\Form\Type;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Positive;
 
 final class OrderShipmentCreationItemsType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('orderItemId', NumberType::class)
-            ->add('quantity', NumberType::class)
+            ->add('orderItemId', IntegerType::class, [
+                'constraints' => [new NotBlank(), new Positive()],
+            ])
+            ->add('quantity', NumberType::class, [
+                'constraints' => [new NotBlank(), new Positive()],
+            ])
         ;
     }
 }

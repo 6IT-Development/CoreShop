@@ -47,6 +47,7 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class OrderShipmentController extends PimcoreController
 {
+    use ProcessableItemsValidationTrait;
     use SalePermissionTrait;
 
     public function getShipAbleItemsAction(Request $request): JsonResponse
@@ -125,6 +126,12 @@ class OrderShipmentController extends PimcoreController
             }
 
             $this->checkSalePermission($order, 'save');
+
+            $itemsError = $this->validateProcessableItems($this->getProcessableHelper(), $order, $resource['items'] ?? null);
+
+            if (null !== $itemsError) {
+                return $this->viewHandler->handle(['success' => false, 'message' => $itemsError]);
+            }
 
             try {
                 // request shipment ready state from order, if it's our first shipment.

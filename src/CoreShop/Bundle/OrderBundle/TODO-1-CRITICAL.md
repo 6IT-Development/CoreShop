@@ -75,6 +75,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Money / order data
 
 ### C-06 — Admin invoice and shipment creation accept any items and any quantities — (dependent)
+- **Status:** fixed — the item forms use `IntegerType` `orderItemId` and `NumberType` `quantity`, both `NotBlank` + `Positive`. Before anything is written, `createInvoiceAction`/`createShipmentAction` run the new `ProcessableItemsValidationTrait::validateProcessableItems()`: the order must be processable, every item must be one of its processable items, and the summed quantity per item may not exceed the remaining quantity. Checked with a PHP 8.4 script (over-quantity, negative, foreign item, split duplicates, fractional). In the transformers (dependent), `OrderToInvoiceTransformer`/`OrderToShipmentTransformer` resolve and assert all items (found, belongs to the order, `qty > 0`) before the document is saved, and the `(int)` cast is gone. **BC:** `OrderDocumentItemTransformerInterface::transform()` now takes `float $quantity`, and item totals are `(int) round(price * qty)`. The Core shipment weight uses the float quantity too.
 - **Where:**
   - Controllers: `Controller/OrderInvoiceController.php:97-154`, `OrderShipmentController.php:97-151`.
   - Forms: `Form/Type/OrderInvoiceCreationItemsType.php:28-32` and `OrderShipmentCreationItemsType.php:28-32` (`orderItemId` and `quantity` are plain `NumberType`s with no constraints); `OrderInvoiceCreationType.php:30-42`, `OrderShipmentCreationType.php:31-44`.

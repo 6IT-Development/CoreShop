@@ -32,6 +32,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## C-03 — `CountryCollector` throws an uncaught `TypeError` after `reset()`
 
+- **Status:** fixed — the change-support flag is kept in a typed `bool` property, and `reset()` (also called from the constructor) restores `['country' => null, 'country_change_support' => <flag>]`. The self-assignment in `collect()` is removed. `getCountry()` and `isCountryChangeSupported()` read with `??` fallbacks, so they also work on older stored profiles. The rest of B-04 (entity in the serialized profile, `country_name` vs `country.name`, double context lookup, unused `admin` key) stays open.
 - **Where:** `Collector/CountryCollector.php:46-49, 59-65, 68-71`
 - **Problem:** `reset()` sets `$this->data = []`. On the next `collect()`, line 62 calls `isCountryChangeSupported(): bool`, which reads a missing key and returns `null`, so PHP throws a `TypeError`. `TypeError` is an `\Error`, so the surrounding `catch (\Exception)` does **not** catch it. It propagates out of `Profiler::collect()` and turns every later request into a 500.
   - `reset()` runs through `services_resetter` (`kernel.reset`). That happens in worker runtimes, in Messenger workers, and in functional tests that reuse the kernel between requests. This affects dev and test environments only, but it breaks them.

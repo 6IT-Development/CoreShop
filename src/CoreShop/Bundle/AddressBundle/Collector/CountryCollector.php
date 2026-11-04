@@ -27,25 +27,26 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 
 final class CountryCollector extends DataCollector
 {
+    private bool $countryChangeSupport;
+
     public function __construct(
         private CountryContextInterface $countryContext,
         private PimcoreContextResolver $pimcoreContext,
-        $countryChangeSupport = false,
+        bool $countryChangeSupport = false,
     ) {
-        $this->data = [
-            'country' => null,
-            'country_change_support' => $countryChangeSupport,
-        ];
+        $this->countryChangeSupport = $countryChangeSupport;
+        $this->reset();
     }
 
     public function getCountry(): ?CountryInterface
     {
-        return $this->data['country'];
+        return $this->data['country'] ?? null;
     }
 
     public function isCountryChangeSupported(): bool
     {
-        return $this->data['country_change_support'];
+        // Read with a fallback: the getters also run on profiles unserialized from storage.
+        return (bool) ($this->data['country_change_support'] ?? false);
     }
 
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
@@ -59,7 +60,6 @@ final class CountryCollector extends DataCollector
         try {
             $this->data['country'] = $this->countryContext->getCountry();
             $this->data['country_name'] = $this->countryContext->getCountry()->getName();
-            $this->data['country_change_support'] = $this->isCountryChangeSupported();
         } catch (\Exception) {
             //If something went wrong, we don't have any country, which we can safely ignore
         }
@@ -67,7 +67,12 @@ final class CountryCollector extends DataCollector
 
     public function reset(): void
     {
-        $this->data = [];
+        // Restore the initial structure: kernel.reset (worker runtimes, Messenger, functional
+        // tests) calls this between requests, and the getters rely on these keys.
+        $this->data = [
+            'country' => null,
+            'country_change_support' => $this->countryChangeSupport,
+        ];
     }
 
     public function getName(): string

@@ -1,11 +1,21 @@
 CoreShop\Component\Order\Model\CartPriceRuleVoucherGenerator:
     constraints:
         -   \CoreShop\Bundle\OrderBundle\Validator\Constraints\VoucherAmount: { groups: [coreshop] }
+        -   \CoreShop\Bundle\OrderBundle\Validator\Constraints\VoucherCodeLength: { groups: [coreshop] }
 
     properties:
         amount:
             - NotBlank: { message: coreshop.cart_price_rule_voucher_generator.amount.not_blank, groups: [coreshop] }
-            - Range: { min: 1,  minMessage: coreshop.cart_price_rule_voucher_generator.amount.min, groups: [coreshop] }
+            # every code is built in memory and checked with its own query, so a batch is limited
+            - Range: { min: 1, max: 10000, notInRangeMessage: coreshop.cart_price_rule_voucher_generator.amount.range, groups: [coreshop] }
         length:
             - NotBlank: { message: coreshop.cart_price_rule_voucher_generator.length.not_blank, groups: [coreshop] }
             - Range: { min: 1, max: 40, notInRangeMessage: coreshop.cart_price_rule_voucher_generator.length.range, groups: [coreshop] }
+        prefix:
+            - Length: { max: 190, groups: [coreshop] }
+        suffix:
+            - Length: { max: 190, groups: [coreshop] }
+        hyphensOn:
+            - PositiveOrZero: { groups: [coreshop] }
+        cartPriceRule:
+            - NotNull: { groups: [coreshop] }

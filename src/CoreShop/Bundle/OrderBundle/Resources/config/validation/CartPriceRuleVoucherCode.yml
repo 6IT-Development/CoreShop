@@ -1,0 +1,13 @@
+CoreShop\Component\Order\Model\CartPriceRuleVoucherCode:
+    constraints:
+        - Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity:
+            fields: [code]
+            message: coreshop.cart_price_rule_voucher_code.code.unique
+            groups: [coreshop]
+
+    properties:
+        code:
+            - NotBlank: { groups: [coreshop] }
+            - Length: { max: 190, groups: [coreshop] }
+        cartPriceRule:
+            - NotNull: { groups: [coreshop] }

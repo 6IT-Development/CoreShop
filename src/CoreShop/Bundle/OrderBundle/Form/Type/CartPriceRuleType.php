@@ -21,7 +21,7 @@ namespace CoreShop\Bundle\OrderBundle\Form\Type;
 use CoreShop\Bundle\ResourceBundle\Form\Type\ResourceTranslationsType;
 use CoreShop\Bundle\RuleBundle\Form\Type\RuleType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -37,7 +37,9 @@ final class CartPriceRuleType extends RuleType
             ->add('name', TextType::class)
             ->add('isVoucherRule', CheckboxType::class)
             ->add('active', CheckboxType::class)
-            ->add('priority', NumberType::class)
+            ->add('priority', IntegerType::class, [
+                'empty_data' => '0',
+            ])
             ->add('description', TextareaType::class)
             ->add('conditions', CartPriceRuleConditionCollectionType::class)
             ->add('actions', CartPriceRuleActionCollectionType::class)

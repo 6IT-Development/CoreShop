@@ -8,3 +8,10 @@ coreshop:
     cart_price_rule:
         not_valid: 'Voucher "%rule%" is not valid anymore.'
         unknown_voucher: 'Voucher code "%code%" does not exist anymore.'
+    cart_price_rule_voucher_code:
+        code:
+            unique: 'Voucher code already exists.'
+    cart_price_rule_voucher_generator:
+        amount:
+            range: 'Please enter between {{ min }} and {{ max }} coupons to generate.'
+        code_length: 'The generated coupon codes would be %codeLength% characters long, including prefix, suffix and hyphens. At most %max% characters are allowed.'

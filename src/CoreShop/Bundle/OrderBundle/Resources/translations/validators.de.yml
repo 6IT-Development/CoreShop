@@ -8,3 +8,10 @@ coreshop:
     cart_price_rule:
         not_valid: 'Gutschein "%rule%" ist nicht mehr gültig.'
         unknown_voucher: 'Gutscheincode "%code%" existiert nicht mehr.'
+    cart_price_rule_voucher_code:
+        code:
+            unique: 'Dieser Gutscheincode existiert bereits.'
+    cart_price_rule_voucher_generator:
+        amount:
+            range: 'Bitte geben Sie zwischen {{ min }} und {{ max }} zu generierende Gutscheine ein.'
+        code_length: 'Die generierten Gutscheincodes wären inklusive Präfix, Suffix und Bindestrichen %codeLength% Zeichen lang. Erlaubt sind höchstens %max% Zeichen.'

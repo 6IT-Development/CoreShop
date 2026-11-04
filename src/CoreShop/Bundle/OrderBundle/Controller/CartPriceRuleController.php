@@ -141,7 +141,9 @@ class CartPriceRuleController extends ResourceController
             return $this->viewHandler->handle(['success' => true]);
         }
 
-        return $this->viewHandler->handle(['success' => false]);
+        $errors = $this->formErrorSerializer->serializeErrorFromHandledForm($handledForm);
+
+        return $this->viewHandler->handle(['success' => false, 'message' => implode(\PHP_EOL, $errors)]);
     }
 
     public function generateVoucherCodesAction(Request $request, FormFactoryInterface $formFactory, CartPriceRuleVoucherCodeGenerator $cartPriceRuleVoucherCodeGenerator): JsonResponse

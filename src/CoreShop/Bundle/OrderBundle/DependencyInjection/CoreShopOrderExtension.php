@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\OrderBundle\DependencyInjection;
 
+use CoreShop\Bundle\OrderBundle\Attribute\AsCartItemPriceRuleActionProcessor;
+use CoreShop\Bundle\OrderBundle\Attribute\AsCartItemPriceRuleConditionChecker;
 use CoreShop\Bundle\OrderBundle\Attribute\AsCartPriceRuleActionProcessor;
 use CoreShop\Bundle\OrderBundle\Attribute\AsCartPriceRuleConditionChecker;
 use CoreShop\Bundle\OrderBundle\Attribute\AsPurchasableCustomAttributesCalculator;
@@ -26,6 +28,8 @@ use CoreShop\Bundle\OrderBundle\Attribute\AsPurchasableDiscountPriceCalculator;
 use CoreShop\Bundle\OrderBundle\Attribute\AsPurchasablePriceCalculator;
 use CoreShop\Bundle\OrderBundle\Attribute\AsPurchasableRetailPriceCalculator;
 use CoreShop\Bundle\OrderBundle\Attribute\AsPurchasableWholesalePriceCalculator;
+use CoreShop\Bundle\OrderBundle\DependencyInjection\Compiler\CartItemPriceRuleActionPass;
+use CoreShop\Bundle\OrderBundle\DependencyInjection\Compiler\CartItemPriceRuleConditionPass;
 use CoreShop\Bundle\OrderBundle\DependencyInjection\Compiler\CartPriceRuleActionPass;
 use CoreShop\Bundle\OrderBundle\DependencyInjection\Compiler\CartPriceRuleConditionPass;
 use CoreShop\Bundle\OrderBundle\DependencyInjection\Compiler\PurchasableCustomAttributesCalculatorsPass;
@@ -46,6 +50,8 @@ use CoreShop\Component\Order\Calculator\PurchasableRetailPriceCalculatorInterfac
 use CoreShop\Component\Order\Calculator\PurchasableWholesalePriceCalculatorInterface;
 use CoreShop\Component\Order\Cart\Rule\Action\CartPriceRuleActionProcessorInterface;
 use CoreShop\Component\Order\Cart\Rule\Condition\CartRuleConditionCheckerInterface;
+use CoreShop\Component\Order\CartItem\Rule\Action\CartItemPriceRuleActionProcessorInterface;
+use CoreShop\Component\Order\CartItem\Rule\Condition\OrderItemActionConditionCheckerInterface;
 use CoreShop\Component\Order\Renderer\OrderDocumentRendererInterface;
 use CoreShop\Component\Registry\Autoconfiguration;
 use Pimcore\Bundle\WebToPrintBundle\PimcoreWebToPrintBundle;
@@ -129,6 +135,22 @@ final class CoreShopOrderExtension extends AbstractModelExtension
             CartRuleConditionCheckerInterface::class,
             CartPriceRuleConditionPass::CART_PRICE_RULE_CONDITION_TAG,
             AsCartPriceRuleConditionChecker::class,
+            $configs['autoconfigure_with_attributes'],
+        );
+
+        Autoconfiguration::registerForAutoConfiguration(
+            $container,
+            CartItemPriceRuleActionProcessorInterface::class,
+            CartItemPriceRuleActionPass::CART_ITEM_PRICE_RULE_ACTION_TAG,
+            AsCartItemPriceRuleActionProcessor::class,
+            $configs['autoconfigure_with_attributes'],
+        );
+
+        Autoconfiguration::registerForAutoConfiguration(
+            $container,
+            OrderItemActionConditionCheckerInterface::class,
+            CartItemPriceRuleConditionPass::CART_ITEM_PRICE_RULE_CONDITION_TAG,
+            AsCartItemPriceRuleConditionChecker::class,
             $configs['autoconfigure_with_attributes'],
         );
 

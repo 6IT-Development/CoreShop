@@ -23,11 +23,21 @@ final class AsPurchasableCustomAttributesCalculator
 {
     public function __construct(
         private ?string $type = null,
+        private ?int $priority = null,
     ) {
     }
 
     public function getType(): ?string
     {
         return $this->type;
+    }
+
+    /**
+     * Registry priority; null means the default (1000). The built-in calculators use 20 (product)
+     * and 10 (default); the composite calculator lets the last result win.
+     */
+    public function getPriority(): ?int
+    {
+        return $this->priority;
     }
 }

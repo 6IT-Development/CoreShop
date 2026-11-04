@@ -111,7 +111,7 @@ final class CoreShopProductExtension extends AbstractModelExtension
 
                     $definition->addTag(
                         ProductRetailPriceCalculatorsPass::PRODUCT_RETAIL_PRICE_CALCULATOR_TAG,
-                        ['type' => $attribute->getType()],
+                        ['type' => $attribute->getType(), 'priority' => $attribute->getPriority()],
                     );
                 },
             );

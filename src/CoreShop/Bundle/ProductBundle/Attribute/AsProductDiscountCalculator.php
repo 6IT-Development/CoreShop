@@ -23,11 +23,21 @@ final class AsProductDiscountCalculator
 {
     public function __construct(
         private ?string $type = null,
+        private ?int $priority = null,
     ) {
     }
 
     public function getType(): ?string
     {
         return $this->type;
+    }
+
+    /**
+     * Registry priority; null means the default (1000). The composite calculators run in
+     * priority order, and the retail / discount-price composites let the last result win.
+     */
+    public function getPriority(): ?int
+    {
+        return $this->priority;
     }
 }

@@ -48,7 +48,7 @@ class OrderExtractor implements TrackingExtractorInterface
             $data,
             [
                 'id' => $object->getId(),
-                'affiliation' => $this->parseAmount($object->getTotal()),
+                'affiliation' => $object->getStore()?->getName() ?? '',
                 'total' => $this->parseAmount($object->getTotal()),
                 'subtotal' => $this->parseAmount($object->getSubtotal()),
                 'totalTax' => $this->parseAmount($object->getTotalTax()),

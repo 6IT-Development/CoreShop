@@ -235,6 +235,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** either use the `getConverted*()` getters together with `getCurrency()`, or report the base amounts with `getBaseCurrency()`. Make the same choice in all three extractors, and use null-safe access.
 
 ### B-31 — `OrderExtractor` sends the order total as `affiliation`
+- **Status:** fixed — `affiliation` is now the store name (`$object->getStore()?->getName() ?? ''`). The key stays in the data, because the Google trackers read `$actionData['affiliation']` without a default.
 - **Where:** `Tracking/Extractor/OrderExtractor.php:51`. **(dependent)** `TrackingBundle/Tracker/Google/*` (`'affiliation' => $actionData['affiliation'] ?: ''`).
 - **Problem:** `affiliation` is meant to be a store or partner name. It is filled with the rounded total, so analytics shows numbers as the affiliation, and a total of 0 becomes `''`.
 - **Fix:** use the store name (`$object->getStore()?->getName()`), or leave the key out.

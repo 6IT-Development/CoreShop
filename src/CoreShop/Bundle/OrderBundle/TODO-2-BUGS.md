@@ -31,6 +31,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** require `isSubmitted() && isValid()` and return the form errors.
 
 ### B-04 — "Order editable" is never enforced on the server
+- **Status:** fixed — `OrderController::updateAction` (preview and save) and the three `OrderEditController` actions (`editItems`, `addItems`, `removeItem`) now call `OrderEditPossibleInterface::isOrderEditable()` after the permission check and return `success: false` with "This order cannot be edited." when it is false. The rule itself is unchanged: with `order_edit` disabled nothing is editable; paid, cancelled or complete orders are not; quotes and carts are. The order detail panel shows the message (see B-03).
 - **Where:** `Controller/OrderController.php:225-325`; `Controller/OrderEditController.php:45-195`. The rule is `Component/Order/OrderEditPossible.php:30-56`, and it is only used to set a UI flag (`OrderController.php:498`; JS `order/detail/panel.js:141,183,192`).
 - **Problem:** paid, complete or cancelled orders (and quotes or carts) can be changed by a direct POST. The `order-edit/*` routes have no bundled JS caller, so only the UI enforces the rule.
 - **Fix:** inject `OrderEditPossibleInterface` and reject the request unless `isOrderEditable()` is true.

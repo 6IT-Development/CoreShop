@@ -32,6 +32,7 @@ use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
 use CoreShop\Component\Order\Model\PurchasableInterface;
+use CoreShop\Component\Order\OrderEditPossibleInterface;
 use CoreShop\Component\Order\Repository\OrderItemRepositoryInterface;
 use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
@@ -50,6 +51,7 @@ class OrderEditController extends PimcoreController
         FormFactoryInterface $formFactory,
         ErrorSerializer $errorSerializer,
         CartManagerInterface $cartManager,
+        OrderEditPossibleInterface $orderEditPossible,
     ): JsonResponse {
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
@@ -61,6 +63,10 @@ class OrderEditController extends PimcoreController
         }
 
         $this->checkSalePermission($cart, 'save');
+
+        if (!$orderEditPossible->isOrderEditable($cart)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
+        }
 
         $form = $formFactory->createNamed('', EditCartType::class, $cart);
 
@@ -95,6 +101,7 @@ class OrderEditController extends PimcoreController
         ErrorSerializer $errorSerializer,
         CartManagerInterface $cartManager,
         CartModifier $cartModifier,
+        OrderEditPossibleInterface $orderEditPossible,
     ): JsonResponse {
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
@@ -106,6 +113,10 @@ class OrderEditController extends PimcoreController
         }
 
         $this->checkSalePermission($cart, 'save');
+
+        if (!$orderEditPossible->isOrderEditable($cart)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
+        }
 
         $commands = [];
 
@@ -163,6 +174,7 @@ class OrderEditController extends PimcoreController
         OrderItemRepositoryInterface $orderItemRepository,
         CartManagerInterface $cartManager,
         CartModifier $cartModifier,
+        OrderEditPossibleInterface $orderEditPossible,
     ): JsonResponse {
         $cartId = $this->getParameterFromRequest($request, 'id');
         $cart = $orderRepository->find($cartId);
@@ -174,6 +186,10 @@ class OrderEditController extends PimcoreController
         }
 
         $this->checkSalePermission($cart, 'save');
+
+        if (!$orderEditPossible->isOrderEditable($cart)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
+        }
 
         $cartItemId = $this->getParameterFromRequest($request, 'cartItem');
         $cartItem = $orderItemRepository->find($cartItemId);

@@ -252,6 +252,10 @@ class OrderController extends PimcoreController
 
         $this->checkSalePermission($order, 'save');
 
+        if (!$this->container->get(OrderEditPossibleInterface::class)->isOrderEditable($order)) {
+            return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
+        }
+
         $form = $formFactory->createNamed('', OrderType::class, $order, [
             'allow_zero_quantity' => true,
         ]);

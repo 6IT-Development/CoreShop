@@ -130,6 +130,7 @@ coreshop.ui.comment: 'Commento'
 coreshop.ui.wishlist: 'Lista dei desideri'
 coreshop.ui.wishlist_empty: 'La tua lista dei desideri è vuota'
 coreshop.ui.error: 'Si è verificato un errore'
+coreshop.ui.error.invalid_csrf_token: 'La sessione è scaduta o la richiesta non proviene da questo negozio. Riprova.'
 coreshop.ui.success: "L'operazione è andata a buon fine"
 coreshop.ui.error.voucher.not_found: 'Il codice promozionale non è valido'
 coreshop.ui.error.voucher.invalid: 'Il codice promozionale non è valido'

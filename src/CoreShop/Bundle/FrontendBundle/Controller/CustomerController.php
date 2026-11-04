@@ -217,6 +217,12 @@ class CustomerController extends FrontendController
     {
         $this->denyAccessUnlessGranted('CORESHOP_CUSTOMER_PROFILE_ADDRESS_DELETE');
 
+        if (!$request->isMethod('POST') || !$this->isCsrfTokenValidInRequest($request, 'coreshop_customer_address_delete')) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.invalid_csrf_token'));
+
+            return $this->redirectToRoute('coreshop_customer_addresses');
+        }
+
         $customer = $this->getCustomer();
         $addressAssignmentManager = $this->container->get(AddressAssignmentManagerInterface::class);
 

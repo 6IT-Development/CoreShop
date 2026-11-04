@@ -156,6 +156,16 @@ class CheckoutController extends FrontendController
     {
         $this->denyAccessUnlessGranted('CORESHOP_ORDER_CREATE');
 
+        /*
+         * The summary step redirects here with a CSRF token in the URL, so a
+         * cross-site GET cannot turn the visitor's cart into an order.
+         */
+        if (!$this->isCsrfTokenValidInRequest($request, 'coreshop_checkout_do')) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.invalid_csrf_token'));
+
+            return $this->redirectToRoute('coreshop_cart_summary');
+        }
+
         $cart = $this->getCart();
         $checkoutManager = $this->getCheckoutManagerFactory()->createCheckoutManager($cart);
 

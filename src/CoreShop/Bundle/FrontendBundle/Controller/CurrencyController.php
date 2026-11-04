@@ -28,6 +28,7 @@ use CoreShop\Component\Store\Context\StoreContextInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class CurrencyController extends FrontendController
@@ -44,6 +45,10 @@ class CurrencyController extends FrontendController
     public function switchAction(Request $request): Response
     {
         $this->denyAccessUnlessGranted('CORESHOP_CURRENCY_SWITCH');
+
+        if (!$request->isMethod('POST')) {
+            throw new MethodNotAllowedHttpException(['POST']);
+        }
 
         $currencyCode = $this->getParameterFromRequest($request, 'currencyCode');
         $currency = $this->getCurrencyRepository()->getByCode($currencyCode);

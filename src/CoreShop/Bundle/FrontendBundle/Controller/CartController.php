@@ -86,6 +86,12 @@ class CartController extends FrontendController
     {
         $this->denyAccessUnlessGranted('CORESHOP_QUOTE_CREATE');
 
+        if (!$this->isCsrfTokenValidInRequest($request, 'coreshop_cart_create_quote')) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.invalid_csrf_token'));
+
+            return $this->redirectToRoute('coreshop_cart_summary');
+        }
+
         $order = $this->getCart();
         $workflow = $machineManager->get($order, OrderSaleTransitions::IDENTIFIER);
         $workflow->apply($order, OrderSaleTransitions::TRANSITION_QUOTE);
@@ -336,6 +342,12 @@ class CartController extends FrontendController
         $this->denyAccessUnlessGranted('CORESHOP_CART');
         $this->denyAccessUnlessGranted('CORESHOP_CART_REMOVE_ITEM');
 
+        if (!$request->isMethod('POST') || !$this->isCsrfTokenValidInRequest($request, 'coreshop_cart_remove')) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.invalid_csrf_token'));
+
+            return $this->redirectToRoute('coreshop_cart_summary');
+        }
+
         $cartItem = $this->container->get('coreshop.repository.order_item')->find($this->getParameterFromRequest($request, 'cartItem'));
 
         if (!$cartItem instanceof OrderItemInterface) {
@@ -362,6 +374,12 @@ class CartController extends FrontendController
     {
         $this->denyAccessUnlessGranted('CORESHOP_CART');
         $this->denyAccessUnlessGranted('CORESHOP_CART_REMOVE_PRICE_RULE');
+
+        if (!$request->isMethod('POST') || !$this->isCsrfTokenValidInRequest($request, 'coreshop_cart_remove_price_rule')) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.invalid_csrf_token'));
+
+            return $this->redirectToRoute('coreshop_cart_summary');
+        }
 
         $code = $this->getParameterFromRequest($request, 'code');
         $cart = $this->getCart();

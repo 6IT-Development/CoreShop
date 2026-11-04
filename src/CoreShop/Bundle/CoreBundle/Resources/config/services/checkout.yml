@@ -56,6 +56,7 @@ services:
             - '@form.factory'
             - '@router'
             - '@request_stack'
+            - '@?security.csrf.token_manager'
 
     # Forms
     CoreShop\Bundle\CoreBundle\Form\Type\Checkout\AddressType:

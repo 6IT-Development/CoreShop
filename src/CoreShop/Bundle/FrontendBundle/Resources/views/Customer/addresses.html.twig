@@ -39,9 +39,12 @@
                             {% endif %}
 
                             {% if is_granted('CORESHOP_CUSTOMER_PROFILE_ADDRESS_DELETE') %}
-                                <a href="{{ path('coreshop_customer_address_delete', {address: address.id|coreshop_string}) }}" class="btn btn-danger" {{ coreshop_test_html_attribute('address-delete',  address.street) }}>
-                                    {{ 'coreshop.ui.delete'|trans }}
-                                </a>
+                                <form method="post" action="{{ path('coreshop_customer_address_delete', {address: address.id|coreshop_string}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('coreshop_customer_address_delete') }}">
+                                    <button type="submit" class="btn btn-danger" {{ coreshop_test_html_attribute('address-delete',  address.street) }}>
+                                        {{ 'coreshop.ui.delete'|trans }}
+                                    </button>
+                                </form>
                             {% endif %}
                         </div>
                     </div>

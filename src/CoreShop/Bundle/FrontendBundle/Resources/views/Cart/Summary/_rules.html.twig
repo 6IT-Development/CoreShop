@@ -14,9 +14,10 @@
             </td>
             <td colspan="1" class="text-left cart-sub-total">
                 {% if priceRule.cartPriceRule.isVoucherRule and is_granted('CORESHOP_CART_REMOVE_PRICE_RULE') %}
-                <a title="{{ 'coreshop.ui.remove'|trans }}" class="btn btn-danger tool-tip" href="{{ path('coreshop_cart_remove_price_rule', {'code' : priceRule.voucherCode }) }}">
+                {# this row is inside the cart form, so the button posts to the remove route via formaction #}
+                <button type="submit" formaction="{{ path('coreshop_cart_remove_price_rule', {'code' : priceRule.voucherCode, '_token': csrf_token('coreshop_cart_remove_price_rule') }) }}" formmethod="post" formnovalidate title="{{ 'coreshop.ui.remove'|trans }}" class="btn btn-danger tool-tip">
                     <i class="fa fa-times-circle"></i>
-                </a>
+                </button>
                 {% endif %}
             </td>
         </tr>

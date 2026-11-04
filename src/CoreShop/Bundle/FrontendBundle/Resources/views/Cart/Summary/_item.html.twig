@@ -64,15 +64,19 @@
     </td>
     <td class="text-center">
         {% if not item.isGiftItem and is_granted('CORESHOP_CART_REMOVE_ITEM') %}
-            <a
-                href="{{ path('coreshop_cart_remove', {cartItem: item.id|coreshop_string}) }}"
+            {# this row is inside the cart form, so the button posts to the remove route via formaction #}
+            <button
+                type="submit"
+                formaction="{{ path('coreshop_cart_remove', {cartItem: item.id|coreshop_string, _token: csrf_token('coreshop_cart_remove')}) }}"
+                formmethod="post"
+                formnovalidate
                 title="{{ 'coreshop.ui.remove'|trans }}"
                 class="btn btn-danger tool-tip"
                 data-id="{{ item.id }}"
                 {{ coreshop_test_html_attribute('cart-remove-button', item.name) }}
             >
                 <i class="fa fa-times-circle"></i>
-            </a>
+            </button>
         {% endif %}
     </td>
 </tr>

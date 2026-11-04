@@ -44,6 +44,8 @@ routes:
     priority: 3
 
   coreshop_cart_remove:
+    methods:
+      - POST
     pattern: '/(\w+)\/shop\/cart\/remove\/([0-9]+)$/'
     reverse: '/%_locale/shop/cart/remove/%cartItem'
     controller: 'CoreShop\Bundle\FrontendBundle\Controller\CartController::removeItemAction'
@@ -51,6 +53,8 @@ routes:
     priority: 3
 
   coreshop_cart_remove_price_rule:
+    methods:
+      - POST
     pattern: '/(\w+)\/shop\/cart\/remove-price-rule$/'
     reverse: '/%_locale/shop/cart/remove-price-rule'
     controller: 'CoreShop\Bundle\FrontendBundle\Controller\CartController::removePriceRuleAction'
@@ -150,6 +154,8 @@ routes:
     priority: 3
 
   coreshop_switch_currency:
+    methods:
+      - POST
     pattern: '/(\w+)\/shop\/switch-currency\/(.*)$/'
     reverse: '/%_locale/shop/switch-currency/%currencyCode'
     controller: 'CoreShop\Bundle\FrontendBundle\Controller\CurrencyController::switchAction'
@@ -206,6 +212,8 @@ routes:
     priority: 3
 
   coreshop_customer_address_delete:
+    methods:
+      - POST
     pattern: '/(\w+)\/shop\/customer\/addresses\/delete\/([0-9]+)$/'
     reverse: '/%_locale/shop/customer/addresses/delete/%address'
     controller: 'CoreShop\Bundle\FrontendBundle\Controller\CustomerController::addressDeleteAction'

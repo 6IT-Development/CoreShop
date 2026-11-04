@@ -76,4 +76,16 @@ abstract class FrontendController extends AbstractController
 
         return $default;
     }
+
+    /**
+     * Checks the "_token" CSRF token of a state-changing action. The token is
+     * read from the query string first (buttons inside another form send it
+     * in their formaction URL), then from the body.
+     */
+    protected function isCsrfTokenValidInRequest(Request $request, string $intention): bool
+    {
+        $token = $request->query->all()['_token'] ?? $request->request->all()['_token'] ?? null;
+
+        return is_string($token) && $this->isCsrfTokenValid($intention, $token);
+    }
 }

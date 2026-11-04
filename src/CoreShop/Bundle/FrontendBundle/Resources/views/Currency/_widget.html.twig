@@ -4,9 +4,12 @@
     </a>
     <div class="dropdown-menu" aria-labelledby="currencyDropdown" >
         {% for currency in currencies %}
-            <a class="dropdown-item" href="{{ path('coreshop_switch_currency', {'currencyCode': currency.isoCode}) }}" {{ coreshop_test_html_attribute('currency-selector-code', currency.isoCode) }}>
-                {{ currency.name }} ({{ currency.isoCode }})
-            </a>
+            {# POST without a CSRF token: a token here would start a session for every anonymous visitor #}
+            <form method="post" action="{{ path('coreshop_switch_currency', {'currencyCode': currency.isoCode}) }}">
+                <button type="submit" class="dropdown-item" {{ coreshop_test_html_attribute('currency-selector-code', currency.isoCode) }}>
+                    {{ currency.name }} ({{ currency.isoCode }})
+                </button>
+            </form>
         {% endfor %}
     </div>
 </li>

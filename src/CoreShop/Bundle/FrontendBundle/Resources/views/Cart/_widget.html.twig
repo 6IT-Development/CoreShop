@@ -34,9 +34,12 @@
                         <td class="text-right">{{ currency.convertAndFormat(item.total) }}</td>
                         <td class="text-center">
                             {% if not item.isGiftItem %}
-                                <a href="{{ path('coreshop_cart_remove', {cartItem: item.id|coreshop_string}) }}" class="removeFromCart" data-id="{{ item.id }}" data-refresh="true">
-                                    <i class="fa fa-times"></i>
-                                </a>
+                                <form method="post" action="{{ path('coreshop_cart_remove', {cartItem: item.id|coreshop_string}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('coreshop_cart_remove') }}">
+                                    <button type="submit" class="btn btn-link p-0 removeFromCart" data-id="{{ item.id }}" data-refresh="true" title="{{ 'coreshop.ui.remove'|trans }}">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </form>
                             {% endif %}
                         </td>
                     </tr>

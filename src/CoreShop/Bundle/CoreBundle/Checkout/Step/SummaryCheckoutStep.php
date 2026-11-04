@@ -33,6 +33,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStepInterface, ValidationCheckoutStepInterface
 {
@@ -42,6 +43,7 @@ class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStep
         private FormFactoryInterface $formFactory,
         private RouterInterface $router,
         private RequestStack $requestStack,
+        private ?CsrfTokenManagerInterface $csrfTokenManager = null,
     ) {
     }
 
@@ -65,7 +67,17 @@ class SummaryCheckoutStep implements CheckoutStepInterface, RedirectCheckoutStep
             ? 'coreshop_cart_create_quote'
             : 'coreshop_checkout_do';
 
-        return new RedirectResponse($this->router->generate($nextAction));
+        /*
+         * The next action changes state although it is reached by a redirect
+         * (GET), so it gets a CSRF token whose intention is its route name.
+         */
+        $parameters = [];
+
+        if (null !== $this->csrfTokenManager) {
+            $parameters['_token'] = $this->csrfTokenManager->getToken($nextAction)->getValue();
+        }
+
+        return new RedirectResponse($this->router->generate($nextAction, $parameters));
     }
 
     public function validate(OrderInterface $cart): bool

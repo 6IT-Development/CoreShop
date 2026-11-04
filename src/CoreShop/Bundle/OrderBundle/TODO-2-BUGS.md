@@ -227,6 +227,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** compare against a stored content hash or render timestamp, update the asset in place, and take a Symfony Lock per document.
 
 ### B-28 — `OrderStateExtension` never shows the shipping state to customers
+- **Status:** fixed — `new` and `confirmed` both count as in progress. For them the calculated state is the payment label until the order is paid, then the shipping label until it is shipped, then the order label. Cancelled and complete orders show the order label. Also fixed: a new, paid and shipped order returned the raw state key `new` instead of its label.
 - **Where:** `Twig/OrderStateExtension.php:35-46`; used in `FrontendBundle/Resources/views/Customer/orders.html.twig:41`.
 - **Problem:** the shipping fallback runs only when the order is `new` and the payment is `paid`. A paid order is always `confirmed` (`OrderStateResolver`), so that branch never runs, and customers see "Confirmed" instead of the shipping status.
 - **Fix:** treat `new` and `confirmed` as in progress, and show the payment label, then the shipping label.

@@ -48,14 +48,12 @@ final class OrderStateExtension extends AbstractExtension
         $invoiceState = $this->workflowStateManager->getStateInfo('coreshop_order_invoice', $order->getInvoiceState(), true);
 
         // the calculated state tries to get the recent state for a customer.
-        // if order is new, check if payment is in a waiting position.
-        // if payment is done, check if shipping is in a waiting condition. and so on.
-        $calculatedState = $orderState['state'];
+        // while the order is in progress (new or confirmed), show the payment state until it is paid,
+        // then the shipping state until it is shipped.
+        // A paid order is always confirmed, so checking only "new" would never reach the shipping state.
+        $calculatedState = $orderState['label'];
 
-        // order has been canceled or is done.
-        if ($calculatedState !== OrderStates::STATE_NEW) {
-            $calculatedState = $orderState['label'];
-        } else {
+        if (in_array($orderState['state'], [OrderStates::STATE_NEW, OrderStates::STATE_CONFIRMED], true)) {
             if ($paymentState['state'] !== OrderPaymentStates::STATE_PAID) {
                 $calculatedState = $paymentState['label'];
             } elseif ($shippingState['state'] !== OrderShipmentStates::STATE_SHIPPED) {

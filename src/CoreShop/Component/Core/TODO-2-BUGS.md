@@ -160,6 +160,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Gift items, appliers
 
 ### B-21 — `GiftProductActionProcessor` deletes and re-creates the gift item on every recalculation, can remove the wrong item, and cannot remove a gift whose product is gone
+- **Status:** fixed — `GiftProductActionProcessor` keeps the existing gift item with the rule's adjustment key and the configured product, and only updates its quantity, unit and adjustment, so a recalculation no longer deletes and re-creates the Pimcore object. Other gift items with that key (for example after the configured product changed) are removed. `unApplyRule()` removes gift items by adjustment key without looking up the product, and `applyRule()` also removes them when the product is gone or no longer purchasable. `Order::removeItem()` and `hasItem()` compare object identity when the item has no id yet, so an unsaved item no longer matches another unsaved item.
 - **Where:** `Cart/Rule/Action/GiftProductActionProcessor.php:43-103`, `:105-134`, `:136-149`. **(dependent)** `Component/Order/Model/Order.php:59-74` (`removeItem()` matches by `getId()`).
 - **Problem:**
   - On every recalculation, the existing gift item is removed and **deleted** (`$cartItem->delete()`), and a new Pimcore object is created. Each cart save produces a new id and new versions, and anything that refers to the old item is lost.

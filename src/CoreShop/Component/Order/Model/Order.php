@@ -63,7 +63,7 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
         foreach ($items as $i => $iValue) {
             $arrayItem = $iValue;
 
-            if ($arrayItem->getId() === $item->getId()) {
+            if ($this->isSameItem($arrayItem, $item)) {
                 unset($items[$i]);
 
                 break;
@@ -80,12 +80,21 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
         foreach ($items as $iValue) {
             $arrayItem = $iValue;
 
-            if ($arrayItem->getId() === $item->getId()) {
+            if ($this->isSameItem($arrayItem, $item)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function isSameItem(OrderItemInterface $arrayItem, OrderItemInterface $item): bool
+    {
+        if (!$item->getId()) {
+            return $arrayItem === $item;
+        }
+
+        return $arrayItem->getId() === $item->getId();
     }
 
     public function getTotalTax(): int

@@ -42,38 +42,38 @@ final class GiftProductActionProcessor implements CartPriceRuleActionProcessorIn
 
     public function applyRule(OrderInterface $cart, array $configuration, PriceRuleItemInterface $cartPriceRuleItem): bool
     {
+        $key = $this->getKey($configuration['action']);
         $product = $this->productRepository->find($configuration['product']);
 
         if (!$product instanceof PurchasableInterface) {
+            $this->removeGiftItems($cart, $this->findGiftItems($cart, $key));
+
             return false;
         }
 
-        $action = $configuration['action'];
-        $key = $this->getKey($action);
-        $cartItems = [];
+        $item = null;
+        $giftItems = $this->findGiftItems($cart, $key);
 
-        foreach ($cart->getItems() as $item) {
-            if (!$item->getIsGiftItem()) {
-                continue;
-            }
+        foreach ($giftItems as $index => $giftItem) {
+            if ($giftItem->getProduct()?->getId() === $product->getId()) {
+                $item = $giftItem;
+                unset($giftItems[$index]);
 
-            foreach ($item->getAdjustments() as $adjustment) {
-                if ($adjustment->getTypeIdentifier() === $key) {
-                    $cartItems[] = $item;
-                }
+                break;
             }
         }
 
-        foreach ($cartItems as $cartItem) {
-            $this->removeCartItem($cart, $cartItem);
+        $this->removeGiftItems($cart, $giftItems);
+
+        if (null === $item) {
+            $item = $this->cartItemFactory->createWithCart($cart, $product);
+            $item->setIsGiftItem(true);
         }
 
         /**
          * @var \CoreShop\Component\Core\Model\OrderItemInterface $item
          */
-        $item = $this->cartItemFactory->createWithCart($cart, $product);
         $item->setQuantity(1);
-        $item->setIsGiftItem(true);
 
         if ($product instanceof ProductInterface) {
             $item->setDigitalProduct($product->getDigitalProduct());
@@ -88,6 +88,7 @@ final class GiftProductActionProcessor implements CartPriceRuleActionProcessorIn
         }
 
         $item->setDefaultUnitQuantity(1);
+        $item->removeAdjustments($key);
 
         $adjustment = $this->adjustmentFactory->createWithData(
             $key,
@@ -104,14 +105,18 @@ final class GiftProductActionProcessor implements CartPriceRuleActionProcessorIn
 
     public function unApplyRule(OrderInterface $cart, array $configuration, PriceRuleItemInterface $cartPriceRuleItem): bool
     {
-        $product = $this->productRepository->find($configuration['product']);
+        $key = $this->getKey($configuration['action']);
 
-        if (!$product instanceof PurchasableInterface) {
-            return false;
-        }
+        $this->removeGiftItems($cart, $this->findGiftItems($cart, $key));
 
-        $action = $configuration['action'];
-        $key = $this->getKey($action);
+        return true;
+    }
+
+    /**
+     * @return OrderItemInterface[]
+     */
+    private function findGiftItems(OrderInterface $cart, string $key): array
+    {
         $cartItems = [];
 
         foreach ($cart->getItems() as $item) {
@@ -119,18 +124,22 @@ final class GiftProductActionProcessor implements CartPriceRuleActionProcessorIn
                 continue;
             }
 
-            foreach ($item->getAdjustments() as $adjustment) {
-                if ($adjustment->getTypeIdentifier() === $key) {
-                    $cartItems[] = $item;
-                }
+            if (count($item->getAdjustments($key)) > 0) {
+                $cartItems[] = $item;
             }
         }
 
+        return $cartItems;
+    }
+
+    /**
+     * @param OrderItemInterface[] $cartItems
+     */
+    private function removeGiftItems(OrderInterface $cart, array $cartItems): void
+    {
         foreach ($cartItems as $cartItem) {
             $this->removeCartItem($cart, $cartItem);
         }
-
-        return true;
     }
 
     private function removeCartItem(OrderInterface $cart, OrderItemInterface $cartItem): void

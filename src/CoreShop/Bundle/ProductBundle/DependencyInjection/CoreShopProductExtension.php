@@ -93,13 +93,18 @@ final class CoreShopProductExtension extends AbstractModelExtension
             $configs['autoconfigure_with_attributes'],
         );
 
-        Autoconfiguration::registerForAutoConfiguration(
-            $container,
-            ProductPriceCalculatorInterface::class,
-            ProductRetailPriceCalculatorsPass::PRODUCT_RETAIL_PRICE_CALCULATOR_TAG,
-            AsProductPriceCalculator::class,
-            $configs['autoconfigure_with_attributes'],
-        );
+        // ProductPriceCalculatorInterface is the facade, not a strategy: tagging every
+        // implementation by interface would register decorators of the facade into the
+        // retail composite. Only the explicit attribute is still mapped (see TODO-2 B-02).
+        if ($configs['autoconfigure_with_attributes']) {
+            Autoconfiguration::registerForAutoConfiguration(
+                $container,
+                ProductPriceCalculatorInterface::class,
+                ProductRetailPriceCalculatorsPass::PRODUCT_RETAIL_PRICE_CALCULATOR_TAG,
+                AsProductPriceCalculator::class,
+                true,
+            );
+        }
 
         Autoconfiguration::registerForAutoConfiguration(
             $container,

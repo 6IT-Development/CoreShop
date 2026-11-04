@@ -18,9 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\ProductBundle\DependencyInjection\Compiler;
 
-use CoreShop\Component\Registry\RegisterSimpleRegistryTypePass;
-
-final class ProductCustomAttributesCalculatorsPass extends RegisterSimpleRegistryTypePass
+final class ProductCustomAttributesCalculatorsPass extends AbstractProductCalculatorsPass
 {
     public const PRODUCT_CUSTOM_ATTRIBUTES_CALCULATOR_TAG = 'coreshop.product.custom_attributes_calculator';
 

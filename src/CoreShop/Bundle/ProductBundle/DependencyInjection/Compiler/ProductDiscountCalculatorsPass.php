@@ -18,9 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\ProductBundle\DependencyInjection\Compiler;
 
-use CoreShop\Component\Registry\RegisterSimpleRegistryTypePass;
-
-final class ProductDiscountCalculatorsPass extends RegisterSimpleRegistryTypePass
+final class ProductDiscountCalculatorsPass extends AbstractProductCalculatorsPass
 {
     public const PRODUCT_DISCOUNT_CALCULATOR_TAG = 'coreshop.product.discount_calculator';
 

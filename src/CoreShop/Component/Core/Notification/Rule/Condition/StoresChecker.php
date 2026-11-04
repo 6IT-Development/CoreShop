@@ -34,7 +34,7 @@ class StoresChecker extends AbstractConditionChecker
         if ($subject instanceof StoreAwareInterface) {
             $store = $subject->getStore();
         } elseif ($subject instanceof OrderDocumentInterface) {
-            $store = $subject->getOrder()->getStore();
+            $store = $subject->getOrder()?->getStore();
         } elseif ($subject instanceof PaymentInterface) {
             $order = $subject->getOrder();
 

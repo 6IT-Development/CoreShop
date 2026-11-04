@@ -42,6 +42,10 @@ class CountriesConditionChecker extends AbstractConditionChecker
 
         $country = $address->getCountry();
 
+        if (null === $country) {
+            return false;
+        }
+
         return in_array($country->getId(), $configuration['countries']);
     }
 }

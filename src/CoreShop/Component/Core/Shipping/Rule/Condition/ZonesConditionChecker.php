@@ -40,6 +40,10 @@ class ZonesConditionChecker extends AbstractConditionChecker
 
         $zone = $country->getZone();
 
+        if (null === $zone) {
+            return false;
+        }
+
         return in_array($zone->getId(), $configuration['zones']);
     }
 }

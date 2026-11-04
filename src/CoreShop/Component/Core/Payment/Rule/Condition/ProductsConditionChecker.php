@@ -51,9 +51,15 @@ class ProductsConditionChecker extends AbstractConditionChecker
             return false;
         }
 
+        $store = $payable->getStore();
+
+        if (null === $store) {
+            return false;
+        }
+
         $productIdsToCheck = $this->getProductsToCheck(
             $configuration['products'],
-            $payable->getStore(),
+            $store,
             $configuration['include_variants'] ?: false,
             [self::PAYMENT_PROVIDER_RULE_RECURSIVE_VARIANT_CACHE_TAG],
         );
@@ -61,7 +67,7 @@ class ProductsConditionChecker extends AbstractConditionChecker
         if (!$payable instanceof OrderInterface) {
             return false;
         }
-        $cartItems = $payable->getItems();
+        $cartItems = $payable->getItems() ?? [];
 
         foreach ($cartItems as $item) {
             if ($item instanceof OrderItemInterface && $item->getIsGiftItem()) {

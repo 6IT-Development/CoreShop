@@ -52,14 +52,20 @@ class ProductsConditionChecker extends AbstractConditionChecker
             return false;
         }
 
+        $store = $shippable->getStore();
+
+        if (null === $store) {
+            return false;
+        }
+
         $productIdsToCheck = $this->getProductsToCheck(
             $configuration['products'],
-            $shippable->getStore(),
+            $store,
             $configuration['include_variants'] ?: false,
             [self::SHIPPING_RULE_RECURSIVE_VARIANT_CACHE_TAG],
         );
 
-        $cartItems = $shippable->getItems();
+        $cartItems = $shippable->getItems() ?? [];
 
         foreach ($cartItems as $item) {
             if ($item instanceof OrderItemInterface && $item->getIsGiftItem()) {

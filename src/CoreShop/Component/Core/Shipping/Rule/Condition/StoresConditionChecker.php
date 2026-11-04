@@ -36,6 +36,12 @@ final class StoresConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($shippable->getStore()->getId(), $configuration['stores']);
+        $store = $shippable->getStore();
+
+        if (null === $store) {
+            return false;
+        }
+
+        return in_array($store->getId(), $configuration['stores']);
     }
 }

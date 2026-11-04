@@ -115,6 +115,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Rule conditions (cart, product, payment, shipping, notification)
 
 ### B-16 — Rule conditions dereference nullable zone, country, store, carrier, items or order without a check
+- **Status:** fixed — the payment and shipping zones, countries and stores checkers, and the payment and shipping categories and products checkers return `false` when the zone, country or store is `null`. The products checkers and `TaxCalculationStrategyCartItems` iterate `getItems() ?? []`, the shipping customer-groups checker iterates `getCustomerGroups() ?? []`, and the notification `StoresChecker` uses `getOrder()?->getStore()`. The payment carrier checker already used `?->`. Configuration keys without a guard are **B-17**, the gift items and the subject type of the categories checkers are **B-18**.
 - **Where:**
   - Payment: `Payment/Rule/Condition/ZonesConditionChecker.php:50-52`, `CountriesConditionChecker.php:43-45`, `StoresConditionChecker.php:37`, `CategoriesConditionChecker.php:54-56` (null store passed into the trait), `ProductsConditionChecker.php:54-58`, `CarrierConditionChecker.php:37`.
   - Shipping: `Shipping/Rule/Condition/ZonesConditionChecker.php:41-43`, `CountriesConditionChecker.php:34-36`, `StoresConditionChecker.php:39`, `CustomerGroupsConditionChecker.php:45` (`getCustomerGroups(): ?array` in `foreach`), `ProductsConditionChecker.php:62-64`, `Shipping/Taxation/TaxCalculationStrategyCartItems.php:82` (`getItems(): ?array`).

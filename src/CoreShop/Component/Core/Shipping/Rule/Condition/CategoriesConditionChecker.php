@@ -50,11 +50,17 @@ final class CategoriesConditionChecker extends AbstractConditionChecker
             return false;
         }
 
+        $store = $shippable->getStore();
+
+        if (null === $store) {
+            return false;
+        }
+
         $cartItems = $shippable->getItems() ?? [];
 
         $categoryIdsToCheck = $this->getCategoriesToCheck(
             $configuration['categories'],
-            $shippable->getStore(),
+            $store,
             $configuration['recursive'] ?: false,
         );
 

@@ -48,11 +48,17 @@ final class CategoriesConditionChecker extends AbstractConditionChecker
             return false;
         }
 
+        $store = $payable->getStore();
+
+        if (null === $store) {
+            return false;
+        }
+
         $cartItems = $payable->getItems() ?? [];
 
         $categoryIdsToCheck = $this->getCategoriesToCheck(
             $configuration['categories'],
-            $payable->getStore(),
+            $store,
             $configuration['recursive'] ?: false,
         );
 

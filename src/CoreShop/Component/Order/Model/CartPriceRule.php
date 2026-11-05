@@ -137,9 +137,15 @@ class CartPriceRule implements CartPriceRuleInterface
         return $this->getTranslation($language)->getLabel();
     }
 
+    /**
+     * Writes the label of exactly that locale: without the fallback, a locale that has no
+     * translation yet gets a new one instead of overwriting the fallback locale's label.
+     */
     public function setLabel(string $label, ?string $language = null)
     {
-        $this->getTranslation($language)->setLabel($label);
+        $this->getTranslation($language, false)->setLabel($label);
+
+        return $this;
     }
 
     public function getTranslation(?string $locale = null, bool $useFallbackTranslation = true): CartPriceRuleTranslationInterface

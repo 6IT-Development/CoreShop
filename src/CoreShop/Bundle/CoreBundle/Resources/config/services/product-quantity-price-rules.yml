@@ -36,6 +36,8 @@ services:
 
     coreshop.product_quantity_price_rules.condition.timespan:
         class: CoreShop\Component\Product\Rule\Condition\TimeSpanConditionChecker
+        arguments:
+            - '@?logger'
         tags:
             - { name: coreshop.product_quantity_price_rules.condition, type: timespan, form-type: CoreShop\Bundle\ProductQuantityPriceRulesBundle\Form\Type\Rule\Condition\TimespanConfigurationType }
 

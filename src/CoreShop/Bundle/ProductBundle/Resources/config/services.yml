@@ -84,6 +84,8 @@ services:
             - { name: coreshop.product_specific_price_rule.condition, type: nested, form-type: CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition\ProductSpecificPriceNestedConfigurationType }
 
     CoreShop\Component\Product\Rule\Condition\TimeSpanConditionChecker:
+        arguments:
+            - '@?logger'
         tags:
             - { name: coreshop.product_price_rule.condition, type: timespan, form-type: CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition\TimespanConfigurationType }
             - { name: coreshop.product_specific_price_rule.condition, type: timespan, form-type: CoreShop\Bundle\ProductBundle\Form\Type\Rule\Condition\TimespanConfigurationType }

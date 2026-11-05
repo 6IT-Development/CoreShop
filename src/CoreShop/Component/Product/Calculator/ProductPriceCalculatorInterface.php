@@ -26,5 +26,11 @@ interface ProductPriceCalculatorInterface extends
     ProductDiscountCalculatorInterface,
     ProductCustomAttributesCalculatorInterface
 {
-    public function getPrice(ProductInterface $product, array $context, bool $withDiscount = true): int;
+    /**
+     * Returns the retail price, or the discount price when it is lower.
+     *
+     * Discounts (discountAmount / discountPercent actions) are only subtracted when
+     * $withDiscount is true. Implementations must keep the default of false.
+     */
+    public function getPrice(ProductInterface $product, array $context, bool $withDiscount = false): int;
 }

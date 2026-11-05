@@ -31,6 +31,8 @@ interface ProductPriceCalculatorInterface extends
      *
      * Discounts (discountAmount / discountPercent actions) are only subtracted when
      * $withDiscount is true. Implementations must keep the default of false.
+     *
+     * @throws \CoreShop\Component\Product\Exception\NoPriceFoundException when there is neither a retail nor a discount price
      */
     public function getPrice(ProductInterface $product, array $context, bool $withDiscount = false): int;
 }

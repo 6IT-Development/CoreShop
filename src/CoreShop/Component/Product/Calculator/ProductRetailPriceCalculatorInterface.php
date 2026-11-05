@@ -22,5 +22,8 @@ use CoreShop\Component\Product\Model\ProductInterface;
 
 interface ProductRetailPriceCalculatorInterface
 {
+    /**
+     * @throws \CoreShop\Component\Product\Exception\NoRetailPriceFoundException when there is no retail price
+     */
     public function getRetailPrice(ProductInterface $product, array $context): int;
 }

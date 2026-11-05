@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Product\Calculator;
 
 use CoreShop\Component\Product\Exception\NoDiscountPriceFoundException;
+use CoreShop\Component\Product\Exception\NoPriceFoundException;
 use CoreShop\Component\Product\Exception\NoRetailPriceFoundException;
 use CoreShop\Component\Product\Model\ProductInterface;
 
@@ -34,14 +35,18 @@ final class ProductPriceCalculator implements ProductPriceCalculatorInterface
 
     public function getPrice(ProductInterface $product, array $context, bool $withDiscount = false): int
     {
-        $retailPrice = $this->getRetailPrice($product, $context);
-        $price = $retailPrice;
+        $retailPrice = $this->findRetailPrice($product, $context);
+        $discountPrice = $this->findDiscountPrice($product, $context);
 
-        $discountPrice = $this->getDiscountPrice($product, $context);
-
-        if ($discountPrice > 0 && $discountPrice < $price) {
-            $price = $discountPrice;
+        if (null === $retailPrice && null === $discountPrice) {
+            throw new NoPriceFoundException(__CLASS__);
         }
+
+        // a discount price applies when it is lower than the retail price, or when there is no retail price;
+        // a discount price of 0 is a valid price
+        $price = null !== $discountPrice && (null === $retailPrice || $discountPrice < $retailPrice)
+            ? $discountPrice
+            : $retailPrice;
 
         if ($withDiscount) {
             $price = max(0, $price - $this->getDiscount($product, $context, $price));
@@ -52,22 +57,12 @@ final class ProductPriceCalculator implements ProductPriceCalculatorInterface
 
     public function getRetailPrice(ProductInterface $product, array $context): int
     {
-        try {
-            return $this->retailPriceCalculator->getRetailPrice($product, $context);
-        } catch (NoRetailPriceFoundException) {
-        }
-
-        return 0;
+        return $this->retailPriceCalculator->getRetailPrice($product, $context);
     }
 
     public function getDiscountPrice(ProductInterface $product, array $context): int
     {
-        try {
-            return $this->discountPriceCalculator->getDiscountPrice($product, $context);
-        } catch (NoDiscountPriceFoundException) {
-        }
-
-        return 0;
+        return $this->discountPriceCalculator->getDiscountPrice($product, $context);
     }
 
     public function getDiscount(ProductInterface $product, array $context, int $price): int
@@ -78,5 +73,23 @@ final class ProductPriceCalculator implements ProductPriceCalculatorInterface
     public function getCustomAttributes(ProductInterface $product, array $context): array
     {
         return $this->productCustomAttributeCalculator->getCustomAttributes($product, $context);
+    }
+
+    private function findRetailPrice(ProductInterface $product, array $context): ?int
+    {
+        try {
+            return $this->getRetailPrice($product, $context);
+        } catch (NoRetailPriceFoundException) {
+            return null;
+        }
+    }
+
+    private function findDiscountPrice(ProductInterface $product, array $context): ?int
+    {
+        try {
+            return $this->getDiscountPrice($product, $context);
+        } catch (NoDiscountPriceFoundException) {
+            return null;
+        }
     }
 }

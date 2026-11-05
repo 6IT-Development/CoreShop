@@ -59,11 +59,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Payment
 
 ### B-08 — (verified) Payment description shows the wrong amount, unformatted
+- **Status:** fixed — the description prints `getPaymentTotal()` (the charged amount) formatted with `MoneyFormatterInterface` in the order currency and the order's locale (fallback: translator locale). The formatter is a new optional constructor argument (wired in `OrderBundle/Resources/config/services/payment.yml`); without it the amount is printed with `decimal_precision` digits plus the ISO code. `%items%` stays the number of order lines, documented in the code. Checked: `2 item(s) for 14,50 €.` (de), fallback `14.50 EUR`.
 - **Where:** `Payment/OrderPaymentProvider.php:54`, `:65-71`.
 - **Problem:** the payment is charged `getPaymentTotal()`, but the description (passed to Payum gateways via `CapturePaymentAction` / `AuthorizePaymentAction::setDescription`) prints `getTotal()`; they differ e.g. by the payment fee. The value is a raw `round()` float without currency ("12.5" instead of "12.50 EUR"). `%items%` counts order lines, not quantities.
 - **Fix:** format `getPaymentTotal()` with `MoneyFormatter` in the order currency and request locale; document what `%items%` means or sum quantities.
 
 ### B-09 — (latent) `OrderPaymentProvider` fatals or emits deprecations on incomplete orders
+- **Status:** fixed — `provideOrderPayment()` throws the new `Exception/OrderNotPayableException` (a `\DomainException`) when the order has no order number, no currency or no items, before anything is created.
 - **Where:** `Payment/OrderPaymentProvider.php:46`, `:68`, `:74`.
 - **Problem:** `str_replace(' ', '_', $order->getOrderNumber())` with a `null` number → PHP 8.1+ deprecation; `count($order->getItems())` with `null` → `TypeError`; `$payment->getCurrency()->getIsoCode()` without a currency → `Error`. Reachable only for orders not committed properly (the PayumBundle prepare action does not check, see overlap list in TODO-1).
 - **Fix:** assert order number, currency and items exist; throw a domain exception.

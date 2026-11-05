@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Order\Payment;
 
+use CoreShop\Component\Currency\Formatter\MoneyFormatterInterface;
+use CoreShop\Component\Currency\Model\CurrencyInterface;
+use CoreShop\Component\Order\Exception\OrderNotPayableException;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderPaymentInterface;
 use CoreShop\Component\Payment\Model\PaymentInterface;
@@ -33,11 +36,18 @@ class OrderPaymentProvider implements OrderPaymentProviderInterface
         private int $decimalFactor,
         private int $decimalPrecision,
         private TranslatorInterface $translator,
+        private ?MoneyFormatterInterface $moneyFormatter = null,
     ) {
     }
 
     public function provideOrderPayment(OrderInterface $order): PaymentInterface
     {
+        $currency = $order->getCurrency();
+
+        if (!$order->getOrderNumber() || !$currency instanceof CurrencyInterface || !$order->getItems()) {
+            throw new OrderNotPayableException(sprintf('Order "%s" has no order number, currency or items and cannot be paid.', (string) $order->getId()));
+        }
+
         $tokenGenerator = new UniqueTokenGenerator(true);
         $uniqueId = $tokenGenerator->generate(15);
         $orderNumber = preg_replace(
@@ -55,24 +65,38 @@ class OrderPaymentProvider implements OrderPaymentProviderInterface
         $payment->setPaymentProvider($order->getPaymentProvider());
         $payment->setState(PaymentInterface::STATE_NEW);
         $payment->setDatePayment(new \DateTime());
-        $payment->setCurrency($order->getCurrency());
+        $payment->setCurrency($currency);
         $payment->setOrder($order);
 
         if ($order instanceof PaymentSettingsAwareInterface) {
             $payment->setDetails($order->getPaymentSettings() ?? []);
         }
 
+        // %items% is the number of order lines, %total% the amount this payment charges
         $description = $this->translator->trans(
             'coreshop.order_payment.total',
             [
                 '%items%' => count($order->getItems()),
-                '%total%' => round($order->getTotal() / $this->decimalFactor, $this->decimalPrecision),
+                '%total%' => $this->formatAmount($order->getPaymentTotal() ?? 0, $currency, $order->getLocaleCode()),
             ],
         );
 
         $payment->setDescription($description);
-        $payment->setCurrencyCode($payment->getCurrency()->getIsoCode());
+        $payment->setCurrencyCode($currency->getIsoCode());
 
         return $payment;
+    }
+
+    private function formatAmount(int $amount, CurrencyInterface $currency, ?string $locale): string
+    {
+        if (null !== $this->moneyFormatter) {
+            return $this->moneyFormatter->format(
+                $amount,
+                $currency->getIsoCode(),
+                $locale ?: $this->translator->getLocale(),
+            );
+        }
+
+        return number_format($amount / $this->decimalFactor, $this->decimalPrecision, '.', '') . ' ' . $currency->getIsoCode();
     }
 }

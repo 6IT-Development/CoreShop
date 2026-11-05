@@ -9,3 +9,4 @@ services:
             - '%coreshop.currency.decimal_factor%'
             - '%coreshop.currency.decimal_precision%'
             - '@translator'
+            - '@CoreShop\Component\Currency\Formatter\MoneyFormatterInterface'

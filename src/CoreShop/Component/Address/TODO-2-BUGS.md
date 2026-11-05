@@ -34,6 +34,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** initialise `$this->states = new ArrayCollection()` in the constructor. Type it as `Collection` only. Add `getStates()`, `hasState()`, `addState()` and `removeState()` to the interface, and keep both sides in sync (`State::setCountry()`).
 
 ### CB-04 — `AddressesAwareTrait` treats all unsaved addresses as the same address
+- **Status:** fixed — `hasAddress()` and `removeAddress()` use a new private `isSameAddress()`: the same object is always the same address; otherwise two addresses only match when both have an id and the ids are equal. So a second unsaved address is added, and removing one unsaved address no longer removes the others. `removeAddress()` wraps the result in `array_values()`, so the holder gets a list. Checked with a holder using the trait: two unsaved and two saved (same id) addresses give 3 entries, and removing one unsaved address leaves a list with keys `[0, 1]`.
 - **Where:** `Model/AddressesAwareTrait.php:28-43, 59-68`
 - **Problems:**
   1. `hasAddress()` compares by `getId()`. Unsaved addresses all have `null` ids, so `null === null` is true: `addAddress()` silently drops the second unsaved address, and `removeAddress()` removes **every** unsaved address. The current callers (`OrderBundle/Controller/CustomerCreationController.php:94`, `AddressCreationController.php:70`, `Component/Core/Customer/CustomerTransformHelper.php:146`) save the address first, so this is latent. Any new or third-party caller that does not save first is affected.

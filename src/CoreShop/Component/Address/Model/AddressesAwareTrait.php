@@ -34,7 +34,7 @@ trait AddressesAwareTrait
         }
 
         foreach ($addresses as $existingAddress) {
-            if ($existingAddress instanceof AddressInterface && $existingAddress->getId() === $address->getId()) {
+            if ($existingAddress instanceof AddressInterface && $this->isSameAddress($existingAddress, $address)) {
                 return true;
             }
         }
@@ -62,9 +62,26 @@ trait AddressesAwareTrait
             return;
         }
 
-        $this->setAddresses(array_filter($this->getAddresses(), function (AddressInterface $storedAddress) use ($address) {
-            return $storedAddress->getId() !== $address->getId();
-        }));
+        // array_values: the holder expects a list, array_filter keeps the keys
+        $this->setAddresses(array_values(array_filter($this->getAddresses(), function (AddressInterface $storedAddress) use ($address) {
+            return !$this->isSameAddress($storedAddress, $address);
+        })));
+    }
+
+    /**
+     * Unsaved addresses have no id yet, so they are only the same address when they are the same object.
+     */
+    private function isSameAddress(AddressInterface $first, AddressInterface $second): bool
+    {
+        if ($first === $second) {
+            return true;
+        }
+
+        if (null === $first->getId() || null === $second->getId()) {
+            return false;
+        }
+
+        return $first->getId() === $second->getId();
     }
 
     public function getAddresses(): ?array

@@ -66,7 +66,7 @@ coreshop.ui.order.revise.transaction_cancelled: 'Sie haben die Transaktion auf I
 coreshop.ui.order.revise.transaction_failed: 'Während der Transaktion ist ein Fehler aufgetreten. Sie können die Zahlungsmöglichkeit ändern, die Zahlung erneut durchführen oder die Bestellung abbrechen.'
 coreshop.ui.order_revise_payment_change_not_allowed: 'Änderung der Zahlungsmöglichkeit dieser Bestellung ist nicht mehr erlaubt'
 coreshop.ui.order.created: 'Warenkorb wurde erstellt'
-coreshop.ui.carts: 'Warekörbe'
+coreshop.ui.carts: 'Warenkörbe'
 coreshop.ui.cart_list: 'Warenkorb Liste'
 coreshop.ui.cart.name: 'Name'
 coreshop.ui.personal_information: 'Persönliche Informationen'

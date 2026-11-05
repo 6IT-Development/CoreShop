@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Order\Calculator;
 
 use CoreShop\Component\Order\Exception\NoPurchasableDiscountPriceFoundException;
+use CoreShop\Component\Order\Exception\NoPurchasablePriceFoundException;
 use CoreShop\Component\Order\Exception\NoPurchasableRetailPriceFoundException;
 use CoreShop\Component\Order\Model\PurchasableInterface;
 
@@ -33,21 +34,25 @@ final class PurchasablePriceCalculator implements PurchasablePriceCalculatorInte
 
     public function getPrice(PurchasableInterface $purchasable, array $context, bool $includingDiscounts = false): int
     {
-        $price = 0;
+        $price = null;
 
         try {
-            $retailPrice = $this->purchasableRetailPriceCalculator->getRetailPrice($purchasable, $context);
-            $price = $retailPrice;
+            $price = $this->purchasableRetailPriceCalculator->getRetailPrice($purchasable, $context);
         } catch (NoPurchasableRetailPriceFoundException) {
         }
 
         try {
             $discountPrice = $this->purchasableDiscountPriceCalculator->getDiscountPrice($purchasable, $context);
 
-            if ($discountPrice > 0 && $discountPrice < $price) {
+            if ($discountPrice > 0 && (null === $price || $discountPrice < $price)) {
                 $price = $discountPrice;
             }
         } catch (NoPurchasableDiscountPriceFoundException) {
+        }
+
+        // Without a retail or discount price the purchasable must not be sold for 0
+        if (null === $price) {
+            throw new NoPurchasablePriceFoundException(__CLASS__);
         }
 
         if ($includingDiscounts) {

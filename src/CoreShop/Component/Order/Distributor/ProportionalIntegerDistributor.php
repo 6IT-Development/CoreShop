@@ -26,12 +26,12 @@ final class ProportionalIntegerDistributor implements ProportionalIntegerDistrib
     {
         Assert::allInteger($integers);
 
-        $total = array_sum($integers);
-        $distributedAmounts = [];
-
         if (!$integers) {
             return [];
         }
+
+        $integers = array_values($integers);
+        $total = array_sum($integers);
 
         // Nothing to weight by: distribute evenly instead of dividing by zero
         if (0 === $total) {
@@ -39,15 +39,44 @@ final class ProportionalIntegerDistributor implements ProportionalIntegerDistrib
             $total = count($integers);
         }
 
-        foreach ($integers as $element) {
-            $distributedAmounts[] = (int) round(($element * $amount) / $total, 0, \PHP_ROUND_HALF_DOWN);
+        // Work on a positive amount and total, so the shares keep the sign of the amount
+        $sign = $amount < 0 ? -1 : 1;
+        $amount = abs($amount);
+
+        if ($total < 0) {
+            $integers = array_map(static fn (int $weight): int => -$weight, $integers);
+            $total = -$total;
+        }
+
+        // Largest remainder method: floor every exact share, then hand the remaining units
+        // to the entries with the largest fractional parts. A zero weight has no fractional
+        // part, so it never gets one.
+        $distributedAmounts = [];
+        $remainders = [];
+
+        foreach ($integers as $i => $weight) {
+            $share = $weight * $amount;
+            $quotient = intdiv($share, $total);
+            $remainder = $share % $total;
+
+            if ($remainder < 0) {
+                --$quotient;
+                $remainder += $total;
+            }
+
+            $distributedAmounts[$i] = $quotient;
+            $remainders[$i] = $remainder;
         }
 
         $missingAmount = $amount - array_sum($distributedAmounts);
-        for ($i = 0, $iMax = abs($missingAmount); $i < $iMax; ++$i) {
-            $distributedAmounts[$i] += $missingAmount >= 0 ? 1 : -1;
+
+        // arsort() is stable, so equal remainders go to the earlier entries first
+        arsort($remainders);
+
+        foreach (array_slice(array_keys($remainders), 0, $missingAmount) as $i) {
+            ++$distributedAmounts[$i];
         }
 
-        return $distributedAmounts;
+        return array_map(static fn (int $share): int => $share * $sign, $distributedAmounts);
     }
 }

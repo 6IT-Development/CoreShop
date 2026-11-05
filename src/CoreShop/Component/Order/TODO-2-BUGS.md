@@ -91,6 +91,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** change the field to `coreShopRelation` as in `CoreBundle/Resources/install/pimcore/classes/CoreShopOrderBundle/CoreShopOrderShipment.json`; add it to the B-45 fix list.
 
 ### B-13 — (verified, latent) `ProposalPriceRuleTrait::getPriceRules()` returns `CartPriceRule` objects (or `null`), not the documented `PriceRuleItemInterface[]`
+- **Status:** fixed — `getPriceRules()` returns the `PriceRuleItemInterface` items as documented. The new trait method `getCartPriceRules()` returns the rules (skipping items whose rule was deleted); it is not added to the interfaces. `setPriceRules()` throws `InvalidArgumentException` for anything but a `Fieldcollection` instead of ignoring it. No caller in `src/` used the old return value.
 - **Where:** `Model/ProposalPriceRuleTrait.php:44-63`; contract in `Model/OrderInterface.php:206-209`, `Model/OrderItemInterface.php:163-166`.
 - **Problem:** `$rules[] = $ruleItem->getCartPriceRule()` collects the rule (possibly `null`). Any consumer that follows the contract (`->getDiscount()`, `->getVoucherCode()`) fatals. No caller in `src/`; public API breakage.
 - **Fix:** return the `$ruleItem`s; add a separate `getCartPriceRules()` if rules are needed. Make `setPriceRules()` reject non-Fieldcollection arguments instead of silently ignoring them.

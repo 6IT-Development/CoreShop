@@ -51,22 +51,41 @@ trait ProposalPriceRuleTrait
         if ($this->getPriceRuleItems() instanceof Fieldcollection) {
             foreach ($this->getPriceRuleItems() as $ruleItem) {
                 if ($ruleItem instanceof PriceRuleItemInterface) {
-                    $rules[] = $ruleItem->getCartPriceRule();
+                    $rules[] = $ruleItem;
                 }
             }
         }
 
-        /**
-         * @var PriceRuleItemInterface[] $rules
-         */
+        return $rules;
+    }
+
+    /**
+     * @return CartPriceRuleInterface[]
+     */
+    public function getCartPriceRules(): array
+    {
+        $rules = [];
+
+        foreach ($this->getPriceRules() as $ruleItem) {
+            if ($ruleItem->getCartPriceRule() instanceof CartPriceRuleInterface) {
+                $rules[] = $ruleItem->getCartPriceRule();
+            }
+        }
+
         return $rules;
     }
 
     public function setPriceRules($priceRules): void
     {
-        if ($priceRules instanceof Fieldcollection) {
-            $this->setPriceRuleItems($priceRules);
+        if (!$priceRules instanceof Fieldcollection) {
+            throw new \InvalidArgumentException(sprintf(
+                'Expected an instance of %s, got %s.',
+                Fieldcollection::class,
+                get_debug_type($priceRules),
+            ));
         }
+
+        $this->setPriceRuleItems($priceRules);
     }
 
     public function addPriceRule(PriceRuleItemInterface $priceRule): void

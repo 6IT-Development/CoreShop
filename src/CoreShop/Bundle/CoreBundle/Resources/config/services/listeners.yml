@@ -77,8 +77,9 @@ services:
         arguments:
             - '@Pimcore\Http\RequestHelper'
             - '@coreshop.repository.customer'
-            - '%coreshop.model.customer.class%'
+            - '@Pimcore\Http\Request\Resolver\PimcoreContextResolver'
         tags:
+            - { name: kernel.event_listener, event: pimcore.dataobject.preAdd, method: checkCustomerSecurityDataBeforeUpdate }
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: checkCustomerSecurityDataBeforeUpdate }
 
     CoreShop\Bundle\CoreBundle\EventListener\QuantityRangeUnitValidationListener:

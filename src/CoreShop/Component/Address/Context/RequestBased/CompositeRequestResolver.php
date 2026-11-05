@@ -46,9 +46,14 @@ final class CompositeRequestResolver implements RequestResolverInterface
     {
         foreach ($this->requestResolvers as $requestResolver) {
             try {
-                return $requestResolver->findCountry($request);
+                $country = $requestResolver->findCountry($request);
             } catch (CountryNotFoundException) {
-                //Silently ignore and continue
+                continue;
+            }
+
+            // RequestResolverInterface allows null for "no country", same as throwing
+            if (null !== $country) {
+                return $country;
             }
         }
 

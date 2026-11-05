@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Address\Context\RequestBased;
 
+use CoreShop\Component\Address\Context\CountryNotFoundException;
 use CoreShop\Component\Address\Model\CountryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\Service\ResetInterface;
@@ -41,7 +42,8 @@ final class CachedCountryContext implements RequestResolverInterface, ResetInter
 
     public function findCountry(Request $request): CountryInterface
     {
-        return $this->countries[$request] ??= $this->inner->findCountry($request);
+        // RequestResolverInterface allows null for "no country"; it is not cached, like a thrown exception
+        return $this->countries[$request] ??= $this->inner->findCountry($request) ?? throw new CountryNotFoundException();
     }
 
     public function reset(): void

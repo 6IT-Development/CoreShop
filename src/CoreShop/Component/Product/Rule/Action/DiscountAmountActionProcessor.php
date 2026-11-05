@@ -35,6 +35,11 @@ class DiscountAmountActionProcessor implements ProductDiscountActionProcessorInt
 
     public function getDiscount($subject, int $price, array $context, array $configuration): int
     {
+        // a fixed amount is per default unit, like the price and discount price actions
+        if (!$this->isDefaultUnitContext($subject, $context)) {
+            return 0;
+        }
+
         Assert::keyExists($context, 'base_currency');
         Assert::isInstanceOf($context['base_currency'], CurrencyInterface::class);
 

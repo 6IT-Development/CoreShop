@@ -49,3 +49,18 @@ Feature: Adding a new Product Specific Price Rule
     And I add the product "Shoe" with unit "Carton" to my cart
     Then the cart total should be "200000" including tax
     And the cart total should be "200000" excluding tax
+
+  Scenario: Add a rule with 20 euro off of unit "Pieces" and getting unit "Carton" to the cart
+    Given adding a product specific price rule to product "Shoe" named "discount"
+    And the specific price rule is active
+    And the specific price rule has a action discount with 20 in currency "EUR" off
+    And I add the product "Shoe" with unit "Pieces" to my cart
+    And I add the product "Shoe" with unit "Carton" to my cart
+    Then the cart total should be "208000" excluding tax
+
+  Scenario: Add a rule with 10 percent discount of unit "Pieces" and getting unit "Carton" to the cart
+    Given adding a product specific price rule to product "Shoe" named "discount"
+    And the specific price rule is active
+    And the specific price rule has a action discount-percent with 10% discount
+    And I add the product "Shoe" with unit "Carton" to my cart
+    Then the cart total should be "180000" excluding tax

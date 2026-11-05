@@ -23,7 +23,6 @@ use CoreShop\Component\Currency\Model\CurrencyInterface;
 use CoreShop\Component\Currency\Repository\CurrencyRepositoryInterface;
 use CoreShop\Component\Product\Exception\NoRetailPriceFoundException;
 use CoreShop\Component\Product\Model\ProductInterface;
-use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 use Webmozart\Assert\Assert;
 
 class PriceActionProcessor implements ProductPriceActionProcessorInterface
@@ -42,12 +41,8 @@ class PriceActionProcessor implements ProductPriceActionProcessorInterface
             throw new NoRetailPriceFoundException(__CLASS__);
         }
 
-        if (isset($context['unitDefinition']) && $context['unitDefinition'] instanceof ProductUnitDefinitionInterface) {
-            $defaultUnitId = $subject->getUnitDefinitions()?->getDefaultUnitDefinition()?->getId();
-
-            if ($context['unitDefinition']->getId() !== $defaultUnitId) {
-                throw new NoRetailPriceFoundException(__CLASS__);
-            }
+        if (!$this->isDefaultUnitContext($subject, $context)) {
+            throw new NoRetailPriceFoundException(__CLASS__);
         }
 
         Assert::keyExists($context, 'base_currency');

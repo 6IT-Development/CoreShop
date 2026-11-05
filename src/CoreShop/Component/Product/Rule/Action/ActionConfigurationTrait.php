@@ -21,6 +21,8 @@ namespace CoreShop\Component\Product\Rule\Action;
 use CoreShop\Component\Currency\Model\CurrencyInterface;
 use CoreShop\Component\Currency\Repository\CurrencyRepositoryInterface;
 use CoreShop\Component\Product\Exception\InvalidActionConfigurationException;
+use CoreShop\Component\Product\Model\ProductInterface;
+use CoreShop\Component\Product\Model\ProductUnitDefinitionInterface;
 
 /**
  * Reads action configuration values that come from the admin form, the API,
@@ -51,6 +53,33 @@ trait ActionConfigurationTrait
         }
 
         return (float) $value;
+    }
+
+    /**
+     * Fixed prices and amounts of the price rules are per default unit: they apply when there is no unit in
+     * the context, when the context unit is the product's default unit, or when the product has no default
+     * unit definition (the context unit is then the base unit). For any other unit (a "box of 12") the
+     * unit's own price applies; a percent discount applies to every unit.
+     */
+    private function isDefaultUnitContext(mixed $subject, array $context): bool
+    {
+        $unitDefinition = $context['unitDefinition'] ?? null;
+
+        if (!$unitDefinition instanceof ProductUnitDefinitionInterface || !$subject instanceof ProductInterface) {
+            return true;
+        }
+
+        $defaultUnitDefinition = $subject->getUnitDefinitions()?->getDefaultUnitDefinition();
+
+        if (!$defaultUnitDefinition instanceof ProductUnitDefinitionInterface) {
+            return true;
+        }
+
+        if ($unitDefinition === $defaultUnitDefinition) {
+            return true;
+        }
+
+        return null !== $unitDefinition->getId() && $unitDefinition->getId() === $defaultUnitDefinition->getId();
     }
 
     private function getConfiguredCurrency(CurrencyRepositoryInterface $currencyRepository, array $configuration): CurrencyInterface

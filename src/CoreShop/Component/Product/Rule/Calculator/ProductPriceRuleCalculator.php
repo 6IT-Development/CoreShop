@@ -22,6 +22,7 @@ use CoreShop\Component\Product\Calculator\ProductCustomAttributesCalculatorInter
 use CoreShop\Component\Product\Calculator\ProductDiscountCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductDiscountPriceCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductRetailPriceCalculatorInterface;
+use CoreShop\Component\Product\Exception\InvalidActionConfigurationException;
 use CoreShop\Component\Product\Exception\NoDiscountPriceFoundException;
 use CoreShop\Component\Product\Exception\NoRetailPriceFoundException;
 use CoreShop\Component\Product\Model\PriceRuleInterface;
@@ -33,6 +34,7 @@ use CoreShop\Component\Product\Rule\Action\ProductPriceActionProcessorInterface;
 use CoreShop\Component\Product\Rule\Fetcher\ValidRulesFetcherInterface;
 use CoreShop\Component\Registry\ServiceRegistryInterface;
 use CoreShop\Component\Rule\Model\ActionInterface;
+use Psr\Log\LoggerInterface;
 
 final class ProductPriceRuleCalculator implements
     ProductDiscountCalculatorInterface,
@@ -43,6 +45,7 @@ final class ProductPriceRuleCalculator implements
     public function __construct(
         private ValidRulesFetcherInterface $validRulesFetcher,
         private ServiceRegistryInterface $actionServiceRegistry,
+        private ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -50,35 +53,19 @@ final class ProductPriceRuleCalculator implements
     {
         $price = null;
 
-        /**
-         * @var PriceRuleInterface[] $rules
-         */
-        $rules = $this->validRulesFetcher->getValidRules($product, $context);
-
-        foreach ($rules as $rule) {
-            /**
-             * @var ActionInterface $action
-             */
-            foreach ($rule->getActions() as $action) {
-                $processor = $this->actionServiceRegistry->get($action->getType());
-
-                if (!$processor instanceof ProductPriceActionProcessorInterface) {
-                    continue;
-                }
-
-                try {
-                    $actionPrice = $processor->getPrice($product, $context, $action->getConfiguration());
-
-                    $price = $actionPrice;
-                } catch (NoRetailPriceFoundException) {
-                    //Silently ignore the error
-                }
+        $this->processRules($product, $context, static function (ActionInterface $action, object $processor, ?int $rulePrice) use ($product, $context): ?int {
+            if (!$processor instanceof ProductPriceActionProcessorInterface) {
+                return $rulePrice;
             }
 
-            if ($rule->getStopPropagation()) {
-                break;
+            try {
+                return $processor->getPrice($product, $context, $action->getConfiguration());
+            } catch (NoRetailPriceFoundException) {
+                return $rulePrice;
             }
-        }
+        }, static function (?int $rulePrice) use (&$price): void {
+            $price = $rulePrice ?? $price;
+        });
 
         if (null === $price) {
             throw new NoRetailPriceFoundException(__CLASS__);
@@ -91,34 +78,19 @@ final class ProductPriceRuleCalculator implements
     {
         $price = null;
 
-        /**
-         * @var PriceRuleInterface[] $rules
-         */
-        $rules = $this->validRulesFetcher->getValidRules($product, $context);
-
-        foreach ($rules as $rule) {
-            /**
-             * @var ActionInterface $action
-             */
-            foreach ($rule->getActions() as $action) {
-                $processor = $this->actionServiceRegistry->get($action->getType());
-
-                if (!$processor instanceof ProductDiscountPriceActionProcessorInterface) {
-                    continue;
-                }
-
-                try {
-                    $actionPrice = $processor->getDiscountPrice($product, $context, $action->getConfiguration());
-                    $price = $actionPrice;
-                } catch (NoDiscountPriceFoundException) {
-                    //Silently ignore the error
-                }
+        $this->processRules($product, $context, static function (ActionInterface $action, object $processor, ?int $rulePrice) use ($product, $context): ?int {
+            if (!$processor instanceof ProductDiscountPriceActionProcessorInterface) {
+                return $rulePrice;
             }
 
-            if ($rule->getStopPropagation()) {
-                break;
+            try {
+                return $processor->getDiscountPrice($product, $context, $action->getConfiguration());
+            } catch (NoDiscountPriceFoundException) {
+                return $rulePrice;
             }
-        }
+        }, static function (?int $rulePrice) use (&$price): void {
+            $price = $rulePrice ?? $price;
+        });
 
         if (null === $price) {
             throw new NoDiscountPriceFoundException(__CLASS__);
@@ -131,30 +103,15 @@ final class ProductPriceRuleCalculator implements
     {
         $discount = 0;
 
-        /**
-         * @var PriceRuleInterface[] $rules
-         */
-        $rules = $this->validRulesFetcher->getValidRules($product, $context);
-
-        if (empty($rules)) {
-            return $discount;
-        }
-
-        foreach ($rules as $rule) {
-            foreach ($rule->getActions() as $action) {
-                $processor = $this->actionServiceRegistry->get($action->getType());
-
-                if (!$processor instanceof ProductDiscountActionProcessorInterface) {
-                    continue;
-                }
-
-                $discount += $processor->getDiscount($product, $price, $context, $action->getConfiguration());
+        $this->processRules($product, $context, static function (ActionInterface $action, object $processor, ?int $ruleDiscount) use ($product, $context, $price): ?int {
+            if (!$processor instanceof ProductDiscountActionProcessorInterface) {
+                return $ruleDiscount;
             }
 
-            if ($rule->getStopPropagation()) {
-                break;
-            }
-        }
+            return ($ruleDiscount ?? 0) + $processor->getDiscount($product, $price, $context, $action->getConfiguration());
+        }, static function (?int $ruleDiscount) use (&$discount): void {
+            $discount += $ruleDiscount ?? 0;
+        });
 
         // Discounts of all actions add up on the same price (10 % + 20 % = 30 %); never discount more than the price
         return min(max(0, $price), $discount);
@@ -164,30 +121,74 @@ final class ProductPriceRuleCalculator implements
     {
         $customAttributes = [];
 
+        $this->processRules($product, $context, static function (ActionInterface $action, object $processor, ?array $ruleAttributes) use ($product, $context): ?array {
+            if (!$processor instanceof ProductCustomAttributesActionProcessorInterface) {
+                return $ruleAttributes;
+            }
+
+            return ($ruleAttributes ?? []) + $processor->getCustomAttributes($product, $context, $action->getConfiguration());
+        }, static function (?array $ruleAttributes) use (&$customAttributes): void {
+            $customAttributes += $ruleAttributes ?? [];
+        });
+
+        return $customAttributes;
+    }
+
+    /**
+     * Runs $applyAction over the actions of every valid rule and hands the rule's result to $commitRule.
+     *
+     * A rule is applied completely or not at all: if one of its actions has a type without a registered
+     * processor, or a processor rejects its configuration, the rule is skipped and logged, so one broken
+     * rule cannot take down every price calculation. A skipped rule still stops propagation when it is
+     * configured to, so lower-priority rules do not suddenly apply in its place.
+     *
+     * @param callable(ActionInterface, object, mixed): mixed $applyAction
+     * @param callable(mixed): void                          $commitRule
+     */
+    private function processRules(ProductInterface $product, array $context, callable $applyAction, callable $commitRule): void
+    {
         /**
          * @var PriceRuleInterface[] $rules
          */
         $rules = $this->validRulesFetcher->getValidRules($product, $context);
 
         foreach ($rules as $rule) {
-            /**
-             * @var ActionInterface $action
-             */
-            foreach ($rule->getActions() as $action) {
-                $processor = $this->actionServiceRegistry->get($action->getType());
+            try {
+                $ruleResult = null;
 
-                if (!$processor instanceof ProductCustomAttributesActionProcessorInterface) {
-                    continue;
+                /**
+                 * @var ActionInterface $action
+                 */
+                foreach ($rule->getActions() as $action) {
+                    $ruleResult = $applyAction($action, $this->getProcessor($action), $ruleResult);
                 }
 
-                $customAttributes += $processor->getCustomAttributes($product, $context, $action->getConfiguration());
+                $commitRule($ruleResult);
+            } catch (InvalidActionConfigurationException $exception) {
+                $this->logger?->critical('Product price rule "{rule}" was skipped: {message}', [
+                    'rule' => $rule->getId(),
+                    'action' => $action->getId(),
+                    'type' => $action->getType(),
+                    'product' => $product->getId(),
+                    'message' => $exception->getMessage(),
+                    'exception' => $exception,
+                ]);
             }
 
             if ($rule->getStopPropagation()) {
                 break;
             }
         }
+    }
 
-        return $customAttributes;
+    private function getProcessor(ActionInterface $action): object
+    {
+        $type = (string) $action->getType();
+
+        if (!$this->actionServiceRegistry->has($type)) {
+            throw new InvalidActionConfigurationException(sprintf('Action type "%s" has no registered processor.', $type));
+        }
+
+        return $this->actionServiceRegistry->get($type);
     }
 }

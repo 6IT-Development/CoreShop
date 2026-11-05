@@ -23,10 +23,12 @@ use Webmozart\Assert\Assert;
 
 class DiscountPercentActionProcessor implements ProductDiscountActionProcessorInterface
 {
+    use ActionConfigurationTrait;
+
     public function getDiscount($subject, int $price, array $context, array $configuration): int
     {
         Assert::isInstanceOf($subject, ProductInterface::class);
 
-        return (int) round(($configuration['percent'] / 100) * $price);
+        return (int) round(($this->getFloatConfiguration($configuration, 'percent') / 100) * $price);
     }
 }

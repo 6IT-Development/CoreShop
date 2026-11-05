@@ -28,6 +28,8 @@ use Webmozart\Assert\Assert;
 
 class DiscountPriceActionProcessor implements ProductDiscountPriceActionProcessorInterface
 {
+    use ActionConfigurationTrait;
+
     public function __construct(
         protected CurrencyRepositoryInterface $currencyRepository,
         protected CurrencyConverterInterface $moneyConverter,
@@ -55,14 +57,9 @@ class DiscountPriceActionProcessor implements ProductDiscountPriceActionProcesso
          * @var CurrencyInterface $contextCurrency
          */
         $contextCurrency = $context['base_currency'];
-        $price = $configuration['price'];
+        $price = $this->getIntConfiguration($configuration, 'price');
 
-        /**
-         * @var CurrencyInterface $currency
-         */
-        $currency = $this->currencyRepository->find($configuration['currency']);
-
-        Assert::isInstanceOf($currency, CurrencyInterface::class);
+        $currency = $this->getConfiguredCurrency($this->currencyRepository, $configuration);
 
         return $this->moneyConverter->convert($price, $currency->getIsoCode(), $contextCurrency->getIsoCode());
     }

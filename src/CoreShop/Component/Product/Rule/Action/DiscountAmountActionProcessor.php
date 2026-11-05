@@ -25,6 +25,8 @@ use Webmozart\Assert\Assert;
 
 class DiscountAmountActionProcessor implements ProductDiscountActionProcessorInterface
 {
+    use ActionConfigurationTrait;
+
     public function __construct(
         protected CurrencyRepositoryInterface $currencyRepository,
         protected CurrencyConverterInterface $moneyConverter,
@@ -40,14 +42,9 @@ class DiscountAmountActionProcessor implements ProductDiscountActionProcessorInt
          * @var CurrencyInterface $contextCurrency
          */
         $contextCurrency = $context['base_currency'];
-        $amount = $configuration['amount'];
+        $amount = $this->getIntConfiguration($configuration, 'amount');
 
-        /**
-         * @var CurrencyInterface $currency
-         */
-        $currency = $this->currencyRepository->find($configuration['currency']);
-
-        Assert::isInstanceOf($currency, CurrencyInterface::class);
+        $currency = $this->getConfiguredCurrency($this->currencyRepository, $configuration);
 
         $discount = $this->moneyConverter->convert($amount, $currency->getIsoCode(), $contextCurrency->getIsoCode());
 

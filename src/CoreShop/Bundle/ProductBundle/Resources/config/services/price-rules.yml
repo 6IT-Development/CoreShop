@@ -120,6 +120,7 @@ services:
         arguments:
             - '@coreshop.product.price_calculator.product_price_valid_rules_fetcher'
             - '@coreshop.registry.product_price_rule.actions'
+            - '@?logger'
         tags:
             - { name: coreshop.product.retail_price_calculator, type: product_price_rules, priority: 20 }
             - { name: coreshop.product.discount_price_calculator, type: product_price_rules, priority: 20 }

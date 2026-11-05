@@ -47,8 +47,8 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
         $cleanTargetQuantity = $this->roundQuantity($item, $targetQuantity);
 
         $currentQuantity = $item->getQuantity();
-        // negative quantities are rejected even when zero is allowed
-        if (0 > $cleanTargetQuantity || (!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity)) {
+        // negative and non-finite quantities are rejected even when zero is allowed
+        if (!is_finite($cleanTargetQuantity) || 0 > $cleanTargetQuantity || (!$this->allowZeroQuantity && 0 >= $cleanTargetQuantity)) {
             return;
         }
 
@@ -80,8 +80,9 @@ class CartItemQuantityModifier implements StorageListItemQuantityModifierInterfa
             return $targetQuantity;
         }
 
+        // without a unit definition there is nothing that allows a fractional quantity: only whole items are sold
         if (!$item->hasUnitDefinition()) {
-            return $targetQuantity;
+            return is_finite($targetQuantity) ? round($targetQuantity, 0, \PHP_ROUND_HALF_UP) : $targetQuantity;
         }
 
         $product = $item->getProduct();

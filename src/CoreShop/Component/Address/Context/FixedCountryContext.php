@@ -19,8 +19,13 @@ declare(strict_types=1);
 namespace CoreShop\Component\Address\Context;
 
 use CoreShop\Component\Address\Model\CountryInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class FixedCountryContext implements CountryContextInterface
+/**
+ * Holds a country set explicitly (tests, CLI, workers acting for a country). It is reset between
+ * requests (kernel.reset), so a country set once does not leak into later requests.
+ */
+final class FixedCountryContext implements CountryContextInterface, ResetInterface
 {
     private ?CountryInterface $country = null;
 
@@ -36,5 +41,15 @@ final class FixedCountryContext implements CountryContextInterface
     public function setCountry(CountryInterface $country): void
     {
         $this->country = $country;
+    }
+
+    public function clearCountry(): void
+    {
+        $this->country = null;
+    }
+
+    public function reset(): void
+    {
+        $this->clearCountry();
     }
 }

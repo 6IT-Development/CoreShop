@@ -22,6 +22,7 @@ services:
     CoreShop\Component\Address\Context\FixedCountryContext:
         tags:
             - { name: coreshop.context.country }
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Component\Address\Context\RequestBased\CompositeRequestResolver:
         public: false
@@ -31,6 +32,8 @@ services:
         decoration_priority: 255
         arguments:
             - '@CoreShop\Component\Address\Context\RequestBased\CachedCountryContext.inner'
+        tags:
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Component\Address\Formatter\AddressFormatterInterface: '@CoreShop\Component\Address\Formatter\AddressFormatter'
     # address formats are admin input: rendered in their own sandboxed environment, never in '@twig'

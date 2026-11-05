@@ -20,22 +20,32 @@ namespace CoreShop\Component\Address\Context\RequestBased;
 
 use CoreShop\Component\Address\Model\CountryInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class CachedCountryContext implements RequestResolverInterface
+/**
+ * Caches the resolved country per request: sub-requests and later requests in a
+ * long-running process (worker mode, Messenger) resolve their own country.
+ */
+final class CachedCountryContext implements RequestResolverInterface, ResetInterface
 {
-    private ?CountryInterface $country = null;
+    /**
+     * @var \WeakMap<Request, CountryInterface>
+     */
+    private \WeakMap $countries;
 
     public function __construct(
         private RequestResolverInterface $inner,
     ) {
+        $this->countries = new \WeakMap();
     }
 
     public function findCountry(Request $request): CountryInterface
     {
-        if (null === $this->country) {
-            $this->country = $this->inner->findCountry($request);
-        }
+        return $this->countries[$request] ??= $this->inner->findCountry($request);
+    }
 
-        return $this->country;
+    public function reset(): void
+    {
+        $this->countries = new \WeakMap();
     }
 }

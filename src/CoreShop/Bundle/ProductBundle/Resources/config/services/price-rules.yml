@@ -121,6 +121,8 @@ services:
             - '@coreshop.product.price_calculator.product_price_valid_rules_fetcher'
             - '@coreshop.registry.product_price_rule.actions'
             - '@?logger'
+            # a valid product-specific rule with stop propagation suppresses all global price rules
+            - '@?coreshop.product.price_calculator.product_specific_price_valid_rules_fetcher'
         tags:
             - { name: coreshop.product.retail_price_calculator, type: product_price_rules, priority: 20 }
             - { name: coreshop.product.discount_price_calculator, type: product_price_rules, priority: 20 }

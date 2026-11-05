@@ -46,6 +46,7 @@ final class ProductPriceRuleCalculator implements
         private ValidRulesFetcherInterface $validRulesFetcher,
         private ServiceRegistryInterface $actionServiceRegistry,
         private ?LoggerInterface $logger = null,
+        private ?ValidRulesFetcherInterface $overridingRulesFetcher = null,
     ) {
     }
 
@@ -64,7 +65,8 @@ final class ProductPriceRuleCalculator implements
                 return $rulePrice;
             }
         }, static function (?int $rulePrice) use (&$price): void {
-            $price = $rulePrice ?? $price;
+            // the first rule (by priority) that yields a price wins, like stop propagation
+            $price ??= $rulePrice;
         });
 
         if (null === $price) {
@@ -89,7 +91,8 @@ final class ProductPriceRuleCalculator implements
                 return $rulePrice;
             }
         }, static function (?int $rulePrice) use (&$price): void {
-            $price = $rulePrice ?? $price;
+            // the first rule (by priority) that yields a price wins, like stop propagation
+            $price ??= $rulePrice;
         });
 
         if (null === $price) {
@@ -143,6 +146,9 @@ final class ProductPriceRuleCalculator implements
      * rule cannot take down every price calculation. A skipped rule still stops propagation when it is
      * configured to, so lower-priority rules do not suddenly apply in its place.
      *
+     * If a valid rule of the overriding fetcher (the product-specific rules, for the global price rules)
+     * stops propagation, none of these rules apply.
+     *
      * @param callable(ActionInterface, object, mixed): mixed $applyAction
      * @param callable(mixed): void                          $commitRule
      */
@@ -152,6 +158,10 @@ final class ProductPriceRuleCalculator implements
          * @var PriceRuleInterface[] $rules
          */
         $rules = $this->validRulesFetcher->getValidRules($product, $context);
+
+        if ([] === $rules || $this->isOverridden($product, $context)) {
+            return;
+        }
 
         foreach ($rules as $rule) {
             try {
@@ -180,6 +190,21 @@ final class ProductPriceRuleCalculator implements
                 break;
             }
         }
+    }
+
+    private function isOverridden(ProductInterface $product, array $context): bool
+    {
+        if (null === $this->overridingRulesFetcher) {
+            return false;
+        }
+
+        foreach ($this->overridingRulesFetcher->getValidRules($product, $context) as $rule) {
+            if ($rule instanceof PriceRuleInterface && $rule->getStopPropagation()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function getProcessor(ActionInterface $action): object

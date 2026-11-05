@@ -30,6 +30,7 @@ class ProductSpecificPriceRuleRepository extends PriceRuleRepository implements 
             ->andWhere('o.product = :productId')
             ->setParameter('productId', $product->getId())
             ->addOrderBy('o.priority', 'ASC')
+            ->addOrderBy('o.id', 'ASC')
             ->getQuery()
             ->getResult()
         ;

@@ -108,6 +108,30 @@ final class ProductSpecificPriceRuleContext implements Context
     }
 
     /**
+     * @Given /^the (specific price rule "[^"]+") is stop propagation$/
+     * @Given /^the (specific price rule) is stop propagation$/
+     */
+    public function theProductsSpecificPriceRuleIsStopPropagation(ProductSpecificPriceRuleInterface $rule): void
+    {
+        $rule->setStopPropagation(true);
+
+        $this->objectManager->persist($rule);
+        $this->objectManager->flush();
+    }
+
+    /**
+     * @Given /^the (specific price rule "[^"]+") has priority "([\d]+)"$/
+     * @Given /^the (specific price rule) has priority "([\d]+)"$/
+     */
+    public function theProductsSpecificPriceRuleHasPriority(ProductSpecificPriceRuleInterface $rule, int $priority): void
+    {
+        $rule->setPriority($priority);
+
+        $this->objectManager->persist($rule);
+        $this->objectManager->flush();
+    }
+
+    /**
      * @Given /^the (specific price rule "[^"]+") has a condition countries with (country "[^"]+")$/
      * @Given /^the (specific price rule) has a condition countries with (country "[^"]+")$/
      */

@@ -23,6 +23,8 @@ use CoreShop\Component\Rule\Condition\RuleValidationProcessorInterface;
 
 final class ValidProductSpecificPriceRuleFetcher implements ValidRulesFetcherInterface
 {
+    use PriorityOrderedRulesTrait;
+
     public function __construct(
         private RuleValidationProcessorInterface $ruleValidationProcessor,
     ) {
@@ -31,7 +33,7 @@ final class ValidProductSpecificPriceRuleFetcher implements ValidRulesFetcherInt
     public function getValidRules(ProductInterface $product, array $context): array
     {
         $validRules = [];
-        $rules = $product->getSpecificPriceRules();
+        $rules = $this->orderByPriority($product->getSpecificPriceRules());
 
         foreach ($rules as $rule) {
             if (!$this->ruleValidationProcessor->isValid($product, $rule, $context)) {

@@ -22,6 +22,7 @@ use CoreShop\Component\Core\Customer\Allocator\CustomerAddressAllocatorInterface
 use CoreShop\Component\Core\Model\CompanyInterface;
 use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Customer\Repository\CustomerRepositoryInterface;
+use Pimcore\Db;
 use Pimcore\Event\Model\DataObjectEvent;
 
 final class CustomerCompanyRelationListener
@@ -40,20 +41,39 @@ final class CustomerCompanyRelationListener
         }
 
         $list = $this->customerRepository->getList();
+        // deactivated (unpublished) customers must be reset as well
+        $list->setUnpublished(true);
         $list->addConditionParam('company__id = ?', $object->getId());
 
-        /** @var CustomerInterface $customer */
+        $customers = [];
+
         foreach ($list->getData() as $customer) {
-            $accessType = $customer->getAddressAccessType();
-            if (empty($accessType)) {
-                continue;
-            }
-            if ($accessType === CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_ONLY) {
+            if (!$customer instanceof CustomerInterface) {
                 continue;
             }
 
-            $customer->setAddressAccessType(CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_ONLY);
-            $customer->save();
+            $accessType = $customer->getAddressAccessType();
+
+            if (empty($accessType) || $accessType === CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_ONLY) {
+                continue;
+            }
+
+            $customers[] = $customer;
         }
+
+        if ([] === $customers) {
+            return;
+        }
+
+        /**
+         * All or nothing: if one customer cannot be saved, the exception aborts the company delete
+         * and none of the customers is left changed.
+         */
+        Db::get()->transactional(static function () use ($customers): void {
+            foreach ($customers as $customer) {
+                $customer->setAddressAccessType(CustomerAddressAllocatorInterface::ADDRESS_ACCESS_TYPE_OWN_ONLY);
+                $customer->save();
+            }
+        });
     }
 }

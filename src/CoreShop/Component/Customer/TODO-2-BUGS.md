@@ -84,6 +84,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** read the customer once and deny access when it is `null` (`$customer = $context['customer'] ?? throw new AccessDeniedException()`), then compare ids.
 
 ### B-08 — (dependent) `CustomerCompanyRelationListener` only resets published customers, and can leave a company half-deleted
+- **Status:** fixed — the listing includes unpublished customers, each row is checked with `instanceof Core\Model\CustomerInterface`, and the customers to reset are collected first and saved in one `Db::get()->transactional()`. A failing save rolls all of them back and aborts the company delete (`preDelete` runs before Pimcore's own delete transaction). The `own_only` filter stays in PHP rather than SQL. Not verified against a running Pimcore (no vendor on this branch).
 - **Where:** `CoreBundle/EventListener/CustomerCompanyRelationListener.php:34-57`
 - **Problem:**
   - `$this->customerRepository->getList()` excludes unpublished objects by default, so unpublished (for example deactivated) customers keep `company_only` / `own_and_company` after the company is deleted. `CustomerAddressAllocator` falls back to the customer's own addresses, so the storefront survives. But the admin field then holds a value that `AddressAccessOptionsProvider` no longer offers, and the next admin save shows an empty select.

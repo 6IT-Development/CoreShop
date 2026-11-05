@@ -68,6 +68,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** together with TODO-1 **CC-01**: `\WeakMap` keyed by the product object, do not cache when `getId() === null`, do not write when not reading (or always read, keyed by context), `ResetInterface`. Clear the entry in the specific-price-rules data type on save **(dependent: ProductBundle `CoreExtension/ProductSpecificPriceRules.php`)**.
 
 ### CB-07 — `DiscountPercentActionProcessor` rounds a float product: 17.5 %, 35 %, 70 % … give a discount 1 cent too low — (reproduced)
+- **Status:** fixed — `DiscountPercentActionProcessor::percentOf(int $price, float $percent)` (public static, for TODO-3 **CI-06**) computes in integers: the percent is scaled to 1/10 000 % (`(int) round($percent * 10_000)`, exact for up to four decimals), then `intdiv(|price × scaled| × 2 + 10⁶, 2 × 10⁶)` rounds half away from zero; prices outside the safe integer range fall back to float rounding. Checked against exact decimal half-up rounding for prices 0.01 … 3 000.00 and 5, 7, 10, 12.5, 15, 17.5, 19, 20, 25, 30, 33, 33.33, 35, 70, 99.99 %: 0 differences (the old formula: 8 215). 1.80 × 17.5 %, 0.90 × 35 %, 0.45 × 70 % → 0.32. The cart / shipping / payment percent actions are not changed (TODO-3 **CI-06**).
 - **Where:** `Rule/Action/DiscountPercentActionProcessor.php:30`: `(int) round(($configuration['percent'] / 100) * $price)`.
 - **Reproduced** (prices 0.01 … 3 000.00, compared with exact decimal half-up rounding):
 

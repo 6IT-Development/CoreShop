@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Payment\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Payment\Model\PayableInterface;
@@ -39,6 +40,6 @@ final class CustomersConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($payable->getCustomer()->getId(), $configuration['customers']);
+        return CustomerConditionMatcher::matchesCustomer($payable->getCustomer(), $configuration);
     }
 }

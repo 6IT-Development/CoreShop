@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Product\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Rule\Condition\ConditionCheckerInterface;
@@ -35,6 +36,6 @@ final class CustomersConditionChecker implements ConditionCheckerInterface
             return false;
         }
 
-        return in_array($params['customer']->getId(), $configuration['customers']);
+        return CustomerConditionMatcher::matchesCustomer($params['customer'], $configuration);
     }
 }

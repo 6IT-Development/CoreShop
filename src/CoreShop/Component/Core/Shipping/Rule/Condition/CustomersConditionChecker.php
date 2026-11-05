@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Shipping\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
@@ -41,6 +42,6 @@ final class CustomersConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        return in_array($shippable->getCustomer()->getId(), $configuration['customers'] ?? []);
+        return CustomerConditionMatcher::matchesCustomer($shippable->getCustomer(), $configuration);
     }
 }

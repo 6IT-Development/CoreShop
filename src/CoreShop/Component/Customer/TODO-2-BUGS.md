@@ -14,6 +14,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Rule conditions that read customers
 
 ### B-01 — (dependent) The customer and customer-group condition checkers trust their input: nullable groups, missing configuration keys and loose comparisons
+- **Status:** fixed — the eight customer/customer-group checkers (cart, product, payment, shipping) delegate to the new `Component/Core/Rule/Condition/CustomerConditionMatcher`. It reads the configuration with `?? []`, keeps only positive integer ids (ints or digit strings), compares strictly, returns `false` for a customer without id and iterates `getCustomerGroups() ?? []`. `Customers`/`CustomerGroupsConfigurationType` now use `IntegerType` entries with `NotBlank` + `Positive` and `Count(min: 1)` in the `coreshop` group (new parameters `coreshop.form.type.rule.condition.{customers,customer_groups}.validation_groups`). Not done: a `ChoiceType` of existing ids, and unit tests (no vendor on this branch; the matcher was smoke-tested with stubs).
 - **Where:**
   - `Component/Core/Cart/Rule/Condition/CustomerGroupsConditionChecker.php:36-38`, `Component/Core/Product/Rule/Condition/CustomerGroupsConditionChecker.php:43-45`, `Component/Core/Payment/Rule/Condition/CustomerGroupsConditionChecker.php:43-45`, `Component/Core/Shipping/Rule/Condition/CustomerGroupsConditionChecker.php:45-47`
   - `Component/Core/{Cart:35,Product:38,Payment:42,Shipping:44}/Rule/Condition/CustomersConditionChecker.php`

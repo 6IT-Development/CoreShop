@@ -20,16 +20,38 @@ namespace CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Validator\Constraints\Count;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Positive;
 
 final class CustomerGroupsConfigurationType extends AbstractType
 {
+    /**
+     * @param string[] $validationGroups
+     */
+    public function __construct(
+        protected array $validationGroups = ['coreshop'],
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('customerGroups', CollectionType::class, [
                 'allow_add' => true,
                 'allow_delete' => true,
+                'entry_type' => IntegerType::class,
+                'entry_options' => [
+                    'constraints' => [
+                        new NotBlank(groups: $this->validationGroups),
+                        new Positive(groups: $this->validationGroups),
+                    ],
+                ],
+                'constraints' => [
+                    new Count(min: 1, groups: $this->validationGroups),
+                ],
             ])
         ;
     }

@@ -18,10 +18,10 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Shipping\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
-use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Shipping\Model\CarrierInterface;
 use CoreShop\Component\Shipping\Model\ShippableInterface;
 use CoreShop\Component\Shipping\Rule\Condition\AbstractConditionChecker;
@@ -42,14 +42,6 @@ final class CustomerGroupsConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        foreach ($shippable->getCustomer()->getCustomerGroups() ?? [] as $group) {
-            if ($group instanceof ResourceInterface) {
-                if (in_array($group->getId(), $configuration['customerGroups'] ?? [])) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return CustomerConditionMatcher::matchesCustomerGroups($shippable->getCustomer(), $configuration);
     }
 }

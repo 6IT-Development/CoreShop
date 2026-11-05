@@ -4,6 +4,8 @@ parameters:
     # coreshop_customer_guest runs the RegisteredUser check (e-mail of a registered account)
     coreshop.form.type.guest_registration_type.validation_groups: [coreshop, coreshop_customer_guest]
     coreshop.form.type.product_price_rule.condition.quantity.validation_groups: [coreshop]
+    coreshop.form.type.rule.condition.customers.validation_groups: [coreshop]
+    coreshop.form.type.rule.condition.customer_groups.validation_groups: [coreshop]
     coreshop.form.type.shipping_rule.action.addition_amount.validation_groups: [coreshop]
     coreshop.form.type.shipping_rule.action.discount_amount.validation_groups: [coreshop]
     coreshop.form.type.shipping_rule.action.price.validation_groups: [coreshop]
@@ -53,6 +55,18 @@ services:
             - '@CoreShop\Bundle\CoreBundle\Form\DataMapper\CustomerDataMapper'
             - '@coreshop.repository.customer'
             - '@coreshop.factory.customer'
+        tags:
+            - { name: form.type }
+
+    CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CustomersConfigurationType:
+        arguments:
+            - '%coreshop.form.type.rule.condition.customers.validation_groups%'
+        tags:
+            - { name: form.type }
+
+    CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\CustomerGroupsConfigurationType:
+        arguments:
+            - '%coreshop.form.type.rule.condition.customer_groups.validation_groups%'
         tags:
             - { name: form.type }
 

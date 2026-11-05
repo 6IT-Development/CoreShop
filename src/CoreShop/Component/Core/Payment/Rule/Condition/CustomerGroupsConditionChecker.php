@@ -18,12 +18,12 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Payment\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Payment\Model\PayableInterface;
 use CoreShop\Component\Payment\Model\PaymentProviderInterface;
 use CoreShop\Component\Payment\Rule\Condition\AbstractConditionChecker;
-use CoreShop\Component\Resource\Model\ResourceInterface;
 
 final class CustomerGroupsConditionChecker extends AbstractConditionChecker
 {
@@ -40,14 +40,6 @@ final class CustomerGroupsConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        foreach ($payable->getCustomer()->getCustomerGroups() as $group) {
-            if ($group instanceof ResourceInterface) {
-                if (in_array($group->getId(), $configuration['customerGroups'])) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return CustomerConditionMatcher::matchesCustomerGroups($payable->getCustomer(), $configuration);
     }
 }

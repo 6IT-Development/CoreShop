@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Product\Rule\Condition;
 
+use CoreShop\Component\Core\Rule\Condition\CustomerConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Rule\Condition\ConditionCheckerInterface;
@@ -35,19 +36,6 @@ final class CustomerGroupsConditionChecker implements ConditionCheckerInterface
             return false;
         }
 
-        /**
-         * @var CustomerInterface $customer
-         */
-        $customer = $params['customer'];
-
-        foreach ($customer->getCustomerGroups() as $group) {
-            if ($group instanceof ResourceInterface) {
-                if (in_array($group->getId(), $configuration['customerGroups'])) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return CustomerConditionMatcher::matchesCustomerGroups($params['customer'], $configuration);
     }
 }

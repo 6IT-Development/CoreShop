@@ -39,6 +39,7 @@ class CompositeDiscountCalculator implements ProductDiscountCalculatorInterface
             $discount += $calculator->getDiscount($product, $context, $price);
         }
 
-        return $discount;
+        // Discounts of all calculators add up on the same price; never discount more than the price
+        return min(max(0, $price), $discount);
     }
 }

@@ -39,6 +39,6 @@ class CompositePurchasableDiscountCalculator implements PurchasableDiscountCalcu
             $discounts += $calculator->getDiscount($purchasable, $context, $basePrice);
         }
 
-        return $discounts;
+        return min(max(0, $basePrice), $discounts);
     }
 }

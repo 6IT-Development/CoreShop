@@ -49,6 +49,8 @@ class DiscountAmountActionProcessor implements ProductDiscountActionProcessorInt
 
         Assert::isInstanceOf($currency, CurrencyInterface::class);
 
-        return $this->moneyConverter->convert($amount, $currency->getIsoCode(), $contextCurrency->getIsoCode());
+        $discount = $this->moneyConverter->convert($amount, $currency->getIsoCode(), $contextCurrency->getIsoCode());
+
+        return min(max(0, $price), $discount);
     }
 }

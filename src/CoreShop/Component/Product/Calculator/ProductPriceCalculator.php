@@ -44,7 +44,7 @@ final class ProductPriceCalculator implements ProductPriceCalculatorInterface
         }
 
         if ($withDiscount) {
-            $price -= $this->getDiscount($product, $context, $price);
+            $price = max(0, $price - $this->getDiscount($product, $context, $price));
         }
 
         return $price;

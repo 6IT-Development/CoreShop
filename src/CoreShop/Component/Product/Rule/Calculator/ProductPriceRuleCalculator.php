@@ -156,7 +156,8 @@ final class ProductPriceRuleCalculator implements
             }
         }
 
-        return $discount;
+        // Discounts of all actions add up on the same price (10 % + 20 % = 30 %); never discount more than the price
+        return min(max(0, $price), $discount);
     }
 
     public function getCustomAttributes(ProductInterface $product, array $context): array

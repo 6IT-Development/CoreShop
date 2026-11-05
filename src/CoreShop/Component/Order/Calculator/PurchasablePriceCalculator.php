@@ -51,7 +51,7 @@ final class PurchasablePriceCalculator implements PurchasablePriceCalculatorInte
         }
 
         if ($includingDiscounts) {
-            $price -= $this->purchasableDiscountCalculator->getDiscount($purchasable, $context, $price);
+            $price = max(0, $price - $this->purchasableDiscountCalculator->getDiscount($purchasable, $context, $price));
         }
 
         return $price;

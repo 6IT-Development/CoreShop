@@ -63,11 +63,15 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         $documentItem->setOrderItem($orderItem);
         $documentItem->setQuantity($quantity);
 
-        $documentItem->setTotal((int) round($orderItem->getItemPrice(true) * $quantity), true);
-        $documentItem->setTotal((int) round($orderItem->getItemPrice(false) * $quantity), false);
+        /*
+         * Take the share of the order item total, it contains the item level discounts (cart item rules)
+         * which the unit price does not
+         */
+        $documentItem->setTotal($this->getShareOfTotal($orderItem->getTotal(true), $orderItem, $quantity), true);
+        $documentItem->setTotal($this->getShareOfTotal($orderItem->getTotal(false), $orderItem, $quantity), false);
 
-        $documentItem->setConvertedTotal((int) round($orderItem->getConvertedItemPrice(true) * $quantity), true);
-        $documentItem->setConvertedTotal((int) round($orderItem->getConvertedItemPrice(false) * $quantity), false);
+        $documentItem->setConvertedTotal($this->getShareOfTotal($orderItem->getConvertedTotal(true), $orderItem, $quantity), true);
+        $documentItem->setConvertedTotal($this->getShareOfTotal($orderItem->getConvertedTotal(false), $orderItem, $quantity), false);
 
         VersionHelper::useVersioning(function () use ($documentItem) {
             $documentItem->save();
@@ -85,5 +89,16 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         );
 
         return $documentItem;
+    }
+
+    private function getShareOfTotal(int $total, OrderItemInterface $orderItem, float $quantity): int
+    {
+        $orderedQuantity = (float) $orderItem->getQuantity();
+
+        if ($orderedQuantity <= 0) {
+            return 0;
+        }
+
+        return (int) round($total * min($quantity, $orderedQuantity) / $orderedQuantity);
     }
 }

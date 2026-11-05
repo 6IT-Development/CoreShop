@@ -185,7 +185,19 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
     {
         $order = $document->getOrder();
 
+        $processedTypes = [];
+
         foreach ($converted ? $order->getConvertedAdjustments() : $order->getAdjustments() as $adjustment) {
+            /*
+             * Neutral adjustments are not part of the order total (e.g. cart item rule discounts, which are
+             * already in the item totals), and every type is processed once with the total of that type
+             */
+            if ($adjustment->getNeutral() || isset($processedTypes[$adjustment->getTypeIdentifier()])) {
+                continue;
+            }
+
+            $processedTypes[$adjustment->getTypeIdentifier()] = true;
+
             $orderAdjustmentsGross = $converted ? $order->getConvertedAdjustmentsTotal($adjustment->getTypeIdentifier()) : $order->getAdjustmentsTotal($adjustment->getTypeIdentifier());
             $orderAdjustmentsNet = $converted ? $order->getConvertedAdjustmentsTotal($adjustment->getTypeIdentifier(), false) : $order->getAdjustmentsTotal($adjustment->getTypeIdentifier(), false);
 
@@ -193,7 +205,7 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
             $adjustmentValueToProcessNet = $orderAdjustmentsNet - $this->getProcessedAdjustmentValue($order, $adjustment->getTypeIdentifier(), false, $converted);
 
             if (0 !== $adjustmentValueToProcessGross) {
-                $newAdjustment = $this->adjustmentFactory->createWithData($adjustment->getTypeIdentifier(), $adjustment->getLabel(), $adjustmentValueToProcessGross, $adjustmentValueToProcessNet, $adjustment->getNeutral());
+                $newAdjustment = $this->adjustmentFactory->createWithData($adjustment->getTypeIdentifier(), $adjustment->getLabel(), $adjustmentValueToProcessGross, $adjustmentValueToProcessNet, false);
 
                 $converted ? $document->addConvertedAdjustment($newAdjustment) : $document->addAdjustment($newAdjustment);
             }
@@ -238,7 +250,7 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
          */
         foreach ($documents as $document) {
             foreach ($converted ? $document->getConvertedAdjustments() : $document->getAdjustments() as $adjustment) {
-                if ($adjustment->getTypeIdentifier() === $adjustmentIdentifier) {
+                if (!$adjustment->getNeutral() && $adjustment->getTypeIdentifier() === $adjustmentIdentifier) {
                     $processedValue += $adjustment->getAmount($withTax);
                 }
             }

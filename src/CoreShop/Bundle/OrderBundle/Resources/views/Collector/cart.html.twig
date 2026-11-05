@@ -1,7 +1,7 @@
 {% extends '@WebProfiler/Profiler/layout.html.twig' %}
 
 {% block toolbar %}
-    {% if collector.cart is not null %}
+    {% if collector.hasCart %}
         {% set icon %}
             {{ include('@CoreShopOrder/Collector/Icon/cart.svg') }}
 
@@ -11,7 +11,11 @@
                 </span>
             {% else %}
                 <span class="sf-toolbar-value">
-                    {{ collector.cart.total|coreshop_format_money(collector.cart.getCurrency.getIsoCode, collector.locale) }}
+                    {% if collector.currency is not null %}
+                        {{ collector.total|coreshop_format_money(collector.currency, collector.locale) }}
+                    {% else %}
+                        {{ collector.total }}
+                    {% endif %}
                 </span>
             {% endif %}
         {% endset %}
@@ -25,7 +29,7 @@
             {% else %}
                 <div class="sf-toolbar-info-piece">
                     <b>Cart ID</b>
-                    <span class="sf-toolbar-status">{{ collector.cart.id|default('New Cart')}}</span>
+                    <span class="sf-toolbar-status">{{ collector.cartId|default('New Cart')}}</span>
                 </div>
             {% endif %}
         {% endset %}

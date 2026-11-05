@@ -20,7 +20,6 @@ namespace CoreShop\Bundle\OrderBundle\Collector;
 
 use CoreShop\Component\Locale\Context\LocaleContextInterface;
 use CoreShop\Component\Order\Context\CartContextInterface;
-use CoreShop\Component\Order\Model\OrderInterface;
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,16 +32,27 @@ final class CartCollector extends DataCollector
         private LocaleContextInterface $localeContext,
         private PimcoreContextResolver $pimcoreContext,
     ) {
-        $this->data = [
-            'cart' => null,
-            'locale' => 'en',
-            'admin' => false,
-        ];
+        $this->reset();
     }
 
-    public function getCart(): ?OrderInterface
+    public function hasCart(): bool
     {
-        return $this->data['cart'];
+        return $this->data['has_cart'];
+    }
+
+    public function getCartId(): ?int
+    {
+        return $this->data['cart_id'];
+    }
+
+    public function getTotal(): ?int
+    {
+        return $this->data['total'];
+    }
+
+    public function getCurrency(): ?string
+    {
+        return $this->data['currency'];
     }
 
     public function getLocale(): string
@@ -64,16 +74,29 @@ final class CartCollector extends DataCollector
         }
 
         try {
-            $this->data['cart'] = $this->cartContext->getCart();
+            $cart = $this->cartContext->getCart();
+
+            // store a scalar summary only, the profile must not carry the whole order object graph
+            $this->data['has_cart'] = true;
+            $this->data['cart_id'] = $cart->getId();
+            $this->data['total'] = $cart->getTotal();
+            $this->data['currency'] = $cart->getCurrency()?->getIsoCode();
             $this->data['locale'] = $this->localeContext->getLocaleCode();
-        } catch (\Exception) {
+        } catch (\Throwable) {
             //If something went wrong, we don't have any cart, which we can safely ignore
         }
     }
 
     public function reset(): void
     {
-        $this->data = [];
+        $this->data = [
+            'has_cart' => false,
+            'cart_id' => null,
+            'total' => null,
+            'currency' => null,
+            'locale' => 'en',
+            'admin' => false,
+        ];
     }
 
     public function getName(): string

@@ -27,15 +27,16 @@ final class FloatDistributor implements FloatDistributorInterface
         Assert::true((1 <= $numberOfTargets), 'Number of targets must be bigger than 0.');
 
         $sign = $floatAmount < 0 ? -1 : 1;
-        $amount = abs($floatAmount);
+        $amount = DistributorAmount::toInt(abs($floatAmount));
 
         $intTargetAmount = (int) floor($numberOfTargets);
         $floatTargetAmount = $numberOfTargets - $intTargetAmount;
 
-        $floatAmountOfAmount = floor($amount / $numberOfTargets * $floatTargetAmount);
-        $amount = $amount - $floatAmountOfAmount;
+        // The fractional target gets its share rounded down, the whole targets share the rest
+        $floatAmountOfAmount = (int) floor($amount / $numberOfTargets * $floatTargetAmount);
+        $amount -= $floatAmountOfAmount;
 
-        $low = (int) ($amount / $intTargetAmount);
+        $low = intdiv($amount, $intTargetAmount);
         $high = $low + 1;
 
         $remainder = $amount % $intTargetAmount;
@@ -49,7 +50,9 @@ final class FloatDistributor implements FloatDistributorInterface
             $result[] = $low * $sign;
         }
 
-        $result[] = (int) $floatAmountOfAmount;
+        if ($floatTargetAmount > 0) {
+            $result[] = $floatAmountOfAmount * $sign;
+        }
 
         return $result;
     }

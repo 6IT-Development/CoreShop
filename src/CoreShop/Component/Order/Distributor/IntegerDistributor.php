@@ -27,9 +27,9 @@ final class IntegerDistributor implements IntegerDistributorInterface
         Assert::true((1 <= $numberOfTargets), 'Number of targets must be bigger than 0.');
 
         $sign = $floatAmount < 0 ? -1 : 1;
-        $amount = abs($floatAmount);
+        $amount = DistributorAmount::toInt(abs($floatAmount));
 
-        $low = (int) ($amount / $numberOfTargets);
+        $low = intdiv($amount, $numberOfTargets);
         $high = $low + 1;
 
         $remainder = $amount % $numberOfTargets;

@@ -19,11 +19,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** largest-remainder method: floor each share, hand the remainder to the entries with the largest fractional parts, never to zero-weight entries, keep the sign of `$amount`.
 
 ### B-02 — (reproduced, latent) `FloatDistributor` loses the sign of the fractional part and returns an extra element
+- **Status:** fixed — `FloatDistributor` works on an `int` amount (whole, in-range floats only, via the new internal `DistributorAmount::toInt()`, otherwise `InvalidArgumentException`), keeps the sign on the fractional slot and appends that slot only when the fractional target is > 0. Checked: `distribute(-100, 1.5)` → `[-67, -33]`, `distribute(7, 3.0)` → `[3, 2, 2]`. The interface signature is unchanged.
 - **Where:** `Distributor/FloatDistributor.php:35-52`.
 - **Problem:** `distribute(-100, 1.5)` → `[-67, 33]` (sum −34 instead of −100; line 52 appends without `* $sign`). `distribute(7, 3.0)` → `[3,2,2,0]` (4 elements for 3 targets; the fractional slot is always appended). `%` on a float (`:41`) loses fractions and emits the PHP 8.1+ "implicit conversion" deprecation. No caller in the repo, but it is a public service.
 - **Fix:** multiply the last element by `$sign`, append it only when the fractional target is > 0, work on `int` amounts. Add unit tests.
 
 ### B-03 — (reproduced, latent) `IntegerDistributor` truncates fractional amounts and overflows on large floats
+- **Status:** fixed — `IntegerDistributor` keeps the `float` signature for BC but rejects fractional, non-finite or out-of-`int`-range amounts (`DistributorAmount::toInt()`, `InvalidArgumentException`) and uses `intdiv()` / `%` on ints. Checked: `distribute(10.5, 2)` and `distribute(1e20, 3)` throw, `distribute(-7, 3)` → `[-3, -2, -2]`.
 - **Where:** `Distributor/IntegerDistributor.php:25-35`.
 - **Problem:** the signature takes `float $floatAmount`, the math is integer only: `distribute(10.5, 2)` → `[5,5]` (0.5 lost, plus deprecation "Implicit conversion from float 10.5 to int loses precision"); `distribute(1e20, 3)` returns wrapped negative numbers. No caller in the repo.
 - **Fix:** change the parameter to `int $amount` (or assert integral and in int range), use `intdiv()` and `%` on ints.

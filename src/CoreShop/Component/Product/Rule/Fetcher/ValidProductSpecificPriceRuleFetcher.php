@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Product\Rule\Fetcher;
 
+use CoreShop\Component\Product\Model\PriceRuleInterface;
 use CoreShop\Component\Product\Model\ProductInterface;
+use CoreShop\Component\Product\Model\ProductSpecificPriceRuleInterface;
 use CoreShop\Component\Rule\Condition\RuleValidationProcessorInterface;
 
 final class ValidProductSpecificPriceRuleFetcher implements ValidRulesFetcherInterface
@@ -33,7 +35,7 @@ final class ValidProductSpecificPriceRuleFetcher implements ValidRulesFetcherInt
     public function getValidRules(ProductInterface $product, array $context): array
     {
         $validRules = [];
-        $rules = $this->orderByPriority($product->getSpecificPriceRules());
+        $rules = $this->orderByPriority($this->collectRules($product));
 
         foreach ($rules as $rule) {
             if (!$this->ruleValidationProcessor->isValid($product, $rule, $context)) {
@@ -44,5 +46,51 @@ final class ValidProductSpecificPriceRuleFetcher implements ValidRulesFetcherInt
         }
 
         return $validRules;
+    }
+
+    /**
+     * The product's own rules (as the field returns them, including what Pimcore field
+     * inheritance supplies when the product has none), plus every rule of a parent product
+     * that is marked "inherit". The rules are checked against the product itself.
+     *
+     * @return list<PriceRuleInterface>
+     */
+    private function collectRules(ProductInterface $product): array
+    {
+        $rules = [];
+        $seen = [];
+
+        $add = static function (PriceRuleInterface $rule, bool $inheritedOnly) use (&$rules, &$seen): void {
+            if ($inheritedOnly && !($rule instanceof ProductSpecificPriceRuleInterface && true === (bool) $rule->getInherit())) {
+                return;
+            }
+
+            $key = null !== $rule->getId() ? 'id:' . $rule->getId() : 'obj:' . spl_object_id($rule);
+            if (isset($seen[$key])) {
+                return;
+            }
+
+            $seen[$key] = true;
+            $rules[] = $rule;
+        };
+
+        foreach ($product->getSpecificPriceRules() as $rule) {
+            $add($rule, false);
+        }
+
+        $visited = [spl_object_id($product) => true];
+        $parent = $product->getParent();
+
+        while ($parent instanceof ProductInterface && !isset($visited[spl_object_id($parent)])) {
+            $visited[spl_object_id($parent)] = true;
+
+            foreach ($parent->getSpecificPriceRules() as $rule) {
+                $add($rule, true);
+            }
+
+            $parent = $parent->getParent();
+        }
+
+        return $rules;
     }
 }

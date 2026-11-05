@@ -41,7 +41,15 @@ final class AddressContext implements Context
         $this->createAddress($country, $postcode, $city, $street, $nr);
     }
 
-    private function createAddress(CountryInterface $country, string $postcode, string $city, string $street, string $nr): AddressInterface
+    /**
+     * @Given /^there is an address without a country, "([^"]+)", "([^"]+)", "([^"]+)", "([^"]+)"$/
+     */
+    public function thereIsAnAddressWithoutACountry($postcode, $city, $street, $nr): void
+    {
+        $this->createAddress(null, $postcode, $city, $street, $nr);
+    }
+
+    private function createAddress(?CountryInterface $country, string $postcode, string $city, string $street, string $nr): AddressInterface
     {
         /**
          * @var AddressInterface $address

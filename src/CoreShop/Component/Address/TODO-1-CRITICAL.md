@@ -12,6 +12,8 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 
 ## CC-01 — `AddressFormatter` throws a fatal `Error` for an address without a country
 
+- **Status:** fixed — `AddressFormatter` renders `AddressFormatter::DEFAULT_FORMAT` (company, salutation + name, street + number, postcode + city, country name) when the address has no country or the country's format is `null`/blank. The country line uses `country.name|default`, so it renders empty without a country, also with `strict_variables`. `Country::getAddressFormat()` returns `''` instead of `null`; the interface signature is unchanged (native types are CI-01). Regression coverage: two Behat scenarios in `features/domain/country/address_formatting.feature` (address without a country, country with an empty format) with the new steps "there is an address without a country, …" and "the address should format to a text containing …". Checked by hand with Twig 3.8; the Behat suite was not run (no `vendor/` in this checkout).
+
 - **Where:** `Formatter/AddressFormatter.php:41, 49`; exposed by `AddressBundle/Twig/FormatAddressExtension.php:35`
 - **Problem:** `$address->getCountry()->getAddressFormat()` is called without a null check, but `AddressInterface::getCountry()` returns `?CountryInterface`. The Pimcore field `country` is not mandatory (`AddressBundle/Resources/install/pimcore/classes/CoreShopAddress.json`). `ResourceBundle/CoreExtension/Select::load()` returns `null` when the referenced country row was deleted. Addresses created via the admin, imports, the API or a deleted country therefore have no country.
   - Result: "Call to a member function getAddressFormat() on null". This is an `\Error`, so nothing catches it. A single broken address takes down:

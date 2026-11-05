@@ -124,7 +124,8 @@ class Country extends AbstractResource implements CountryInterface, \Stringable
 
     public function getAddressFormat()
     {
-        return $this->addressFormat;
+        // the setter is untyped, the Doctrine column is NOT NULL
+        return $this->addressFormat ?? '';
     }
 
     public function setAddressFormat($addressFormat)

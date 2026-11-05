@@ -108,6 +108,24 @@ final class CountryContext implements Context
     }
 
     /**
+     * @Then /^the (address) should format to a text containing "([^"]+)"$/
+     */
+    public function theAddressShouldFormatToATextContaining(AddressInterface $address, string $text): void
+    {
+        $actualFormattedAddress = $this->addressFormatter->formatAddress($address, false);
+
+        Assert::contains(
+            $actualFormattedAddress,
+            $text,
+            sprintf(
+                'expected the formatted address to contain "%s" but got "%s" instead.',
+                $text,
+                $actualFormattedAddress,
+            ),
+        );
+    }
+
+    /**
      * @Then /^there should be a sample country context with priority 1 loaded by attribute as country context$/
      */
     public function thereShouldBeASampleCountryContextLoadedByAttributeAsCountryContext(): void

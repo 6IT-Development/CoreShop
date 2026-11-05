@@ -24,6 +24,11 @@ use Twig\Environment;
 
 class AddressFormatter implements AddressFormatterInterface
 {
+    /**
+     * Used for an address without a country, or a country without an address format.
+     */
+    public const DEFAULT_FORMAT = "{{ company }}\n{{ salutation }} {{ firstname }} {{ lastname }}\n{{ street }} {{ number }}\n{{ postcode }} {{ city }}\n{{ country.name|default }}";
+
     public function __construct(
         private Environment $twig,
         private TranslatorInterface $translator,
@@ -46,7 +51,13 @@ class AddressFormatter implements AddressFormatterInterface
             $objectVars['salutation'] = $this->translator->trans(SalutationTranslationKey::fromSalutation($address->getSalutation()));
         }
 
-        $convertedAddress = $this->twig->createTemplate($address->getCountry()->getAddressFormat())->render($objectVars);
+        $format = $address->getCountry()?->getAddressFormat();
+
+        if (!is_string($format) || '' === trim($format)) {
+            $format = self::DEFAULT_FORMAT;
+        }
+
+        $convertedAddress = $this->twig->createTemplate($format)->render($objectVars);
 
         if ($asHtml) {
             $convertedAddress = \nl2br($convertedAddress);

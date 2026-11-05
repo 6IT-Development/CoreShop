@@ -88,7 +88,7 @@ class CustomerController extends FrontendController
 
         return $this->render($this->getTemplateConfigurator()->findTemplate('Customer/orders.html'), [
             'customer' => $customer,
-            'orders' => $this->container->get('coreshop.repository.order')->findOrdersByCustomer($this->getCustomer()),
+            'orders' => $this->container->get('coreshop.repository.order')->findOrdersByCustomer($customer),
         ]);
     }
 
@@ -334,7 +334,6 @@ class CustomerController extends FrontendController
     {
         $success = false;
         $token = $this->getStringParameterFromRequest($request, 'token');
-        $newsletterUser = null;
 
         if (!$token) {
             return $this->redirectToRoute('coreshop_index');
@@ -370,7 +369,8 @@ class CustomerController extends FrontendController
         }
 
         return $this->render($this->getTemplateConfigurator()->findTemplate('Customer/confirm_newsletter.html'), [
-            'newsletterUser' => $newsletterUser,
+            // Never set; kept so templates that still read it do not break.
+            'newsletterUser' => null,
             'success' => $success,
         ]);
     }

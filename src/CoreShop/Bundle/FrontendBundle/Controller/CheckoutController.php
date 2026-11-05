@@ -325,6 +325,7 @@ class CheckoutController extends FrontendController
                 'event_dispatcher' => EventDispatcherInterface::class,
                 TrackerInterface::class => TrackerInterface::class,
                 StateMachineManagerInterface::class,
+                'payum' => '?' . Payum::class,
             ],
         );
     }
@@ -400,6 +401,9 @@ class CheckoutController extends FrontendController
         return $this->container->get(CartContextInterface::class);
     }
 
+    /**
+     * @deprecated not used by the bundle; 'payum' is an optional subscription
+     */
     protected function getPayum(): Payum
     {
         return $this->container->get('payum');

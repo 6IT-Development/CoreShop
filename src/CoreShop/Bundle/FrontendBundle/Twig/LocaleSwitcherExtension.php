@@ -60,8 +60,10 @@ final class LocaleSwitcherExtension extends AbstractExtension
             try {
                 $site = Site::getById($store->getSiteId());
 
-                if ($site instanceof Site) {
-                    $basePath = $site->getRootDocument()->getRealFullPath() . '/';
+                $rootDocument = $site instanceof Site ? $site->getRootDocument() : null;
+
+                if ($rootDocument instanceof Document) {
+                    $basePath = $rootDocument->getRealFullPath() . '/';
                 }
             } catch (\Exception) {
                 $basePath = '/';
@@ -74,7 +76,7 @@ final class LocaleSwitcherExtension extends AbstractExtension
             $target = $basePath . $language;
 
             if ($object instanceof SluggableInterface) {
-                $urlSlug = $object->getSlug($language)[0] ?? null;
+                $urlSlug = $this->getSlugForSite($object->getSlug($language) ?? [], (int) $store->getSiteId());
 
                 if ($urlSlug instanceof UrlSlug) {
                     $links[] = [
@@ -90,7 +92,7 @@ final class LocaleSwitcherExtension extends AbstractExtension
             $link = '';
             if ($this->getMainRequest()->attributes->get('pimcore_request_source') === 'staticroute') {
                 $route = $this->getMainRequest()->attributes->get('_route');
-                $staticRoute = Staticroute::getByName($route);
+                $staticRoute = is_string($route) && '' !== $route ? Staticroute::getByName($route) : null;
 
                 if ($staticRoute) {
                     $params = [];
@@ -121,6 +123,35 @@ final class LocaleSwitcherExtension extends AbstractExtension
         }
 
         return $links;
+    }
+
+    /**
+     * The slug of the store's site; a slug without a site (site id 0) is
+     * the fallback.
+     *
+     * @param array<mixed> $slugs
+     */
+    private function getSlugForSite(array $slugs, int $siteId): ?UrlSlug
+    {
+        $fallback = null;
+
+        foreach ($slugs as $slug) {
+            if (!$slug instanceof UrlSlug) {
+                continue;
+            }
+
+            $slugSiteId = (int) $slug->getSiteId();
+
+            if ($slugSiteId === $siteId) {
+                return $slug;
+            }
+
+            if (0 === $slugSiteId && null === $fallback) {
+                $fallback = $slug;
+            }
+        }
+
+        return $fallback;
     }
 
     private function getMainRequest(): Request

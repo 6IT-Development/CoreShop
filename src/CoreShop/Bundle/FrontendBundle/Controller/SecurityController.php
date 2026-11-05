@@ -37,7 +37,9 @@ class SecurityController extends FrontendController
 
         $form = $this->container->get('form.factory')->createNamed('', CustomerLoginType::class);
 
-        $renderLayout = $this->getParameterFromRequest($request, 'renderLayout', true);
+        // Only internal render(controller(...)) calls pass renderLayout (an attribute);
+        // a query string value such as 'false' or '0' must not count as true.
+        $renderLayout = $request->attributes->getBoolean('renderLayout', true);
 
         $viewWithLayout = $this->getTemplateConfigurator()->findTemplate('Security/login.html');
         $viewWithoutLayout = $this->getTemplateConfigurator()->findTemplate('Security/_login-form.html');

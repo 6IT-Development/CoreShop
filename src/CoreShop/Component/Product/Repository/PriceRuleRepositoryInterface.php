@@ -18,8 +18,17 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Product\Repository;
 
+use CoreShop\Component\Product\Model\PriceRuleInterface;
 use CoreShop\Component\Rule\Repository\RuleRepositoryInterface;
 
 interface PriceRuleRepositoryInterface extends RuleRepositoryInterface
 {
+    /**
+     * Returns the active rules, ordered by priority ascending (lower = more important), then by
+     * id ascending. The valid-rule fetchers sort the rules again (`PriorityOrderedRulesTrait`),
+     * so precedence does not depend on this order, but other callers may rely on it.
+     *
+     * @return list<PriceRuleInterface>
+     */
+    public function findActive(): array;
 }

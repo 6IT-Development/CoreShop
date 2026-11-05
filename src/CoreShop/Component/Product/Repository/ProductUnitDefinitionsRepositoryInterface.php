@@ -25,7 +25,7 @@ use CoreShop\Component\Resource\Repository\RepositoryInterface;
 interface ProductUnitDefinitionsRepositoryInterface extends RepositoryInterface
 {
     /**
-     * @return ProductUnitDefinitionsInterface
+     * Returns the unit definitions stored for the product, or null when it has none.
      */
     public function findOneForProduct(ProductInterface $product): ?ProductUnitDefinitionsInterface;
 }

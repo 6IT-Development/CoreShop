@@ -24,7 +24,10 @@ use CoreShop\Component\Product\Model\ProductSpecificPriceRuleInterface;
 interface ProductSpecificPriceRuleRepositoryInterface extends PriceRuleRepositoryInterface
 {
     /**
-     * @return ProductSpecificPriceRuleInterface[]
+     * Returns all rules of the product, active or not, ordered by priority ascending, then by id
+     * ascending.
+     *
+     * @return list<ProductSpecificPriceRuleInterface>
      */
     public function findForProduct(ProductInterface $product): array;
 }

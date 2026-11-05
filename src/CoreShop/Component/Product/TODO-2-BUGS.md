@@ -112,6 +112,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Exceptions and contracts
 
 ### CB-11 — The three exceptions reject an `\Error` as previous exception, and `$calculatorClass` is untyped — (reproduced)
+- **Status:** fixed — the three exceptions take `string $calculatorClass` and `?\Throwable $previousException = null` (the parameter name is kept, so named arguments still work). Every caller in the repository passes `__CLASS__`. Checked: each exception wraps a `TypeError` as previous. The restructuring in TODO-3 **CI-05** and ProductQuantityPriceRules TODO-2 **B-07** are not part of this.
 - **Where:** `Exception/{NoPriceFoundException,NoRetailPriceFoundException,NoDiscountPriceFoundException}.php:23-28`.
 - **Reproduced:** `new NoRetailPriceFoundException('X', new \TypeError('boom'))` → `TypeError: …__construct(): Argument #2 ($previousException) must be of type ?Exception, TypeError given`. Wrapping a `TypeError` from a processor (TODO-2 **CB-09**) — the obvious fix for TODO-1 **CC-03** — therefore fails.
 - **Fix:** `?\Throwable $previous = null`, `string $calculatorClass`. Same fix as ProductQuantityPriceRules TODO-2 **B-07**. Restructure as in TODO-3 **CI-05**.

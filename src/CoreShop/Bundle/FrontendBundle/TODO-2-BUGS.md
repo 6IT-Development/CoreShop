@@ -151,6 +151,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** `in_array($storeId, $product->getStores() ?? [], true)` (keep the int/string types consistent). Throw `NotFoundHttpException` on failure.
 
 ### B-20 — `view_bundle` (deprecated) is silently ignored, and its fallback would produce `@@CoreShopFrontend`
+- **Status:** fixed — `view_prefix` and `view_bundle` have no default (`defaultNull()`). The extension's new `resolveViewPrefix()` uses `view_prefix` if set, otherwise the deprecated `view_bundle` with exactly one leading `@` (`AppShop` and `@AppShop` both give `@AppShop`), otherwise `@CoreShopFrontend`. A project that sets only `view_bundle` gets its own templates again. `setDeprecated()` names the package `coreshop/frontend-bundle`, and the deprecation is only reported when `view_bundle` is actually set.
 - **Where:** `DependencyInjection/Configuration.php:49-51`; `DependencyInjection/CoreShopFrontendExtension.php:46-50`.
 - **Problem:**
   - `view_prefix` has `defaultValue('@CoreShopFrontend')`, so `isset($configs['view_prefix'])` is always true. A project that still sets only `view_bundle: '@AppShop'` (as 4.0 documented) gets the bundle templates instead of its own, with no error.

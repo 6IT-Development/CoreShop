@@ -43,11 +43,7 @@ final class CoreShopFrontendExtension extends AbstractModelExtension
 
         $container->setParameter('coreshop.frontend.view_suffix', $configs['view_suffix']);
 
-        if (isset($configs['view_prefix'])) {
-            $container->setParameter('coreshop.frontend.view_prefix', $configs['view_prefix']);
-        } else {
-            $container->setParameter('coreshop.frontend.view_prefix', '@' . $configs['view_bundle']);
-        }
+        $container->setParameter('coreshop.frontend.view_prefix', $this->resolveViewPrefix($configs));
 
         $container->setParameter('coreshop.frontend.category.valid_sort_options', $configs['category']['valid_sort_options']);
         $container->setParameter('coreshop.frontend.category.default_sort_name', $configs['category']['default_sort_name']);
@@ -55,5 +51,22 @@ final class CoreShopFrontendExtension extends AbstractModelExtension
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
+    }
+
+    /**
+     * view_prefix wins. The deprecated view_bundle is a bundle namespace,
+     * written with or without the leading '@'.
+     */
+    private function resolveViewPrefix(array $configs): string
+    {
+        if (null !== $configs['view_prefix'] && '' !== $configs['view_prefix']) {
+            return $configs['view_prefix'];
+        }
+
+        if (null !== $configs['view_bundle'] && '' !== $configs['view_bundle']) {
+            return '@' . ltrim($configs['view_bundle'], '@');
+        }
+
+        return '@CoreShopFrontend';
     }
 }

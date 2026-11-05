@@ -47,8 +47,8 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 ->scalarNode('view_suffix')->defaultValue('twig')->end()
-                ->scalarNode('view_bundle')->setDeprecated('coreshop_frontend', '4.1', 'Use view_prefix instead')->defaultValue('@CoreShopFrontend')->end()
-                ->scalarNode('view_prefix')->defaultValue('@CoreShopFrontend')->end()
+                ->scalarNode('view_bundle')->setDeprecated('coreshop/frontend-bundle', '4.1', 'Use view_prefix instead')->defaultNull()->end()
+                ->scalarNode('view_prefix')->defaultNull()->end()
             ->end()
         ;
 

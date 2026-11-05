@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Order\Checkout;
 
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Registry\NonExistingServiceException;
 use Symfony\Component\HttpFoundation\Request;
 
 interface CheckoutManagerInterface
@@ -49,6 +50,9 @@ interface CheckoutManagerInterface
 
     public function prepareStep(CheckoutStepInterface $step, OrderInterface $cart, Request $request): array;
 
+    /**
+     * @throws NonExistingServiceException if the step does not exist (or was skipped for this cart)
+     */
     public function getCurrentStepIndex(string $identifier): int;
 
     public function commitStep(CheckoutStepInterface $step, OrderInterface $cart, Request $request): bool;

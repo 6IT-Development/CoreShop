@@ -40,5 +40,8 @@ interface PrioritizedServiceRegistryInterface
 
     public function hasNextTo(string $identifier): bool;
 
+    /**
+     * @throws NonExistingServiceException if the identifier is not registered
+     */
     public function getIndex(string $identifier): int;
 }

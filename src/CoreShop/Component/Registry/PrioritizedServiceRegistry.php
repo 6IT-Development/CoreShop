@@ -155,7 +155,7 @@ final class PrioritizedServiceRegistry implements PrioritizedServiceRegistryInte
         if ($prevIndex >= 0) {
             $previousElements = [];
 
-            for ($i = $prevIndex; $i > 0; --$i) {
+            for ($i = $prevIndex; $i >= 0; --$i) {
                 $previousElements[] = $this->get($keys[$i]);
             }
 
@@ -165,10 +165,15 @@ final class PrioritizedServiceRegistry implements PrioritizedServiceRegistryInte
         return [];
     }
 
-    public function getIndex($identifier): int
+    public function getIndex(string $identifier): int
     {
         $keys = $this->priortyMap->getKeys();
+        $index = array_search($identifier, $keys, true);
 
-        return array_search($identifier, $keys, true);
+        if (false === $index) {
+            throw new NonExistingServiceException($this->context, $identifier, $keys);
+        }
+
+        return $index;
     }
 }

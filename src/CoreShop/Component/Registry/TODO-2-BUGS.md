@@ -13,6 +13,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## `PrioritizedServiceRegistry` navigation (checkout steps)
 
 ### B-01 — (reproduced) `getAllPreviousTo()` never returns the first entry
+- **Status:** fixed — the loop runs down to index 0 (`$i >= 0`). Checked with `CheckoutManager` (see `Component/Order/TODO-2-BUGS.md` **B-23**): `getAllPreviousTo('summary')` returns all 4 previous steps, `getAllPreviousTo('address')` → `[customer]`.
 - **Where:** `PrioritizedServiceRegistry.php:150-166` (`for ($i = $prevIndex; $i > 0; --$i)`). Consumer: `Component/Order/Checkout/CheckoutManager.php:74-77` → `FrontendBundle/Controller/CheckoutController.php:65-69` ("check all previous steps").
 - **Problem:** index 0 is excluded. Steps `customer, address, shipping, payment, summary` → `getAllPreviousTo('summary')` returns 3 entries (no `customer`), `getAllPreviousTo('address')` returns `[]`. The first checkout step is never re-validated before a later step is shown.
 - **Fix:** `for ($i = $prevIndex; $i >= 0; --$i)`, or `array_reverse(array_slice($objects, 0, $index))`. Same item as `Component/Order/TODO-2-BUGS.md` **B-23** (consumer side) — fix here.
@@ -23,6 +24,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** return `null` when the identifier is not registered (`if (!$this->has($identifier)) return null;`), then `return $keys[$index + 1] ?? null` → `get()`.
 
 ### B-03 — (reproduced) `getIndex()` returns `false` into an `int` return type
+- **Status:** fixed — `getIndex(string $identifier)` (parameter typed as in the interface) throws `NonExistingServiceException` for an unknown identifier, documented on the interface. Numeric-string identifiers (**B-04**) still do not match. See `Component/Order/TODO-2-BUGS.md` **B-24**.
 - **Where:** `PrioritizedServiceRegistry.php:168-173`; interface `PrioritizedServiceRegistryInterface.php:43`. Consumers: `Component/Order/Checkout/CheckoutManager.php:93-96`, `CoreBundle/Twig/CheckoutIdentifierExtension.php:69`, `:86`, `FrontendBundle/Controller/CheckoutController.php:121`.
 - **Problem:** `array_search()` returns `false` for an unknown identifier → `TypeError: getIndex(): Return value must be of type int, false returned` → HTTP 500 in the checkout and in the step navigation Twig function.
 - **Fix:** throw `NonExistingServiceException` (consistent with `get()`), or return `-1` and document it. Same item as `Component/Order/TODO-2-BUGS.md` **B-24** (third sub-point) — fix here.

@@ -41,8 +41,12 @@ class CheckoutManager implements CheckoutManagerInterface
         }, $this->serviceRegistry->all());
     }
 
-    public function getStep(string $identifier): CheckoutStepInterface
+    public function getStep(string $identifier): ?CheckoutStepInterface
     {
+        if (!$this->serviceRegistry->has($identifier)) {
+            return null;
+        }
+
         /**
          * @var CheckoutStepInterface $step
          */
@@ -61,7 +65,7 @@ class CheckoutManager implements CheckoutManagerInterface
         return $this->serviceRegistry->hasNextTo($identifier);
     }
 
-    public function getPreviousStep(string $identifier): CheckoutStepInterface
+    public function getPreviousStep(string $identifier): ?CheckoutStepInterface
     {
         return $this->serviceRegistry->getPreviousTo($identifier);
     }

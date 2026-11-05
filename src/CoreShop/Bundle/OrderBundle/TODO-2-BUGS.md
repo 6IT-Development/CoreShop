@@ -354,6 +354,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** use `type: string` and `xml_root_name: adjustment`.
 
 ### B-43 — Typo in the order serializer: `convertedSshippingNet`
+- **Status:** fixed — the key is serialized as `convertedShippingNet`. Nothing in the repository (PHP, JS, Twig) read the misspelled key. **BC:** consumers of the order details that read `convertedSshippingNet` must switch to the new key. As with B-40, no UPGRADE note was added, because the repository's UPGRADE file only covers 3.0.
 - **Where:** `Resources/config/serializer/Model.Order.yml:169`.
 - **Problem:** consumers that look for `convertedShippingNet` (next to `convertedShippingGross`) get nothing.
 - **Fix:** rename it to `convertedShippingNet` and mention it in UPGRADE.

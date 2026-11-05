@@ -166,7 +166,7 @@ CoreShop\Component\Order\Model\Order:
             type: integer
             groups: [Detailed]
         convertedShippingNet:
-            serialized_name: convertedSshippingNet
+            serialized_name: convertedShippingNet
             exp: object.getConvertedShipping(false)
             type: integer
             groups: [Detailed]

@@ -42,7 +42,8 @@ class CompositeProductCustomAttributesCalculator implements ProductCustomAttribu
 
             Assert::allIsInstanceOf($attributes, ProductAttribute::class);
 
-            $customAttributes += $attributes;
+            // Concatenate the lists: `+=` would drop every calculator's attributes after the first
+            $customAttributes = [...$customAttributes, ...array_values($attributes)];
         }
 
         return $customAttributes;

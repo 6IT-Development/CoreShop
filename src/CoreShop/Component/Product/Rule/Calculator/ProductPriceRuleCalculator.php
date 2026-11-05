@@ -126,9 +126,10 @@ final class ProductPriceRuleCalculator implements
                 return $ruleAttributes;
             }
 
-            return ($ruleAttributes ?? []) + $processor->getCustomAttributes($product, $context, $action->getConfiguration());
+            // Lists are concatenated: `+` would keep only the first action's attributes (same int keys)
+            return [...$ruleAttributes ?? [], ...array_values($processor->getCustomAttributes($product, $context, $action->getConfiguration()))];
         }, static function (?array $ruleAttributes) use (&$customAttributes): void {
-            $customAttributes += $ruleAttributes ?? [];
+            $customAttributes = [...$customAttributes, ...$ruleAttributes ?? []];
         });
 
         return $customAttributes;

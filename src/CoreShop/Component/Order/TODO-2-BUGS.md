@@ -33,6 +33,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** let `NoPurchasablePriceFoundException` reach the cart layer, or flag the item and block checkout. At minimum use the discount price when no retail price exists.
 
 ### B-05 — (verified, latent) `CompositePurchasableCustomAttributesCalculator` drops the attributes of every calculator after the first
+- **Status:** fixed with Product TODO-2 **CB-03** — the composite concatenates the lists of all calculators (`[...$customAttributes, ...array_values($attributes)]`).
 - **Where:** `Calculator/CompositePurchasableCustomAttributesCalculator.php:45`.
 - **Problem:** `$customAttributes += $attributes` is a union by key. Calculators return lists (`PurchasableProductCustomAttributesCalculator` returns an `array_map` over a list), so a second calculator's entries at keys 0..n are discarded. Only one calculator is registered by default.
 - **Fix:** `array_merge(...)`, or key by `getAttributeKey()` with a defined override order.

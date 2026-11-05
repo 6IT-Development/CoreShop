@@ -184,28 +184,34 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
     private function calculateAdjustments(OrderInvoiceInterface $document, bool $converted = true): void
     {
         $order = $document->getOrder();
+        $orderAdjustments = $converted ? $order->getConvertedAdjustments() : $order->getAdjustments();
 
-        $processedTypes = [];
+        $processedKeys = [];
 
-        foreach ($converted ? $order->getConvertedAdjustments() : $order->getAdjustments() as $adjustment) {
+        foreach ($orderAdjustments as $adjustment) {
             /*
              * Neutral adjustments are not part of the order total (e.g. cart item rule discounts, which are
-             * already in the item totals), and every type is processed once with the total of that type
+             * already in the item totals). Every type and label is booked once, so two rules of the same
+             * type keep their own labels and amounts.
              */
-            if ($adjustment->getNeutral() || isset($processedTypes[$adjustment->getTypeIdentifier()])) {
+            $key = $adjustment->getTypeIdentifier() . "\0" . $adjustment->getLabel();
+
+            if ($adjustment->getNeutral() || isset($processedKeys[$key])) {
                 continue;
             }
 
-            $processedTypes[$adjustment->getTypeIdentifier()] = true;
+            $processedKeys[$key] = true;
 
-            $orderAdjustmentsGross = $converted ? $order->getConvertedAdjustmentsTotal($adjustment->getTypeIdentifier()) : $order->getAdjustmentsTotal($adjustment->getTypeIdentifier());
-            $orderAdjustmentsNet = $converted ? $order->getConvertedAdjustmentsTotal($adjustment->getTypeIdentifier(), false) : $order->getAdjustmentsTotal($adjustment->getTypeIdentifier(), false);
+            $type = $adjustment->getTypeIdentifier();
+            $label = $adjustment->getLabel();
 
-            $adjustmentValueToProcessGross = $orderAdjustmentsGross - $this->getProcessedAdjustmentValue($order, $adjustment->getTypeIdentifier(), true, $converted);
-            $adjustmentValueToProcessNet = $orderAdjustmentsNet - $this->getProcessedAdjustmentValue($order, $adjustment->getTypeIdentifier(), false, $converted);
+            $adjustmentValueToProcessGross = $this->sumAdjustments($orderAdjustments, $type, $label, true) -
+                $this->getProcessedAdjustmentValue($order, $document, $type, $label, true, $converted);
+            $adjustmentValueToProcessNet = $this->sumAdjustments($orderAdjustments, $type, $label, false) -
+                $this->getProcessedAdjustmentValue($order, $document, $type, $label, false, $converted);
 
-            if (0 !== $adjustmentValueToProcessGross) {
-                $newAdjustment = $this->adjustmentFactory->createWithData($adjustment->getTypeIdentifier(), $adjustment->getLabel(), $adjustmentValueToProcessGross, $adjustmentValueToProcessNet, false);
+            if (0 !== $adjustmentValueToProcessGross || 0 !== $adjustmentValueToProcessNet) {
+                $newAdjustment = $this->adjustmentFactory->createWithData($type, $label, $adjustmentValueToProcessGross, $adjustmentValueToProcessNet, false);
 
                 $converted ? $document->addConvertedAdjustment($newAdjustment) : $document->addAdjustment($newAdjustment);
             }
@@ -240,8 +246,18 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
         }
     }
 
-    private function getProcessedAdjustmentValue(OrderInterface $order, string $adjustmentIdentifier, bool $withTax, bool $converted): int
-    {
+    /**
+     * Sums the adjustments of the other, not cancelled invoices of the order. The invoice being created is
+     * skipped, so the result does not depend on whether the repository returns the same instance.
+     */
+    private function getProcessedAdjustmentValue(
+        OrderInterface $order,
+        OrderInvoiceInterface $currentDocument,
+        ?string $type,
+        ?string $label,
+        bool $withTax,
+        bool $converted,
+    ): int {
         $documents = $this->invoiceRepository->getDocumentsNotInState($order, OrderInvoiceStates::STATE_CANCELLED);
         $processedValue = 0;
 
@@ -249,13 +265,31 @@ class OrderToInvoiceTransformer implements OrderDocumentTransformerInterface
          * @var OrderInvoiceInterface $document
          */
         foreach ($documents as $document) {
-            foreach ($converted ? $document->getConvertedAdjustments() : $document->getAdjustments() as $adjustment) {
-                if (!$adjustment->getNeutral() && $adjustment->getTypeIdentifier() === $adjustmentIdentifier) {
-                    $processedValue += $adjustment->getAmount($withTax);
-                }
+            if ($document === $currentDocument || ($document->getId() !== null && $document->getId() === $currentDocument->getId())) {
+                continue;
             }
+
+            $processedValue += $this->sumAdjustments(
+                $converted ? $document->getConvertedAdjustments() : $document->getAdjustments(),
+                $type,
+                $label,
+                $withTax,
+            );
         }
 
         return $processedValue;
+    }
+
+    private function sumAdjustments(iterable $adjustments, ?string $type, ?string $label, bool $withTax): int
+    {
+        $sum = 0;
+
+        foreach ($adjustments as $adjustment) {
+            if (!$adjustment->getNeutral() && $adjustment->getTypeIdentifier() === $type && $adjustment->getLabel() === $label) {
+                $sum += $adjustment->getAmount($withTax);
+            }
+        }
+
+        return $sum;
     }
 }

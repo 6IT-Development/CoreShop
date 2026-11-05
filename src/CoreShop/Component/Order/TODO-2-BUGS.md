@@ -137,11 +137,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Transformers
 
 ### B-20 — (verified, dependent) Partial shipments get the weight of the whole order
+- **Status:** fixed with Core TODO-2 **B-25** / **B-26** (`222ebd85c`, `2785fddec`) — the Core `OrderToShipmentTransformer` sets the shipment weight to the weight of the shipped items and quantities (converted to the default unit), not the order weight. Nothing changed for this item.
 - **Where:** `Component/Core/Order/Transformer/OrderToShipmentTransformer.php:32-35` (decorates `Transformer/OrderToShipmentTransformer.php`; `CoreBundle/Resources/config/services/order.yml:15-19`).
 - **Problem:** `$document->setWeight($order->getWeight())` ignores `$itemsToTransform`; two shipments each get the full order weight (carrier data, labels, admin view). Item weight in the Core item transformer is correct.
 - **Fix:** after the inner transform, set the shipment weight to the sum of its items' weights.
 
 ### B-21 — (verified) The invoice merges same-type adjustments under the first adjustment's label
+- **Status:** fixed — `calculateAdjustments()` books every non-neutral order adjustment once per type **and label**, with that pair's order total minus what the other non-cancelled invoices booked for it. Rule A −10 and Rule B −5 now give two invoice adjustments under their own labels. The invoice being created is skipped when summing the processed amounts, so the result no longer depends on Pimcore's runtime cache returning the same instance. An adjustment is also added when only the net amount is left. Checked with stubs: invoice 1 books Rule A −1000/−800, Rule B −500/−400 and shipping 500/420 (the neutral item rule is skipped); a second invoice books nothing, with or without the first invoice in the repository result. Invoices created before the fix keep the merged amount under the first label, so the next invoice of such an order books a correction per label (the sum is still right).
 - **Where:** `Transformer/OrderToInvoiceTransformer.php:169-180`.
 - **Problem:** the loop runs over individual adjustments but computes the remaining amount per type. Rule A −10 and Rule B −5 (both `cart_price_rule`): the first iteration books −15 labelled "Rule A", the second sees processed = −15 and skips. It also relies on Pimcore's RuntimeCache returning the same `$document` instance from `getDocumentsNotInState()` (`vendor/six-it/pimcore-source/models/DataObject/AbstractObject.php:208`, `:725`); without the cache the type would be booked twice.
 - **Fix:** iterate per adjustment (tracking processed amounts per adjustment) or per distinct type + label; track this run's amounts in memory instead of relying on the runtime cache.

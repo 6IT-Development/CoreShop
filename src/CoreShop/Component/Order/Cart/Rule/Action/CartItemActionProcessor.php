@@ -106,15 +106,19 @@ class CartItemActionProcessor implements CartPriceRuleActionProcessorInterface
             }
         }
 
-        $cartPriceRuleItem->setDiscount($totalDiscountNet, false);
-        $cartPriceRuleItem->setDiscount($totalDiscountGross, true);
+        /*
+         * Add to the rule's discount instead of replacing it: the rule's other actions have already
+         * booked their part on the same price rule item. The neutral adjustment only carries this action's part.
+         */
+        $cartPriceRuleItem->setDiscount($cartPriceRuleItem->getDiscount(false) + $totalDiscountNet, false);
+        $cartPriceRuleItem->setDiscount($cartPriceRuleItem->getDiscount(true) + $totalDiscountGross, true);
 
         $cart->addAdjustment(
             $this->adjustmentFactory->createWithData(
                 AdjustmentInterface::CART_PRICE_RULE,
                 $cartPriceRuleItem->getCartPriceRule()->getName(),
-                $cartPriceRuleItem->getDiscount(true),
-                $cartPriceRuleItem->getDiscount(false),
+                $totalDiscountGross,
+                $totalDiscountNet,
                 true,
             ),
         );

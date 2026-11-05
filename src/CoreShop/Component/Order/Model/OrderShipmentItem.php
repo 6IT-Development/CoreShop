@@ -27,13 +27,13 @@ abstract class OrderShipmentItem extends AbstractPimcoreModel implements OrderSh
     {
         $parent = $this->getParent();
 
-        do {
+        while ($parent !== null) {
             if ($parent instanceof OrderDocumentInterface) {
                 return $parent;
             }
 
             $parent = $parent->getParent();
-        } while ($parent !== null);
+        }
 
         throw new \InvalidArgumentException('Order Shipment could not be found!');
     }

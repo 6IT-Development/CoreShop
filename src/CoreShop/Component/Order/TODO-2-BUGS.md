@@ -109,6 +109,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `protected ?int $id = null` + `getId(): ?int`, `protected int $uses = 0`, `decrementUses()` with `max(0, …)`.
 
 ### B-16 — (verified, latent) `OrderInvoiceItem::getDocument()` / `OrderShipmentItem::getDocument()` dereference `null`
+- **Status:** fixed (null check) — both `getDocument()` methods check the parent before dereferencing it, so an item without parent throws the existing `InvalidArgumentException` instead of an `Error`. Not done: a stored reference / reverse relation to the document; the folder walk stays (it is one level, the items folder, in the transformers' layout).
 - **Where:** `Model/OrderInvoiceItem.php:26-39`, `Model/OrderShipmentItem.php:26-39`.
 - **Problem:** do/while without null check; an item without parent (unsaved) → `$parent->getParent()` on null → `Error`. It also walks and loads the whole folder tree (items live in a sub-folder, `Transformer/OrderItemTo*ItemTransformer.php:60`).
 - **Fix:** `while ($parent !== null)` with the check first; better, resolve the document via a stored reference / reverse relation.

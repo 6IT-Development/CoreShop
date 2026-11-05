@@ -48,16 +48,14 @@ class CartPriceRuleVoucherCodeGenerator
         $lettersToUse = $this->letterResolver->findLetters($generator);
 
         for ($i = 0; $i < $generator->getAmount(); ++$i) {
-            $code = $this->generateCode($lettersToUse, $generator->getLength(), $generator->getPrefix(), $generator->getSuffix(), $generatedVouchers);
-
-            if ($generator->getHyphensOn() > 0) {
-                /** @psalm-suppress ArgumentTypeCoercion */
-                $hyphens = str_split($code, $generator->getHyphensOn());
-
-                if (false !== $hyphens) {
-                    $code = implode('-', $hyphens);
-                }
-            }
+            $code = $this->generateCode(
+                $lettersToUse,
+                $generator->getLength(),
+                $generator->getPrefix(),
+                $generator->getSuffix(),
+                $generatedVouchers,
+                (int) $generator->getHyphensOn(),
+            );
 
             $codeObject = $this->voucherCodeFactory->createNew();
             $codeObject->setCode($code);
@@ -72,7 +70,11 @@ class CartPriceRuleVoucherCodeGenerator
         return $generatedVouchers;
     }
 
-    protected function generateCode(string $letters, int $length, ?string $prefix, ?string $suffix, array $generatedCoupons): string
+    /**
+     * Returns the final code, hyphens included, so that the uniqueness check
+     * sees the code as it is stored.
+     */
+    protected function generateCode(string $letters, int $length, ?string $prefix, ?string $suffix, array $generatedCoupons, int $hyphensOn = 0): string
     {
         Assert::nullOrRange($length, 1, 40, 'Invalid %d code length should be between %d and %d');
 
@@ -90,6 +92,10 @@ class CartPriceRuleVoucherCodeGenerator
 
             if (null !== $suffix) {
                 $code .= $suffix;
+            }
+
+            if ($hyphensOn > 0) {
+                $code = implode('-', mb_str_split($code, $hyphensOn));
             }
         } while ($this->isUsedCode($code, $generatedCoupons));
 

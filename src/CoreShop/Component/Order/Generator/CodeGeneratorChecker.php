@@ -58,6 +58,7 @@ class CodeGeneratorChecker implements CodeGeneratorCheckerInterface
             $length,
             $generator->getPrefix(),
             $generator->getSuffix(),
+            (int) $generator->getHyphensOn(),
         );
 
         $letters = $this->letterResolver->findLetters($generator);

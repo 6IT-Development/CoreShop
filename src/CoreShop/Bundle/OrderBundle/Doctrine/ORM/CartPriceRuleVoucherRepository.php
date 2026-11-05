@@ -69,24 +69,24 @@ class CartPriceRuleVoucherRepository extends EntityRepository implements CartPri
         ;
     }
 
-    public function countCodes(int $length, ?string $prefix = null, ?string $suffix = null): int
+    public function countCodes(int $length, ?string $prefix = null, ?string $suffix = null, int $hyphensOn = 0): int
     {
-        if ($prefix !== null) {
-            $length += strlen($prefix);
-        }
+        $escape = static fn (string $char): string => addcslashes($char, '%_\\');
 
-        if ($suffix !== null) {
-            $length += strlen($suffix);
-        }
+        $pattern = [
+            ...array_map($escape, mb_str_split((string) $prefix)),
+            ...array_fill(0, $length, '_'),
+            ...array_map($escape, mb_str_split((string) $suffix)),
+        ];
 
-        $code = $prefix . '%' . $suffix;
+        $pattern = $hyphensOn > 0
+            ? implode('-', array_map(implode(...), array_chunk($pattern, $hyphensOn)))
+            : implode('', $pattern);
 
         return (int) $this->createQueryBuilder('o')
             ->select('COUNT(o.id)')
-            ->andWhere('LENGTH(o.code) = :length')
             ->andWhere('o.code LIKE :code')
-            ->setParameter('length', $length)
-            ->setParameter('code', $code)
+            ->setParameter('code', $pattern)
             ->getQuery()
             ->getSingleScalarResult()
         ;

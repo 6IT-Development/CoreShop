@@ -33,5 +33,10 @@ interface CartPriceRuleVoucherRepositoryInterface extends RepositoryInterface
 
     public function findByCode(string $code): ?CartPriceRuleVoucherCodeInterface;
 
-    public function countCodes(int $length, ?string $prefix = null, ?string $suffix = null): int;
+    /**
+     * Counts the codes in the format the generator stores: prefix, $length
+     * random characters and suffix, with a hyphen after every $hyphensOn
+     * characters when $hyphensOn > 0.
+     */
+    public function countCodes(int $length, ?string $prefix = null, ?string $suffix = null, int $hyphensOn = 0): int;
 }

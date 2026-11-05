@@ -21,29 +21,58 @@ namespace CoreShop\Component\Product\Rule\Fetcher;
 use CoreShop\Component\Product\Model\ProductInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class MemoryCachedValidRuleFetcher implements ValidRulesFetcherInterface
+/**
+ * Caches the valid rules per product object and rule context for the current
+ * request. Outside a request (CLI, Messenger) nothing is cached, and the cache
+ * is cleared between requests through ResetInterface.
+ */
+final class MemoryCachedValidRuleFetcher implements ValidRulesFetcherInterface, ResetInterface
 {
-    private array $checkedProducts = [];
+    /**
+     * @var \WeakMap<ProductInterface, array<string, array>>
+     */
+    private \WeakMap $checkedProducts;
+
+    private RuleContextFingerprinterInterface $contextFingerprinter;
 
     public function __construct(
         private ValidRulesFetcherInterface $validRuleFetcher,
         private RequestStack $requestStack,
+        ?RuleContextFingerprinterInterface $contextFingerprinter = null,
     ) {
+        $this->contextFingerprinter = $contextFingerprinter ?? new RuleContextFingerprinter();
+        $this->checkedProducts = new \WeakMap();
     }
 
     public function getValidRules(ProductInterface $product, array $context): array
     {
-        if ($this->requestStack->getMainRequest() instanceof Request) {
-            if (isset($this->checkedProducts[$product->getId()])) {
-                return $this->checkedProducts[$product->getId()];
-            }
+        if (!$this->requestStack->getMainRequest() instanceof Request) {
+            return $this->validRuleFetcher->getValidRules($product, $context);
+        }
+
+        $fingerprint = $this->contextFingerprinter->fingerprint($context);
+
+        if (null === $fingerprint) {
+            return $this->validRuleFetcher->getValidRules($product, $context);
+        }
+
+        if (isset($this->checkedProducts[$product][$fingerprint])) {
+            return $this->checkedProducts[$product][$fingerprint];
         }
 
         $rules = $this->validRuleFetcher->getValidRules($product, $context);
 
-        $this->checkedProducts[$product->getId()] = $rules;
+        $cached = $this->checkedProducts[$product] ?? [];
+        $cached[$fingerprint] = $rules;
+        $this->checkedProducts[$product] = $cached;
 
         return $rules;
+    }
+
+    public function reset(): void
+    {
+        $this->checkedProducts = new \WeakMap();
     }
 }

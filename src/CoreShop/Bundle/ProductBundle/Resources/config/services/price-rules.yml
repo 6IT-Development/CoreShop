@@ -104,6 +104,9 @@ services:
             - { name: coreshop.rule.conditions.validation_processor }
 
     # Price Calculators
+    CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinterInterface: '@CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinter'
+    CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinter: ~
+
     coreshop.product.price_calculator.product_price_valid_rules_fetcher: '@CoreShop\Component\Product\Rule\Fetcher\ValidProductPriceRuleFetcher'
     CoreShop\Component\Product\Rule\Fetcher\ValidProductPriceRuleFetcher:
         arguments:
@@ -129,3 +132,6 @@ services:
         arguments:
             - '@coreshop.product.price_calculator.product_price_valid_rules_fetcher.memory_cache.inner'
             - '@request_stack'
+            - '@CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinterInterface'
+        tags:
+            - { name: kernel.reset, method: reset }

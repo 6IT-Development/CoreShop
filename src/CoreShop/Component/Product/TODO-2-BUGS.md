@@ -53,6 +53,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** define one rule: "first valid rule (by priority, then id) that yields a price wins" — iterate and `return` on the first `price` / `discountPrice` hit, or keep the minimum for `discountPrice`. Add `->addOrderBy('o.id', 'ASC')` in both repositories **(dependent)**. Decide whether a specific rule's stop propagation suppresses global rules (pass a flag through the context, or let `CompositeDiscountCalculator` stop after a calculator reports "stop"). Add Behat scenarios for each rule.
 
 ### CB-06 — `MemoryCachedValidRuleFetcher`: all unsaved products share one cache slot, the cache is written (never read) outside requests and grows without limit, and it is not dropped when a product's rules change — (reproduced)
+- **Status:** partly fixed with TODO-1 **CC-01**: the cache is a `\WeakMap` per product object, so unsaved products no longer share a slot. Nothing is cached or written outside a main request, and the cache is cleared by `kernel.reset`. Still open: dropping the entry when the specific price rules are saved in the same request (ProductBundle `CoreExtension/ProductSpecificPriceRules.php`).
 - **Where:** `Rule/Fetcher/MemoryCachedValidRuleFetcher.php:37-47`.
 - **Problems:**
   - Key `$product->getId()`: every product with id `null` (new object, variant being generated, temporary object for a price preview) uses key `""`. Reproduced: two different unsaved products returned the same cached rule list.

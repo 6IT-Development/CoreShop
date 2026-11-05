@@ -117,6 +117,9 @@ services:
         arguments:
             - '@coreshop.product.price_calculator.product_specific_price_valid_rules_fetcher.memory_cached.inner'
             - '@request_stack'
+            - '@CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinterInterface'
+        tags:
+            - { name: kernel.reset, method: reset }
 
     coreshop.product.price_calculator.product_specific_price_rules:
       class: CoreShop\Component\Product\Rule\Calculator\ProductPriceRuleCalculator

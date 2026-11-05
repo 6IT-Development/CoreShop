@@ -94,3 +94,8 @@ services:
             - '@coreshop.factory.order_item_attribute'
         tags:
             - { name: coreshop.order.purchasable.custom_attributes_calculator, type: product, priority: 20 }
+
+    CoreShop\Component\Core\Product\Rule\Fetcher\CartAwareRuleContextFingerprinter:
+        decorates: 'CoreShop\Component\Product\Rule\Fetcher\RuleContextFingerprinter'
+        arguments:
+            - '@.inner'

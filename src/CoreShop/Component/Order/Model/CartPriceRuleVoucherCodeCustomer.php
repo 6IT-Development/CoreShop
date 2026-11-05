@@ -27,19 +27,16 @@ class CartPriceRuleVoucherCodeCustomer implements CartPriceRuleVoucherCodeCustom
 {
     use SetValuesTrait;
 
-    /**
-     * @var int
-     */
-    protected $id;
+    protected ?int $id = null;
 
     /** @var \CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface */
     protected $voucherCode;
 
     protected int $customerId;
 
-    protected int $uses;
+    protected int $uses = 0;
 
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -71,7 +68,7 @@ class CartPriceRuleVoucherCodeCustomer implements CartPriceRuleVoucherCodeCustom
 
     public function decrementUses(): void
     {
-        --$this->uses;
+        $this->uses = max(0, $this->uses - 1);
     }
 
     public function getCustomerId(): int

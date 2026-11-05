@@ -103,6 +103,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** do not recalculate implicitly from inside the fieldcollection item; let the adjustable own recalculation. At least reset `object` in `__clone()`.
 
 ### B-15 — (verified, latent) `CartPriceRuleVoucherCodeCustomer`: `getId(): int` on an unflushed entity, uninitialised `uses`, uses can go negative
+- **Status:** fixed — `protected ?int $id = null` with `getId(): ?int` (allowed by `ResourceInterface::getId(): int|string|null`), `protected int $uses = 0`, and `decrementUses()` stops at 0. Checked: a new entity returns `null` / `0`, decrementing at 0 stays 0.
 - **Where:** `Model/CartPriceRuleVoucherCodeCustomer.php:33-45`, `:40`, `:72-75`.
 - **Problem:** `$id` is `null` until flush, so `getId(): int` throws `TypeError` (dumping, logging, `ResourceInterface` consumers). `int $uses` is uninitialised after `createNew()`. `decrementUses()` has no lower bound, so the per-customer count can go below 0, which effectively raises `maxUsagePerUser`.
 - **Fix:** `protected ?int $id = null` + `getId(): ?int`, `protected int $uses = 0`, `decrementUses()` with `max(0, …)`.

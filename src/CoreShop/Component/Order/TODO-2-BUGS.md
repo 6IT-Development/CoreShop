@@ -177,6 +177,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** accumulate (`setDiscount($item->getDiscount($withTax) + $delta, $withTax)`) in both appliers.
 
 ### B-26 — (verified) `VoucherModifier` throws `TypeError` when the voucher code no longer exists
+- **Status:** fixed — `doIncrement()` / `doDecrement()` skip a price rule item whose voucher code no longer exists (`continue`), before the per-customer branch. Not logged (the modifier has no logger). Checked with stubs: a deleted code on a rule with `maxUsagePerUser` → increment and decrement run through and flush (before: `TypeError` from `findUsesByCustomer(…, null)`).
 - **Where:** `Modifier/VoucherModifier.php:57-58`, `:80`, `:89` (increment); `:117-118`, `:142` (decrement).
 - **Problem:** when `findByCode()` returns `null` (code deleted while the cart was open; only *used* codes are FK-protected, `OrderBundle/TODO-2-BUGS.md` **B-44**), the per-customer branch still calls `findUsesByCustomer($customer, null)` / `createWithInitialData($customer, null)` → `TypeError` under `strict_types`. This runs in the `after` callback of `create` / `cancel`: the order is already persisted, the request returns 500, remaining callbacks (history) are skipped, and other vouchers on the order are not counted.
 - **Fix:** `continue` (and log) when `$voucherCode` is not a `CartPriceRuleVoucherCodeInterface`.

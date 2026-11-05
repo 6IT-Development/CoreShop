@@ -73,18 +73,25 @@ class VoucherModifier implements VoucherModifierInterface
             }
 
             $voucherCode = $this->findAndLockVoucherCode($item->getVoucherCode());
-            if ($voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
-                $voucherCode->setUsed(true);
-                $voucherCode->setUses($voucherCode->getUses() + 1);
 
-                if ($voucherCode->isCreditCode()) {
-                    $voucherCode->setCreditUsed(
-                        (int) $voucherCode->getCreditUsed() + $this->getUsedCredit($order, $item, $voucherCode),
-                    );
-                }
-
-                $this->entityManager->persist($voucherCode);
+            /*
+             * The code was deleted while the cart was open (only used codes are protected), so there is
+             * nothing to count, neither on the code nor per customer.
+             */
+            if (!$voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
+                continue;
             }
+
+            $voucherCode->setUsed(true);
+            $voucherCode->setUses($voucherCode->getUses() + 1);
+
+            if ($voucherCode->isCreditCode()) {
+                $voucherCode->setCreditUsed(
+                    (int) $voucherCode->getCreditUsed() + $this->getUsedCredit($order, $item, $voucherCode),
+                );
+            }
+
+            $this->entityManager->persist($voucherCode);
 
             $customer = $order->getCustomer();
 
@@ -135,19 +142,22 @@ class VoucherModifier implements VoucherModifierInterface
             }
 
             $voucherCode = $this->findAndLockVoucherCode($item->getVoucherCode());
-            if ($voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
-                if ($voucherCode->getUses() !== 0) {
-                    $voucherCode->setUses($voucherCode->getUses() - 1);
-                    $voucherCode->setUsed($voucherCode->getUses() !== 0);
 
-                    if ($voucherCode->isCreditCode()) {
-                        $voucherCode->setCreditUsed(
-                            max(0, (int) $voucherCode->getCreditUsed() - $this->getUsedCredit($order, $item, $voucherCode)),
-                        );
-                    }
+            if (!$voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
+                continue;
+            }
 
-                    $this->entityManager->persist($voucherCode);
+            if ($voucherCode->getUses() !== 0) {
+                $voucherCode->setUses($voucherCode->getUses() - 1);
+                $voucherCode->setUsed($voucherCode->getUses() !== 0);
+
+                if ($voucherCode->isCreditCode()) {
+                    $voucherCode->setCreditUsed(
+                        max(0, (int) $voucherCode->getCreditUsed() - $this->getUsedCredit($order, $item, $voucherCode)),
+                    );
                 }
+
+                $this->entityManager->persist($voucherCode);
             }
 
             $customer = $order->getCustomer();

@@ -25,6 +25,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Models
 
 ### CB-03 — `Country::$states` is never initialised; `getStates()` is not part of the interface
+- **Status:** fixed — the constructor initialises `$states` with an `ArrayCollection`; `getStates()` returns `Collection` only. `setStates()` still accepts an array or a collection for BC, but adds and removes elements instead of replacing the Doctrine collection. `CountryInterface` gains `getStates(): Collection`, `hasState()`, `addState()` (also sets the state's country) and `removeState()`; `State::setCountry()` removes the state from its previous country and adds it to the new one, like `Core\Model\Country::setCurrency()`. `removeState()` only updates the inverse side: `State::$country` is the owning side and `setCountry()` does not accept `null`, so removing a state from the database still means deleting it. **BC:** custom `CountryInterface` implementations must add the four methods, and a subclass overriding `getStates()` with `Collection|array` must narrow its return type. Checked with the real model classes: a new country has 0 states, and moving a state between countries keeps both sides in sync.
 - **Where:** `Model/Country.php:58, 70-73, 112-123`; `Model/CountryInterface.php`
 - **Problems:**
   1. The constructor initialises only the translations. On a **new** (non-hydrated) `Country`, `getStates(): Collection|array` returns `null` and throws a `TypeError`. Fixtures, factories and unit tests hit this before the first flush.

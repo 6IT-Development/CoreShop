@@ -22,6 +22,7 @@ use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Resource\Model\TimestampableInterface;
 use CoreShop\Component\Resource\Model\ToggleableInterface;
 use CoreShop\Component\Resource\Model\TranslatableInterface;
+use Doctrine\Common\Collections\Collection;
 
 interface CountryInterface extends
     ResourceInterface,
@@ -67,6 +68,20 @@ interface CountryInterface extends
      * @return string
      */
     public function getZoneName();
+
+    /**
+     * @return Collection<int, StateInterface>
+     */
+    public function getStates(): Collection;
+
+    public function hasState(StateInterface $state): bool;
+
+    /**
+     * Also sets the country of the state.
+     */
+    public function addState(StateInterface $state): void;
+
+    public function removeState(StateInterface $state): void;
 
     /**
      * @return string

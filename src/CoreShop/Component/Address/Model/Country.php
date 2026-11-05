@@ -22,6 +22,7 @@ use CoreShop\Component\Resource\Model\AbstractResource;
 use CoreShop\Component\Resource\Model\TimestampableTrait;
 use CoreShop\Component\Resource\Model\ToggleableTrait;
 use CoreShop\Component\Resource\Model\TranslatableTrait;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 /**
@@ -70,6 +71,7 @@ class Country extends AbstractResource implements CountryInterface, \Stringable
     public function __construct(
         ) {
         $this->initializeTranslationsCollection();
+        $this->states = new ArrayCollection();
     }
 
     public function __toString(): string
@@ -107,19 +109,53 @@ class Country extends AbstractResource implements CountryInterface, \Stringable
     }
 
     /**
-     * @return StateInterface[]|Collection
+     * @return Collection<int, StateInterface>
      */
-    public function getStates(): Collection|array
+    public function getStates(): Collection
     {
         return $this->states;
     }
 
     /**
-     * @param StateInterface[]|Collection $states
+     * Replaces the states by adding and removing elements, so the Doctrine collection
+     * (and its change tracking) is kept.
+     *
+     * @param StateInterface[]|Collection<int, StateInterface> $states
      */
     public function setStates(Collection|array $states): void
     {
-        $this->states = $states;
+        $states = $states instanceof Collection ? $states->toArray() : $states;
+
+        foreach ($this->states->toArray() as $state) {
+            if (!in_array($state, $states, true)) {
+                $this->removeState($state);
+            }
+        }
+
+        foreach ($states as $state) {
+            $this->addState($state);
+        }
+    }
+
+    public function hasState(StateInterface $state): bool
+    {
+        return $this->states->contains($state);
+    }
+
+    public function addState(StateInterface $state): void
+    {
+        if ($this->hasState($state)) {
+            return;
+        }
+
+        $this->states->add($state);
+        $state->setCountry($this);
+    }
+
+    public function removeState(StateInterface $state): void
+    {
+        // State::$country is the owning side and cannot be unset: delete the state to remove it from the database
+        $this->states->removeElement($state);
     }
 
     public function getAddressFormat()

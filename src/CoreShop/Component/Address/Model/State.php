@@ -97,7 +97,15 @@ class State extends AbstractResource implements StateInterface, \Stringable
 
     public function setCountry(CountryInterface $country)
     {
+        $previousCountry = $this->country;
         $this->country = $country;
+
+        // keep the inverse side (Country::$states) in sync
+        if ($previousCountry instanceof CountryInterface && $previousCountry !== $country) {
+            $previousCountry->removeState($this);
+        }
+
+        $country->addState($this);
 
         return $this;
     }

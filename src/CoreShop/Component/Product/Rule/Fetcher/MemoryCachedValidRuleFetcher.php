@@ -28,7 +28,7 @@ use Symfony\Contracts\Service\ResetInterface;
  * request. Outside a request (CLI, Messenger) nothing is cached, and the cache
  * is cleared between requests through ResetInterface.
  */
-final class MemoryCachedValidRuleFetcher implements ValidRulesFetcherInterface, ResetInterface
+final class MemoryCachedValidRuleFetcher implements ValidRulesFetcherInterface, InvalidatableRulesFetcherInterface, ResetInterface
 {
     /**
      * @var \WeakMap<ProductInterface, array<string, array>>
@@ -69,6 +69,29 @@ final class MemoryCachedValidRuleFetcher implements ValidRulesFetcherInterface, 
         $this->checkedProducts[$product] = $cached;
 
         return $rules;
+    }
+
+    public function invalidate(ProductInterface $product): void
+    {
+        unset($this->checkedProducts[$product]);
+
+        $id = $product->getId();
+
+        if (null === $id) {
+            return;
+        }
+
+        $stale = [];
+
+        foreach ($this->checkedProducts as $cachedProduct => $rules) {
+            if ($cachedProduct->getId() === $id) {
+                $stale[] = $cachedProduct;
+            }
+        }
+
+        foreach ($stale as $cachedProduct) {
+            unset($this->checkedProducts[$cachedProduct]);
+        }
     }
 
     public function reset(): void

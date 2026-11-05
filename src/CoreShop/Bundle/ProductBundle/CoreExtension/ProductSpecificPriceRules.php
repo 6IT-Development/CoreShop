@@ -24,6 +24,7 @@ use CoreShop\Bundle\ResourceBundle\Doctrine\ORM\EntityMerger;
 use CoreShop\Bundle\ResourceBundle\Pimcore\CacheMarshallerInterface;
 use CoreShop\Component\Product\Model\ProductInterface;
 use CoreShop\Component\Product\Model\ProductSpecificPriceRuleInterface;
+use CoreShop\Component\Product\Rule\Fetcher\InvalidatableRulesFetcherInterface;
 use CoreShop\Component\Product\Repository\ProductSpecificPriceRuleRepositoryInterface;
 use CoreShop\Component\Resource\Factory\RepositoryFactoryInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -427,6 +428,8 @@ class ProductSpecificPriceRules extends Data implements
             }
 
             $this->getEntityManager()->flush();
+
+            $this->invalidateCachedRules($object);
         }
     }
 
@@ -461,6 +464,8 @@ class ProductSpecificPriceRules extends Data implements
             }
 
             $this->getEntityManager()->flush();
+
+            $this->invalidateCachedRules($object);
         }
     }
 
@@ -472,6 +477,25 @@ class ProductSpecificPriceRules extends Data implements
     /**
      * @return \Symfony\Component\DependencyInjection\ContainerInterface
      */
+    /**
+     * The memory-cached valid rules fetcher keeps the specific rules of a product for the request;
+     * drop them, so a price calculated later in the same request uses the saved rules.
+     */
+    private function invalidateCachedRules(ProductInterface $product): void
+    {
+        $fetcherId = 'coreshop.product.price_calculator.product_specific_price_valid_rules_fetcher';
+
+        if (!$this->getContainer()->has($fetcherId)) {
+            return;
+        }
+
+        $fetcher = $this->getContainer()->get($fetcherId);
+
+        if ($fetcher instanceof InvalidatableRulesFetcherInterface) {
+            $fetcher->invalidate($product);
+        }
+    }
+
     private function getContainer()
     {
         return \Pimcore::getContainer();

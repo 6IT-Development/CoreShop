@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Payment\Rule\Condition;
 
-use CoreShop\Component\Core\Model\CustomerInterface;
+use CoreShop\Component\Core\Rule\Condition\GuestConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Payment\Model\PayableInterface;
 use CoreShop\Component\Payment\Model\PaymentProviderInterface;
@@ -35,12 +35,6 @@ final class GuestConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        $customer = $payable->getCustomer();
-
-        if (!$customer instanceof CustomerInterface) {
-            return true;
-        }
-
-        return null === $customer->getUser();
+        return GuestConditionMatcher::matches($payable->getCustomer(), $configuration);
     }
 }

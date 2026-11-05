@@ -32,7 +32,7 @@ services:
 
     CoreShop\Component\Core\Shipping\Rule\Condition\GuestConditionChecker:
         tags:
-            - { name: coreshop.shipping_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
+            - { name: coreshop.shipping_rule.condition, type: guest, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\GuestConfigurationType }
 
     CoreShop\Component\Core\Shipping\Rule\Condition\StoresConditionChecker:
         tags:

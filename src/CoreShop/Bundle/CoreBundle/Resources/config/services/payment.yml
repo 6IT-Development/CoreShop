@@ -44,7 +44,7 @@ services:
 
     CoreShop\Component\Core\Payment\Rule\Condition\GuestConditionChecker:
         tags:
-            - { name: coreshop.payment_provider_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
+            - { name: coreshop.payment_provider_rule.condition, type: guest, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\GuestConfigurationType }
 
     CoreShop\Component\Core\Payment\Rule\Condition\StoresConditionChecker:
         tags:

@@ -13,4 +13,26 @@
 pimcore.registerNS('coreshop.shippingrule.conditions.guest');
 coreshop.shippingrule.conditions.guest = Class.create(coreshop.rules.conditions.abstract, {
     type: 'guest',
+
+    getForm: function () {
+        // rules saved before this option existed have no value and keep matching guests
+        var guest = this.data && typeof this.data.guest !== 'undefined' ? !!this.data.guest : true;
+
+        this.form = new Ext.form.Panel({
+            items: [{
+                fieldLabel: t('coreshop_condition_guest_is_guest'),
+                xtype: 'checkbox',
+                name: 'guest',
+                checked: guest
+            }]
+        });
+
+        return this.form;
+    },
+
+    getValues: function () {
+        return {
+            guest: this.form.getForm().findField('guest').getValue()
+        };
+    }
 });

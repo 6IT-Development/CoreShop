@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Core\Product\Rule\Condition;
 
-use CoreShop\Component\Core\Model\CustomerInterface;
+use CoreShop\Component\Core\Rule\Condition\GuestConditionMatcher;
 use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Rule\Condition\ConditionCheckerInterface;
 use CoreShop\Component\Rule\Model\RuleInterface;
@@ -31,10 +31,6 @@ final class GuestConditionChecker implements ConditionCheckerInterface
         array $configuration,
         array $params = [],
     ): bool {
-        if (!array_key_exists('customer', $params) || !$params['customer'] instanceof CustomerInterface) {
-            return true;
-        }
-
-        return null === $params['customer']->getUser();
+        return GuestConditionMatcher::matches($params['customer'] ?? null, $configuration);
     }
 }

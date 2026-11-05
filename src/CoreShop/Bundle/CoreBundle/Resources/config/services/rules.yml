@@ -17,8 +17,8 @@ services:
     coreshop.rule.condition.guest:
         class: CoreShop\Component\Core\Product\Rule\Condition\GuestConditionChecker
         tags:
-            - { name: coreshop.product_price_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
-            - { name: coreshop.product_specific_price_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
+            - { name: coreshop.product_price_rule.condition, type: guest, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\GuestConfigurationType }
+            - { name: coreshop.product_specific_price_rule.condition, type: guest, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\GuestConfigurationType }
 
     coreshop.rule.condition.countries:
         class: CoreShop\Component\Core\Product\Rule\Condition\CountriesConditionChecker
@@ -97,7 +97,7 @@ services:
     coreshop.rule.cart_price_rule.condition.guest:
         class: CoreShop\Component\Core\Cart\Rule\Condition\GuestConditionChecker
         tags:
-            - { name: coreshop.cart_price_rule.condition, type: guest, form-type: CoreShop\Bundle\RuleBundle\Form\Type\Rule\EmptyConfigurationFormType }
+            - { name: coreshop.cart_price_rule.condition, type: guest, form-type: CoreShop\Bundle\CoreBundle\Form\Type\Rule\Condition\GuestConfigurationType }
 
     coreshop.rule.cart_price_rule.condition.countries:
         class: CoreShop\Component\Core\Cart\Rule\Condition\CountriesConditionChecker

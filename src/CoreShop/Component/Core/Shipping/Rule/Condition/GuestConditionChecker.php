@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Core\Shipping\Rule\Condition;
 
 use CoreShop\Component\Address\Model\AddressInterface;
-use CoreShop\Component\Core\Model\CustomerInterface;
+use CoreShop\Component\Core\Rule\Condition\GuestConditionMatcher;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\Shipping\Model\CarrierInterface;
 use CoreShop\Component\Shipping\Model\ShippableInterface;
@@ -37,12 +37,6 @@ final class GuestConditionChecker extends AbstractConditionChecker
             return false;
         }
 
-        $customer = $shippable->getCustomer();
-
-        if (!$customer instanceof CustomerInterface) {
-            return true;
-        }
-
-        return null === $customer->getUser();
+        return GuestConditionMatcher::matches($shippable->getCustomer(), $configuration);
     }
 }

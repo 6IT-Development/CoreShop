@@ -19,6 +19,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Data written wrongly
 
 ### C-01 — The generator increments a possibly stale in-memory `index`, so a second call in the same `EntityManager` can return a number another process already used — (verified code path, trigger plausible) (dependent: SequenceBundle repository)
+- **Status:** fixed (component side) — `SequenceGenerator::getSequence()` calls `$em->refresh($sequence, LockMode::PESSIMISTIC_WRITE)` on a sequence it found, so it no longer depends on the repository returning a fresh object (Order TODO-2 **B-19**). `findForType()` has no `HINT_REFRESH`, so the row is read twice under the lock.
 - **Same as:** SequenceBundle TODO-1 **C-01**.
 - **Where:**
   - `Generator/SequenceGenerator.php:39-45`: `getSequence()` → `incrementIndex()` → `flush()` → `getIndex()`. The generator trusts that `findForType()` returned fresh data.
@@ -35,6 +36,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Outage / data loss
 
 ### C-02 — No rollback: any exception between `beginTransaction()` and `commit()` leaves the transaction open, the sequence row locked and the `EntityManager` closed — (verified code path, trigger plausible)
+- **Status:** fixed — `getNextSequenceForType()` wraps lookup, increment, `flush()` and `commit()` in `try`, rolls back when the connection is still in a transaction, and rethrows (Order TODO-2 **B-19**). No domain exception was added (TODO-3 **I-03**).
 - **Same as:** SequenceBundle TODO-1 **C-02** (root cause is in this component).
 - **Where:** `Generator/SequenceGenerator.php:37-43`: `beginTransaction()` … `flush()` … `commit()` without `try` / `catch` / `finally` and without `rollback()`.
   - Things that can throw inside the window: `findForType()` (`DeadlockException`, `LockWaitTimeoutException`, `TransactionRequiredException`), `$this->sequenceRepository->add()` (it flushes, `ResourceBundle/Doctrine/ORM/EntityRepository.php:27-31`; `UniqueConstraintViolationException` from TODO-2 **B-01**), `flush()` (any unrelated pending entity, TODO-2 **B-02**), or "The EntityManager is closed" from an earlier failure in the request (TODO-2 **B-04**).

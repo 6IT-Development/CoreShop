@@ -19,6 +19,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Data written wrongly
 
 ### C-01 — The locked `SELECT … FOR UPDATE` returns the stale entity from the identity map, so a second call in the same `EntityManager` can hand out a number that another process already used — (verified code path, plausible trigger)
+- **Status:** fixed in `Component/Sequence` (TODO-1 **C-01** there): the generator refreshes the found sequence under the lock. The repository is unchanged.
 - **Where:**
   - `Doctrine/ORM/SequenceRepository.php:28-37` runs a DQL query with `setLockMode(LockMode::PESSIMISTIC_WRITE)` but without `Query::HINT_REFRESH`.
   - `Component/Sequence/Generator/SequenceGenerator.php:35-46` increments the in-memory `index` of whatever object comes back and flushes it (`UPDATE coreshop_sequence SET idx = <in-memory value + 1>`).
@@ -35,6 +36,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Error that takes down a whole area
 
 ### C-02 — Any exception between `beginTransaction()` and `commit()` leaves the transaction open with the sequence row locked, and closes the `EntityManager` — (verified code path, plausible trigger)
+- **Status:** fixed in `Component/Sequence` (TODO-1 **C-02** there): the generator rolls back on any exception.
 - **Where:**
   - `Component/Sequence/Generator/SequenceGenerator.php:37-43`: `beginTransaction()` … `flush()` … `commit()` with no `try`/`catch`/`finally` and no `rollback()`.
   - Things that can throw in that window: `findForType()` (deadlock / lock wait timeout, `LockWaitTimeoutException`, `DeadlockException`), `SequenceRepository::add()` (`EntityRepository::add()` flushes, `UniqueConstraintViolationException` from B-01), `flush()` (any other pending entity in the unit of work, see B-02, or a DB error).

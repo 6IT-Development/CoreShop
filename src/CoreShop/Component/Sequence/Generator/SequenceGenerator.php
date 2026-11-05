@@ -21,6 +21,7 @@ namespace CoreShop\Component\Sequence\Generator;
 use CoreShop\Component\Sequence\Factory\SequenceFactoryInterface;
 use CoreShop\Component\Sequence\Model\SequenceInterface;
 use CoreShop\Component\Sequence\Repository\SequenceRepositoryInterface;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 class SequenceGenerator implements SequenceGeneratorInterface
@@ -36,11 +37,21 @@ class SequenceGenerator implements SequenceGeneratorInterface
     {
         $this->entityManager->beginTransaction();
 
-        $sequence = $this->getSequence($type);
-        $sequence->incrementIndex();
+        try {
+            $sequence = $this->getSequence($type);
+            $sequence->incrementIndex();
 
-        $this->entityManager->flush();
-        $this->entityManager->commit();
+            $this->entityManager->flush();
+            $this->entityManager->commit();
+        } catch (\Throwable $exception) {
+            // Without the rollback a failed flush leaves the sequence row locked
+            // and the connection inside the transaction.
+            if ($this->entityManager->getConnection()->isTransactionActive()) {
+                $this->entityManager->rollback();
+            }
+
+            throw $exception;
+        }
 
         return $sequence->getIndex();
     }
@@ -52,7 +63,13 @@ class SequenceGenerator implements SequenceGeneratorInterface
         if (null === $sequence) {
             $sequence = $this->sequenceFactory->createWithType($type);
             $this->sequenceRepository->add($sequence);
+
+            return $sequence;
         }
+
+        // A sequence that is already managed is returned from the identity map
+        // with its old index, so read the locked row again.
+        $this->entityManager->refresh($sequence, LockMode::PESSIMISTIC_WRITE);
 
         return $sequence;
     }

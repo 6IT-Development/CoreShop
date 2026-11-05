@@ -54,10 +54,18 @@ final class AddressFormatEnvironment
         StateInterface::class => ['getName', 'getIsoCode', '__toString'],
     ];
 
+    /**
+     * Template name prefix for plain-text output: such templates are not escaped.
+     * The "autoescape" tag is not allowed in the sandbox, so a format cannot switch escaping off itself.
+     */
+    public const PLAIN_TEXT_TEMPLATE_NAME = 'address_format.txt';
+
+    public const HTML_TEMPLATE_NAME = 'address_format.html';
+
     public static function create(): Environment
     {
         $twig = new Environment(new ArrayLoader(), [
-            'autoescape' => 'html',
+            'autoescape' => static fn (string $name): string|false => str_starts_with($name, self::PLAIN_TEXT_TEMPLATE_NAME) ? false : 'html',
             'strict_variables' => false,
             'cache' => false,
         ]);

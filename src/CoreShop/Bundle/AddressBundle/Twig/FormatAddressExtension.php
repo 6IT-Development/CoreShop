@@ -19,7 +19,9 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\AddressBundle\Twig;
 
 use CoreShop\Component\Address\Formatter\AddressFormatterInterface;
+use CoreShop\Component\Address\Model\AddressInterface;
 use Twig\Extension\AbstractExtension;
+use Twig\Markup;
 use Twig\TwigFilter;
 
 final class FormatAddressExtension extends AbstractExtension
@@ -32,7 +34,18 @@ final class FormatAddressExtension extends AbstractExtension
     public function getFilters(): array
     {
         return [
-            new TwigFilter('coreshop_format_address', [$this->addressFormatter, 'formatAddress'], ['is_safe' => ['html']]),
+            new TwigFilter('coreshop_format_address', [$this, 'formatAddress']),
         ];
+    }
+
+    /**
+     * Only the HTML output is safe: the plain-text output (asHtml: false) is not escaped by the
+     * formatter, so it is returned as a string and escaped by the calling template.
+     */
+    public function formatAddress(AddressInterface $address, bool $asHtml = true): Markup|string
+    {
+        $formatted = $this->addressFormatter->formatAddress($address, $asHtml);
+
+        return $asHtml ? new Markup($formatted, 'UTF-8') : $formatted;
     }
 }

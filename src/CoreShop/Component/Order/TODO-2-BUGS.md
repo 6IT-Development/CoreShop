@@ -79,6 +79,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** with `null`, iterate `getAdjustments()` and sum only neutral ones. Add a unit test.
 
 ### B-11 — (reproduced, plausible trigger) `Order::removeItem()` / `hasItem()` compare by `getId()`, so all unsaved items match each other
+- **Status:** fixed — the main case was already fixed with Core TODO-2 **B-21** (`a180f64eb`, `isSameItem()` compares an unsaved item by identity). `isSameItem()` now checks identity first and compares ids only when both items have one, so an unsaved array item never matches a saved one by id, and `removeItem()` / `hasItem()` guard `getItems() ?? []`.
 - **Where:** `Model/Order.php:59-89`.
 - **Problem:** unsaved items have id `null` and `null === null`, so `removeItem($giftItem)` removes the first unsaved item, which can be a real product line; `hasItem()` is true for any unsaved item once the cart holds one. Affects transient carts (admin order creation preview, `OrderBundle/Controller/OrderCreationController.php:82-95`) and gift items created during `CartManager::persistCart()`; `Component/Core/Cart/Rule/Action/GiftProductActionProcessor.php:134-137` then removes the wrong line. Reproduced with `[saved#5, productX(new), gift(new)]`: `removeItem(gift)` removed productX.
 - **Fix:** compare by identity (`$a === $item`) first; fall back to id only when both ids are non-null. Guard `getItems() ?? []`.

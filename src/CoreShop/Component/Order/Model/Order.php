@@ -58,7 +58,7 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
 
     public function removeItem($item): void
     {
-        $items = $this->getItems();
+        $items = $this->getItems() ?? [];
 
         foreach ($items as $i => $iValue) {
             $arrayItem = $iValue;
@@ -75,7 +75,7 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
 
     public function hasItem($item): bool
     {
-        $items = $this->getItems();
+        $items = $this->getItems() ?? [];
 
         foreach ($items as $iValue) {
             $arrayItem = $iValue;
@@ -90,8 +90,13 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
 
     private function isSameItem(OrderItemInterface $arrayItem, OrderItemInterface $item): bool
     {
-        if (!$item->getId()) {
-            return $arrayItem === $item;
+        if ($arrayItem === $item) {
+            return true;
+        }
+
+        // Unsaved items have no id, so they only match themselves
+        if (!$item->getId() || !$arrayItem->getId()) {
+            return false;
         }
 
         return $arrayItem->getId() === $item->getId();

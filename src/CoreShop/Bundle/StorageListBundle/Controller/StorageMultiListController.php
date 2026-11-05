@@ -134,11 +134,12 @@ class StorageMultiListController extends AbstractController
                 if ($form->isSubmitted() && $form->isValid()) {
                     $list = $form->getData()['list'];
 
-                    if (interface_exists(CustomerAwareInterface::class)) {
-                        if ($list instanceof CustomerAwareInterface &&
-                            $list->getCustomer()?->getId() !==
-                            $this->contextProvider->getCurrentContext()['customer']->getId()
-                        ) {
+                    if (interface_exists(CustomerAwareInterface::class) && $list instanceof CustomerAwareInterface) {
+                        // a user without a (published) customer has no lists of their own
+                        $currentCustomerId = ($this->contextProvider->getCurrentContext()['customer'] ?? null)?->getId();
+                        $listCustomerId = $list->getCustomer()?->getId();
+
+                        if (null === $currentCustomerId || null === $listCustomerId || $listCustomerId !== $currentCustomerId) {
                             throw new AccessDeniedException();
                         }
                     }

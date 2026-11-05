@@ -324,17 +324,21 @@ abstract class Order extends AbstractPimcoreModel implements OrderInterface, Act
         $this->setSubtotal($subtotalNet, false);
     }
 
+    /*
+     * Discounts larger than the cart must never lead to a negative total: the payment step would be skipped
+     * and the order committed with a negative amount
+     */
     protected function recalculateConvertedAfterAdjustmentChange(): void
     {
-        $this->setConvertedTotal($this->getConvertedSubtotal(true) + $this->getConvertedAdjustmentsTotal(null, true), true);
-        $this->setConvertedTotal($this->getConvertedSubtotal(false) + $this->getConvertedAdjustmentsTotal(null, false), false);
+        $this->setConvertedTotal(max(0, $this->getConvertedSubtotal(true) + $this->getConvertedAdjustmentsTotal(null, true)), true);
+        $this->setConvertedTotal(max(0, $this->getConvertedSubtotal(false) + $this->getConvertedAdjustmentsTotal(null, false)), false);
     }
 
     protected function recalculateAfterAdjustmentChange(): void
     {
         $this->recalculateSubtotal();
 
-        $this->setTotal($this->getSubtotal(true) + $this->getAdjustmentsTotal(null, true), true);
-        $this->setTotal($this->getSubtotal(false) + $this->getAdjustmentsTotal(null, false), false);
+        $this->setTotal(max(0, $this->getSubtotal(true) + $this->getAdjustmentsTotal(null, true)), true);
+        $this->setTotal(max(0, $this->getSubtotal(false) + $this->getAdjustmentsTotal(null, false)), false);
     }
 }

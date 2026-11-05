@@ -98,6 +98,9 @@ services:
             - '@CoreShop\Component\Pimcore\DataObject\ObjectClonerInterface'
             - '@CoreShop\Bundle\WorkflowBundle\Applier\StateMachineApplier'
             - '@?Symfony\Component\Lock\LockFactory'
+            - '@doctrine.orm.default_entity_manager'
+            - '@coreshop.repository.cart_price_rule_voucher_code'
+            - '@coreshop.repository.cart_price_rule_voucher_code_customer'
 
     CoreShop\Component\Order\Committer\QuoteCommitterInterface: '@CoreShop\Component\Core\Order\Committer\QuoteCommitter'
     CoreShop\Component\Core\Order\Committer\QuoteCommitter:

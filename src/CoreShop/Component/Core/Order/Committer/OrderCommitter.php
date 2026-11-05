@@ -22,8 +22,12 @@ use Carbon\Carbon;
 use CoreShop\Bundle\WorkflowBundle\Applier\StateMachineApplierInterface;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Order\Committer\OrderCommitterInterface;
+use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
+use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeCustomerInterface;
+use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\Order\Model\PriceRuleItemInterface;
 use CoreShop\Component\Order\NumberGenerator\NumberGeneratorInterface;
 use CoreShop\Component\Order\OrderInvoiceStates;
 use CoreShop\Component\Order\OrderPaymentStates;
@@ -31,9 +35,12 @@ use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Order\OrderShipmentStates;
 use CoreShop\Component\Order\OrderStates;
 use CoreShop\Component\Order\OrderTransitions;
+use CoreShop\Component\Order\Repository\CartPriceRuleVoucherCodeCustomerRepositoryInterface;
+use CoreShop\Component\Order\Repository\CartPriceRuleVoucherRepositoryInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectClonerInterface;
 use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Pimcore\Db;
 use Pimcore\Model\DataObject\Service;
 use Symfony\Component\Lock\LockFactory;
@@ -50,14 +57,96 @@ class OrderCommitter implements OrderCommitterInterface
         protected ObjectClonerInterface $objectCloner,
         protected StateMachineApplierInterface $stateMachineApplier,
         protected ?LockFactory $lockFactory = null,
+        protected ?EntityManagerInterface $entityManager = null,
+        protected ?CartPriceRuleVoucherRepositoryInterface $voucherCodeRepository = null,
+        protected ?CartPriceRuleVoucherCodeCustomerRepositoryInterface $codePerCustomerRepository = null,
     ) {
     }
 
     public function commitOrder(OrderInterface $order): void
     {
         $this->commitLocked($order, function () use ($order): void {
-            $this->doCommitOrder($order);
+            $this->commitWithVoucherLocks($order, function () use ($order): void {
+                $this->doCommitOrder($order);
+            });
         });
+    }
+
+    /**
+     * The voucher limits (uses per code and per customer, credit) are checked when the cart is recalculated
+     * during the commit, and booked by the "create" transition afterwards. Both run under a lock per voucher
+     * code, with the codes reloaded inside it, so two orders can no longer both pass the check before either
+     * one is booked. An order whose voucher was used up in the meantime is committed without it.
+     *
+     * @param callable(): void $commit
+     */
+    private function commitWithVoucherLocks(OrderInterface $order, callable $commit): void
+    {
+        $codes = [];
+
+        foreach ($order->getPriceRuleItems()?->getItems() ?? [] as $item) {
+            if ($item instanceof PriceRuleItemInterface && $item->getVoucherCode()) {
+                $codes[] = $item->getVoucherCode();
+            }
+        }
+
+        if (null === $this->lockFactory || !$codes) {
+            $commit();
+
+            return;
+        }
+
+        $codes = array_unique($codes);
+        // always lock in the same order, so two orders with the same codes cannot deadlock
+        sort($codes);
+
+        $locks = [];
+
+        try {
+            foreach ($codes as $code) {
+                $lock = $this->lockFactory->createLock(sprintf('coreshop_voucher_code_%s', md5(mb_strtolower($code))));
+                $lock->acquire(true);
+                $locks[] = $lock;
+
+                $this->refreshVoucherCode($order, $code);
+            }
+
+            $commit();
+        } finally {
+            foreach (array_reverse($locks) as $lock) {
+                $lock->release();
+            }
+        }
+    }
+
+    /**
+     * The voucher code and the customer's usage may have been loaded before another order booked them.
+     */
+    private function refreshVoucherCode(OrderInterface $order, string $code): void
+    {
+        if (null === $this->entityManager || null === $this->voucherCodeRepository) {
+            return;
+        }
+
+        $voucherCode = $this->voucherCodeRepository->findByCode($code);
+
+        if (!$voucherCode instanceof CartPriceRuleVoucherCodeInterface) {
+            return;
+        }
+
+        $this->entityManager->refresh($voucherCode);
+
+        $customer = $order->getCustomer();
+
+        if (null === $this->codePerCustomerRepository || !$customer instanceof CustomerInterface) {
+            return;
+        }
+
+        $usage = $this->codePerCustomerRepository->findUsesByCustomer($customer, $voucherCode);
+
+        if ($usage instanceof CartPriceRuleVoucherCodeCustomerInterface) {
+            $this->entityManager->refresh($usage);
+        }
     }
 
     protected function doCommitOrder(OrderInterface $order): void

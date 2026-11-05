@@ -48,10 +48,6 @@ abstract class Adjustment extends AbstractPimcoreFieldcollection implements Adju
     {
         $this->setPimcoreAmountGross($grossAmount);
         $this->setPimcoreAmountNet($netAmount);
-
-        if (!$this->getNeutral()) {
-            $this->recalculateAdjustable();
-        }
     }
 
     public function getNeutral(): bool
@@ -61,11 +57,7 @@ abstract class Adjustment extends AbstractPimcoreFieldcollection implements Adju
 
     public function setNeutral(bool $neutral)
     {
-        if ($this->getPimcoreNeutral() !== $neutral) {
-            $this->setPimcoreNeutral($neutral);
-
-            $this->recalculateAdjustable();
-        }
+        $this->setPimcoreNeutral($neutral);
     }
 
     public function isCharge(): bool
@@ -126,13 +118,5 @@ abstract class Adjustment extends AbstractPimcoreFieldcollection implements Adju
     public function getPimcoreNeutral(): ?bool
     {
         throw new ImplementedByPimcoreException(__CLASS__, __METHOD__);
-    }
-
-    private function recalculateAdjustable(): void
-    {
-        $adjustable = $this->getAdjustable();
-        if (null !== $adjustable) {
-            $adjustable->recalculateAdjustmentsTotal();
-        }
     }
 }

@@ -42,6 +42,10 @@ interface AdjustmentInterface extends ResourceInterface
 
     public function getAmount(bool $withTax = true): int;
 
+    /**
+     * Does not recalculate the adjustable; call its recalculateAdjustmentsTotal()
+     * after changing an adjustment it already holds.
+     */
     public function setAmount(int $grossAmount, int $netAmount);
 
     public function getNeutral(): bool;

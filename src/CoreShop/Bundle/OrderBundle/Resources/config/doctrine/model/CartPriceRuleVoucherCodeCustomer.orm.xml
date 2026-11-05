@@ -21,7 +21,7 @@
 
         <many-to-one field="voucherCode"
                      target-entity="CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface">
-            <join-column name="voucherCodeId" referenced-column-name="id"/>
+            <join-column name="voucherCodeId" referenced-column-name="id" on-delete="CASCADE"/>
         </many-to-one>
 
         <field name="uses" column="uses" type="integer"/>

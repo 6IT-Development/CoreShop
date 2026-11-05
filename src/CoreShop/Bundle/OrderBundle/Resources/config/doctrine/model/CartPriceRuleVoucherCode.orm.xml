@@ -27,7 +27,7 @@
         </field>
 
         <many-to-one field="cartPriceRule" target-entity="CoreShop\Component\Order\Model\CartPriceRuleInterface" inversed-by="voucherCodes">
-            <join-column name="cartPriceRuleId"/>
+            <join-column name="cartPriceRuleId" referenced-column-name="id" on-delete="CASCADE"/>
         </many-to-one>
 
         <many-to-one field="creditCurrency" target-entity="CoreShop\Component\Currency\Model\CurrencyInterface">

@@ -200,6 +200,7 @@ final class Configuration implements ConfigurationInterface
                             ->children()
                                 ->variableNode('options')->end()
                                 ->arrayNode('path')
+                                    ->addDefaultsIfNotSet()
                                     ->children()
                                         ->scalarNode('order')->defaultValue('orders')->end()
                                         ->scalarNode('quote')->defaultValue('quotes')->end()

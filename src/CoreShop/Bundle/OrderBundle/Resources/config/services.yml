@@ -34,6 +34,7 @@ services:
             - '@?lock.factory'
 
     coreshop.cart_item.quantity_modifier: '@CoreShop\Component\StorageList\StorageListItemQuantityModifier'
+    coreshop.cart_item.quantity_modifier.backend: '@CoreShop\Component\StorageList\StorageListItemQuantityModifier'
     CoreShop\Component\StorageList\StorageListItemQuantityModifier: ~
 
     CoreShop\Component\Order\Cart\CartItemResolver: ~

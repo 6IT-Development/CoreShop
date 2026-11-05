@@ -36,11 +36,6 @@ CoreShop\Component\Order\Model\Order:
             serialized_name: paymentProvider
             exp: object.getPaymentProvider()
             groups: [Detailed]
-        paymentSettings:
-            serialized_name: paymentSettings
-            exp: object.getPaymentSettings()
-            type: array
-            groups: [Detailed]
         baseCurrency:
             serialized_name: baseCurrency
             exp: object.getBaseCurrency()
@@ -83,11 +78,6 @@ CoreShop\Component\Order\Model\Order:
         convertedSubtotalTax:
             serialized_name: convertedSubtotalTax
             exp: object.getConvertedSubtotalTax()
-            type: integer
-            groups: [Detailed]
-        shippingTax:
-            serialized_name: shippingTax
-            exp: object.getShippingTax()
             type: integer
             groups: [Detailed]
         convertedShippingTax:
@@ -153,16 +143,6 @@ CoreShop\Component\Order\Model\Order:
         convertedTotalGross:
             serialized_name: convertedTotalGross
             exp: object.getConvertedTotal(true)
-            type: integer
-            groups: [Detailed]
-        shippingNet:
-            serialized_name: shippingNet
-            exp: object.getShipping(false)
-            type: integer
-            groups: [Detailed]
-        shippingGross:
-            serialized_name: shippingGross
-            exp: object.getShipping(true)
             type: integer
             groups: [Detailed]
         convertedShippingNet:

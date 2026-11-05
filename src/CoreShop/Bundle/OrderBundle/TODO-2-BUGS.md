@@ -348,6 +348,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Configuration, serializer and Doctrine
 
 ### B-42 — (reproduced) The `Adjustment` serializer emits `label` and `typeIdentifier` as booleans
+- **Status:** fixed — `label` and `typeIdentifier` are serialized as `type: string`, and `xml_root_name` is `adjustment`. Checked with the vendored JMS and the bundle's metadata: an adjustment that serialized `"typeIdentifier":true,"label":true` now gives `"typeIdentifier":"cart_price_rule","label":"Voucher X"`.
 - **Where:** `Resources/config/serializer/Model.Adjustment.yml:30-39` (`type: boolean`); `:3` has a copy-pasted `xml_root_name: cart_price_rule`.
 - **Problem:** JMS turns every label and type identifier into `true` (reproduced with the vendored JMS). The wrong values appear in `adjustments` / `convertedAdjustments` of `OrderController::getDetails()` (`toArray($order)`), which `SALE_DETAIL_PREPARE` listeners and API consumers receive.
 - **Fix:** use `type: string` and `xml_root_name: adjustment`.

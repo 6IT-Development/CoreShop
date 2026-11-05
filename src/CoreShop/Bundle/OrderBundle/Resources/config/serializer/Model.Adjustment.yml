@@ -1,6 +1,6 @@
 CoreShop\Component\Order\Model\Adjustment:
     exclusion_policy: ALL
-    xml_root_name: cart_price_rule
+    xml_root_name: adjustment
     virtual_properties:
         amountNet:
             serialized_name: amountNet
@@ -30,10 +30,10 @@ CoreShop\Component\Order\Model\Adjustment:
         typeIdentifier:
             serialized_name: typeIdentifier
             exp: object.getTypeIdentifier()
-            type: boolean
+            type: string
             groups: [Detailed]
         label:
             serialized_name: label
             exp: object.getLabel()
-            type: boolean
+            type: string
             groups: [Detailed]

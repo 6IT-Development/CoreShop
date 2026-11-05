@@ -135,8 +135,8 @@ class CartController extends FrontendController
 
                     $priceRule = $voucherCode->getCartPriceRule();
 
+                    // Persisted once, after the cart update event below.
                     if ($this->getCartPriceRuleProcessor()->process($cart, $priceRule, $voucherCode)) {
-                        $this->getCartManager()->persistCart($cart);
                         $this->addFlash(
                             'success',
                             $this->container->get('translator')->trans('coreshop.ui.success.voucher.stored'),
@@ -157,7 +157,8 @@ class CartController extends FrontendController
             $session = $request->getSession();
 
             if ($session instanceof Session) {
-                foreach ($form->getErrors() as $error) {
+                // deep: item-level errors (quantity, stock, ...) belong to child forms.
+                foreach ($form->getErrors(true, true) as $error) {
                     $session->getFlashBag()->add('error', $error->getMessage());
                 }
 

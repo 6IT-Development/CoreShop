@@ -12,6 +12,7 @@ services:
         arguments:
             - '@CoreShop\Component\Resource\Service\FolderCreationServiceInterface'
             - '@CoreShop\Component\Order\Transformer\TransformerEventDispatcherInterface'
+            - '@coreshop.repository.order_shipment'
 
     CoreShop\Component\Order\Transformer\OrderToShipmentTransformer:
         arguments:

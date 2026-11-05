@@ -22,15 +22,20 @@ use CoreShop\Component\Order\Model\OrderDocumentInterface;
 use CoreShop\Component\Order\Model\OrderDocumentItemInterface;
 use CoreShop\Component\Order\Model\OrderInvoiceItemInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
+use CoreShop\Component\Order\OrderInvoiceStates;
+use CoreShop\Component\Order\Repository\OrderDocumentRepositoryInterface;
 use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use Webmozart\Assert\Assert;
 
 class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerInterface
 {
+    use OrderDocumentItemTotalTrait;
+
     public function __construct(
         protected FolderCreationServiceInterface $folderCreationService,
         protected TransformerEventDispatcherInterface $eventDispatcher,
+        protected ?OrderDocumentRepositoryInterface $documentRepository = null,
     ) {
     }
 
@@ -63,15 +68,7 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         $documentItem->setOrderItem($orderItem);
         $documentItem->setQuantity($quantity);
 
-        /*
-         * Take the share of the order item total, it contains the item level discounts (cart item rules)
-         * which the unit price does not
-         */
-        $documentItem->setTotal($this->getShareOfTotal($orderItem->getTotal(true), $orderItem, $quantity), true);
-        $documentItem->setTotal($this->getShareOfTotal($orderItem->getTotal(false), $orderItem, $quantity), false);
-
-        $documentItem->setConvertedTotal($this->getShareOfTotal($orderItem->getConvertedTotal(true), $orderItem, $quantity), true);
-        $documentItem->setConvertedTotal($this->getShareOfTotal($orderItem->getConvertedTotal(false), $orderItem, $quantity), false);
+        $this->setDocumentItemTotals($documentItem, $orderDocument, $orderItem, $quantity, $this->documentRepository, OrderInvoiceStates::STATE_CANCELLED);
 
         VersionHelper::useVersioning(function () use ($documentItem) {
             $documentItem->save();
@@ -89,16 +86,5 @@ class OrderItemToInvoiceItemTransformer implements OrderDocumentItemTransformerI
         );
 
         return $documentItem;
-    }
-
-    private function getShareOfTotal(int $total, OrderItemInterface $orderItem, float $quantity): int
-    {
-        $orderedQuantity = (float) $orderItem->getQuantity();
-
-        if ($orderedQuantity <= 0) {
-            return 0;
-        }
-
-        return (int) round($total * min($quantity, $orderedQuantity) / $orderedQuantity);
     }
 }

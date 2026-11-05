@@ -18,10 +18,14 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Customer\Context\RequestBased;
 
+use CoreShop\Component\Customer\Context\CustomerNotFoundException;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 interface RequestResolverInterface
 {
+    /**
+     * @throws CustomerNotFoundException when this resolver cannot find a customer for the request
+     */
     public function findCustomer(Request $request): CustomerInterface;
 }

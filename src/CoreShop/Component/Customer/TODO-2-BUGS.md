@@ -42,6 +42,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Contexts
 
 ### B-03 — `RequestBased\CustomerContext` turns any `\UnexpectedValueException` from a resolver into "customer not found"
+- **Status:** fixed — `getMainRequest()` throws `CustomerNotFoundException` (wrapping the `UnexpectedValueException`) itself, and the `try`/`catch` around the resolver call is gone, so only `CustomerNotFoundException` means "not found". `RequestResolverInterface::findCustomer()` documents that contract.
 - **Where:** `Context/RequestBased/CustomerContext.php:35-42`, `:49-57`
 - **Problem:** the `try` wraps both `getMainRequest()` (which throws `\UnexpectedValueException` itself) **and** `$this->requestResolver->findCustomer($request)`. A resolver that fails with an `\UnexpectedValueException` (or a subclass of it, which is common in token decoding, JWT and serializer code) is silently reported as "no customer". The visitor is then treated as anonymous instead of the error being logged. Today no resolver is registered (CustomerBundle I-09), so it is latent until someone adds one.
 - **Fix direction:** throw `CustomerNotFoundException` directly from `getMainRequest()` (CustomerBundle I-05) and remove the `try`/`catch` around the resolver call, so only the documented "not found" exception means "not found".

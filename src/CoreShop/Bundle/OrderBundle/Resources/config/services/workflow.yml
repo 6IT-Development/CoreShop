@@ -122,3 +122,7 @@ services:
 
     CoreShop\Component\Order\Modifier\ImmutabilityModifierInterface: '@CoreShop\Component\Order\Modifier\ImmutabilityModifier'
     CoreShop\Component\Order\Modifier\ImmutabilityModifier: ~
+
+    CoreShop\Bundle\OrderBundle\EventListener\OrderCancelGuardListener:
+        tags:
+            - { name: kernel.event_listener, event: workflow.coreshop_order.guard.cancel, method: guardCancel }

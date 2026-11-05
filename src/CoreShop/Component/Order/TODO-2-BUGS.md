@@ -183,11 +183,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** `continue` (and log) when `$voucherCode` is not a `CartPriceRuleVoucherCodeInterface`.
 
 ### B-27 — (plausible) `onlyOnePerCart` crashes on a price-rule item whose rule was deleted
+- **Status:** fixed — the `onlyOnePerCart` loop skips items without a rule, as `NotCombinableConditionChecker` does. Checked with stubs: a cart with an orphaned voucher item → the condition is valid instead of `Error`.
 - **Where:** `Cart/Rule/Condition/VoucherConditionChecker.php:84-87` (`$rule->getCartPriceRule()->getIsVoucherRule()`); `Cart/Rule/Condition/NotCombinableConditionChecker.php:45-47` guards the same case.
 - **Problem:** deleting an unused cart rule leaves fieldcollection items with `getCartPriceRule() === null`. A voucher earlier in the list with `onlyOnePerCart` calls a method on `null` → `Error` → 500 on every recalculation of that cart.
 - **Fix:** skip items with a `null` rule, as `NotCombinableConditionChecker` does.
 
 ### B-28 — (plausible, dependent) `CartPriceRuleVoucherProcessor` removes price-rule items by stale index
+- **Status:** fixed with Core TODO-2 **B-02** (`02f0c05ca`) — `CartPriceRuleVoucherProcessor` drops all orphaned items in one `setItems()` call before the loop, so no index-based `remove()` is left. Nothing changed for this item.
 - **Where:** `Component/Core/Order/Processor/CartPriceRuleVoucherProcessor.php:53-60`.
 - **Problem:** iterates a copy of `getItems()` with original indexes while `unProcess()`, `calculatePriceRule()` and `remove($index)` change the live collection; `Fieldcollection::remove()` uses `array_splice`, so indexes shift. Two orphaned items followed by a valid voucher: `remove(1)` removes the valid voucher.
 - **Fix:** collect orphaned items first and remove them by identity (or iterate in reverse) before processing the rest.

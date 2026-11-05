@@ -81,7 +81,8 @@ class VoucherConditionChecker extends AbstractConditionChecker
             $valid = true;
             if ($cart->hasPriceRules()) {
                 foreach ($cart->getPriceRuleItems() as $rule) {
-                    if ($rule instanceof PriceRuleItemInterface) {
+                    // An item whose rule was deleted has no rule to compare, as in NotCombinableConditionChecker
+                    if ($rule instanceof PriceRuleItemInterface && null !== $rule->getCartPriceRule()) {
                         if ($rule->getCartPriceRule()->getIsVoucherRule() && $rule->getVoucherCode(
                         ) !== $storedCode->getCode()) {
                             $valid = false;

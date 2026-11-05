@@ -38,6 +38,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ## Wrong person's data
 
 ### CC-03 — Contexts cache the resolved list in a shared service property: in long-running runtimes one visitor's list is served to the next visitor — (plausible)
+- **Status:** fixed (Customer component TODO-2 B-04) — both contexts implement `ResetInterface`, and their definitions are tagged `kernel.reset`, so the memoised list lives for one request only. The factory result is still memoised within that request. No functional two-request test yet.
 - **Where:**
   - `Core/Context/StoreBasedStorageListContext.php:30,40-42,63` (`private ?StorageListInterface $storageList` — decorates the **factory** context, `Bundle/StorageListBundle/DependencyInjection/CoreShopStorageListExtension.php:246-261`, enabled for `wishlist` via `enable_default_store_based_decorator: true`).
   - `Context/SessionBasedListContext.php:27,39-41,60-65` (registered for every non-Core list with session enabled, extension `:349-362`).

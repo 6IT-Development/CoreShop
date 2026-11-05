@@ -48,6 +48,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** throw `CustomerNotFoundException` directly from `getMainRequest()` (CustomerBundle I-05) and remove the `try`/`catch` around the resolver call, so only the documented "not found" exception means "not found".
 
 ### B-04 — (dependent) Customer-bound state is cached in shared services and never reset, so long-running processes mix customers
+- **Status:** fixed — `StoreBasedStorageListContext` and `SessionBasedListContext` implement `ResetInterface` and their definitions in `CoreShopStorageListExtension` are tagged `kernel.reset` (`StorageList` declares `symfony/service-contracts`). `FixedCustomerContext` was already reset by CustomerBundle B-04, and `StoreBasedCartContext` already implements `ResetInterface`. This also covers StorageList TODO-1 **CC-03**. The store, currency and locale contexts stay with their own components' TODOs. No functional two-request test (no vendor on this branch).
 - **Where:**
   - `Component/StorageList/Core/Context/StoreBasedStorageListContext.php:30,40-43,56,62`: memoises `$this->storageList`, after `CoreContextProvider::provideContextForStorageList()` (`Component/StorageList/Core/Provider/CoreContextProvider.php:51-54`) has written the current customer into it.
   - `Context/FixedCustomerContext.php:25` (CustomerBundle B-04).

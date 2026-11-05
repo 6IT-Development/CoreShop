@@ -21,8 +21,13 @@ namespace CoreShop\Component\StorageList\Context;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\Repository\StorageListRepositoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class SessionBasedListContext implements StorageListContextInterface
+/**
+ * The resolved list is memoised for the current request only: reset() runs between requests
+ * (kernel.reset), so a long-running process never serves one visitor's list to the next.
+ */
+final class SessionBasedListContext implements StorageListContextInterface, ResetInterface
 {
     private ?StorageListInterface $storageList = null;
 
@@ -63,5 +68,10 @@ final class SessionBasedListContext implements StorageListContextInterface
         }
 
         return $this->storageList;
+    }
+
+    public function reset(): void
+    {
+        $this->storageList = null;
     }
 }

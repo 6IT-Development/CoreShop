@@ -258,6 +258,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                             '$contextProvider',
                             new Reference('coreshop.storage_list.context_provider.' . $name),
                         );
+                        $storeBasedContextDefinition->addTag('kernel.reset', ['method' => 'reset']);
 
                         $container->setDefinition(
                             'coreshop.storage_list.context.store_based.' . $name,
@@ -360,6 +361,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                 $sessionContext->setArgument('$sessionKeyName', $list['session']['key']);
                 $sessionContext->setArgument('$repository', new Reference($list['resource']['repository']));
                 $sessionContext->setDecoratedService('coreshop.storage_list.context.factory.' . $name);
+                $sessionContext->addTag('kernel.reset', ['method' => 'reset']);
 
                 $container->setDefinition('coreshop.storage_list.context.' . $name . '.session', $sessionContext);
             }

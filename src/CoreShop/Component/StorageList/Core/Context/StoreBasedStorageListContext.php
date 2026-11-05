@@ -24,8 +24,13 @@ use CoreShop\Component\StorageList\Context\StorageListNotFoundException;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\Provider\ContextProviderInterface;
 use CoreShop\Component\Store\Model\StoreAwareInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class StoreBasedStorageListContext implements StorageListContextInterface
+/**
+ * The resolved list is memoised for the current request only: reset() runs between requests
+ * (kernel.reset), so a long-running process never serves one visitor's list to the next.
+ */
+final class StoreBasedStorageListContext implements StorageListContextInterface, ResetInterface
 {
     private ?StorageListInterface $storageList = null;
 
@@ -63,5 +68,10 @@ final class StoreBasedStorageListContext implements StorageListContextInterface
         $this->storageList = $storageList;
 
         return $storageList;
+    }
+
+    public function reset(): void
+    {
+        $this->storageList = null;
     }
 }

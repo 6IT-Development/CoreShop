@@ -23,6 +23,23 @@ namespace CoreShop\Component\Product\Model;
  */
 class ProductPriceRule extends AbstractPriceRule implements ProductPriceRuleInterface
 {
+    /**
+     * Only catalog price rules have a description column; specific price rules have none.
+     */
+    protected ?string $description = null;
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription($description)
+    {
+        $this->description = null === $description ? null : (string) $description;
+
+        return $this;
+    }
+
     protected function createTranslation(): ProductPriceRuleTranslationInterface
     {
         return new ProductPriceRuleTranslation();

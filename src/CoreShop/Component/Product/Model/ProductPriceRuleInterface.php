@@ -20,10 +20,10 @@ namespace CoreShop\Component\Product\Model;
 
 interface ProductPriceRuleInterface extends PriceRuleInterface
 {
-    public function getDescription(): string;
+    public function getDescription(): ?string;
 
     /**
-     * @param string $description
+     * @param string|null $description
      */
     public function setDescription($description);
 }

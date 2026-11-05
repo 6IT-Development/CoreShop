@@ -38,11 +38,6 @@ abstract class AbstractPriceRule implements PriceRuleInterface
     protected $id;
 
     /**
-     * @var string
-     */
-    protected $description;
-
-    /**
      * @var int
      */
     protected $priority = 0;
@@ -61,18 +56,6 @@ abstract class AbstractPriceRule implements PriceRuleInterface
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
-    }
-
-    public function setDescription($description)
-    {
-        $this->description = $description;
-
-        return $this;
     }
 
     public function getPriority()

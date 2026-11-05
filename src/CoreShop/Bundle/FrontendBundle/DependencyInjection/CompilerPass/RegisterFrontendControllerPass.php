@@ -18,49 +18,66 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\FrontendBundle\DependencyInjection\CompilerPass;
 
+use CoreShop\Bundle\FrontendBundle\DependencyInjection\Configuration;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 
+/**
+ * Registers each configured frontend controller under the service id of its
+ * default class (Configuration::DEFAULT_CONTROLLERS), which is what the
+ * routes reference.
+ */
 class RegisterFrontendControllerPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
         /**
-         * @var array $controllers
+         * @var array<string, string> $controllers
          */
         $controllers = $container->getParameter('coreshop.frontend.controllers');
 
-        foreach ($controllers as $key => $value) {
-            $controllerKey = sprintf('coreshop.frontend.controller.%s', $key);
+        foreach ($controllers as $key => $controllerClass) {
+            $serviceName = Configuration::DEFAULT_CONTROLLERS[$key] ?? null;
 
-            if ($key === 'payment') {
-                $serviceName = 'CoreShop\\Bundle\\PayumBundle\\Controller\\PaymentController';
-            } else {
-                $serviceName = sprintf('CoreShop\\Bundle\\FrontendBundle\\Controller\\%sController', ucfirst($key));
+            if (null === $serviceName) {
+                throw new \LogicException(sprintf('No default controller service is known for the frontend controller key "%s".', $key));
             }
 
-            $controllerClass = (string) $container->getParameter($controllerKey);
+            $controllerClass = (string) $controllerClass;
 
             if ($container->hasDefinition($controllerClass)) {
-                $customController = $container->getDefinition($controllerClass);
+                // The app already defines the controller (usually an autowired
+                // App\Controller service): tag that definition and point the
+                // default id at it, so there is only one instance.
+                $definition = $container->getDefinition($controllerClass);
+                $definition->setPublic(true);
+                $this->addControllerTags($definition);
 
-                $customController->addTag('container.service_subscriber');
-
-                $container->setDefinition($serviceName, $customController)->setPublic(true);
+                if ($controllerClass !== $serviceName) {
+                    $container->setAlias($serviceName, $controllerClass)->setPublic(true);
+                }
 
                 continue;
             }
 
-            $controllerDefinition = new Definition($controllerClass);
-            $controllerDefinition->setPublic(true);
-            $controllerDefinition->addTag('controller.service_arguments');
-            $controllerDefinition->addTag('container.service_subscriber');
+            $definition = new Definition($controllerClass);
+            $definition->setPublic(true);
+            $this->addControllerTags($definition);
 
-            $container->setDefinition($serviceName, $controllerDefinition)->setPublic(true);
+            $container->setDefinition($serviceName, $definition);
 
             if ($controllerClass !== $serviceName) {
                 $container->setAlias($controllerClass, $serviceName)->setPublic(true);
+            }
+        }
+    }
+
+    private function addControllerTags(Definition $definition): void
+    {
+        foreach (['controller.service_arguments', 'container.service_subscriber'] as $tag) {
+            if (!$definition->hasTag($tag)) {
+                $definition->addTag($tag);
             }
         }
     }

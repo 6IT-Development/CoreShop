@@ -38,6 +38,27 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 final class Configuration implements ConfigurationInterface
 {
+    /**
+     * Controller key => default controller class. The class is also the
+     * service id the routes use, see RegisterFrontendControllerPass.
+     */
+    public const DEFAULT_CONTROLLERS = [
+        'index' => IndexController::class,
+        'register' => RegisterController::class,
+        'customer' => CustomerController::class,
+        'currency' => CurrencyController::class,
+        'search' => SearchController::class,
+        'cart' => CartController::class,
+        'checkout' => CheckoutController::class,
+        'order' => OrderController::class,
+        'category' => CategoryController::class,
+        'product' => ProductController::class,
+        'quote' => QuoteController::class,
+        'security' => SecurityController::class,
+        'payment' => PaymentController::class,
+        'mail' => MailController::class,
+    ];
+
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('core_shop_frontend');
@@ -84,27 +105,15 @@ final class Configuration implements ConfigurationInterface
 
     private function addControllerSection(ArrayNodeDefinition $node): void
     {
-        $node->children()
+        $children = $node->children()
             ->arrayNode('controllers')
                 ->addDefaultsIfNotSet()
                 ->children()
-                    ->scalarNode('index')->defaultValue(IndexController::class)->end()
-                    ->scalarNode('register')->defaultValue(RegisterController::class)->end()
-                    ->scalarNode('customer')->defaultValue(CustomerController::class)->end()
-                    ->scalarNode('currency')->defaultValue(CurrencyController::class)->end()
-                    ->scalarNode('search')->defaultValue(SearchController::class)->end()
-                    ->scalarNode('cart')->defaultValue(CartController::class)->end()
-                    ->scalarNode('checkout')->defaultValue(CheckoutController::class)->end()
-                    ->scalarNode('order')->defaultValue(OrderController::class)->end()
-                    ->scalarNode('category')->defaultValue(CategoryController::class)->end()
-                    ->scalarNode('product')->defaultValue(ProductController::class)->end()
-                    ->scalarNode('quote')->defaultValue(QuoteController::class)->end()
-                    ->scalarNode('security')->defaultValue(SecurityController::class)->end()
-                    ->scalarNode('payment')->defaultValue(PaymentController::class)->end()
-                    ->scalarNode('mail')->defaultValue(MailController::class)->end()
-                ->end()
-            ->end()
         ;
+
+        foreach (self::DEFAULT_CONTROLLERS as $key => $controllerClass) {
+            $children->scalarNode($key)->defaultValue($controllerClass)->end();
+        }
     }
 
     private function addPimcoreResourcesSection(ArrayNodeDefinition $node): void

@@ -160,6 +160,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** give `view_prefix` no default (`->defaultNull()`). In the extension, use `view_prefix ?? view_bundle` and do not add a second `@`. Fix the package name in `setDeprecated()`.
 
 ### B-21 — `RegisterFrontendControllerPass`: custom controller services lose argument resolution and get registered twice
+- **Status:** fixed — `Configuration::DEFAULT_CONTROLLERS` is an explicit `key => default class` map. It builds the `controllers` config section, and the pass uses it as the service id the routes reference, so the `ucfirst()` naming and the `payment` special case are gone. An unknown key throws a `LogicException`. When the configured class is already a service, the pass no longer copies its `Definition` under a second id: it tags that definition with `controller.service_arguments` and `container.service_subscriber` (once each), makes it public and aliases the default id to it, so there is one instance and action arguments such as `StateMachineManagerInterface $machineManager` resolve. The other branch is unchanged apart from the shared tagging.
 - **Where:** `DependencyInjection/CompilerPass/RegisterFrontendControllerPass.php:45-53`.
 - **Problem:**
   - When the configured class is already a service (the normal case for an autowired `App\Controller\…`), the **same `Definition` object** is registered under a second id. That gives two separate instances, and later changes to one definition affect the other.

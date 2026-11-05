@@ -73,25 +73,36 @@ class CustomerManager implements CustomerManagerInterface
             $customer->setUser(null);
             $customer->setAddresses([]);
             $customer->setPublished(true);
-            $customer->setParent(
-                $this->folderCreationService->createFolderForResource($customer, [
-                    'path' => ($userBackup ? 'customer' : 'guest'),
-                    'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
-                ]),
-            );
-            $customer->setKey(File::getValidFilename($customer->getEmail()));
-            /** @psalm-suppress InvalidArgument */
-            $customer->setKey(Service::getUniqueKey($customer));
+
+            /**
+             * Only place and name a new customer: an existing object (e.g. a customer created in the
+             * back office) must never be moved into the guest folder or renamed as a side effect of a checkout.
+             */
+            if (null === $customer->getId()) {
+                $customer->setParent(
+                    $this->folderCreationService->createFolderForResource($customer, [
+                        'path' => ($userBackup ? 'customer' : 'guest'),
+                        'suffix' => mb_strtoupper(mb_substr($customer->getLastname(), 0, 1)),
+                    ]),
+                );
+                $customer->setKey(File::getValidFilename($customer->getEmail()));
+                /** @psalm-suppress InvalidArgument */
+                $customer->setKey(Service::getUniqueKey($customer));
+            }
             $customer->save();
 
             foreach ($addressBackup as $address) {
                 $address->setPublished(true);
-                $address->setKey(uniqid());
-                $address->setParent(
-                    $this->folderCreationService->createFolderForResource($address, [
-                        'prefix' => $customer->getFullPath(),
-                    ]),
-                );
+
+                // existing addresses keep their key and folder
+                if (null === $address->getId()) {
+                    $address->setKey(uniqid());
+                    $address->setParent(
+                        $this->folderCreationService->createFolderForResource($address, [
+                            'prefix' => $customer->getFullPath(),
+                        ]),
+                    );
+                }
                 $address->save();
             }
 

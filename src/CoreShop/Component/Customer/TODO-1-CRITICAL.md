@@ -20,6 +20,7 @@ Related files: [TODO-2-BUGS.md](TODO-2-BUGS.md), [TODO-3-IMPROVEMENTS.md](TODO-3
 ---
 
 ## C-01 — (dependent) An anonymous guest checkout can take over **any customer without a login**, including admin-created B2B customers, and gets that customer's groups, so group-only prices, payment and shipping methods apply to the guest's cart
+- **Status:** fixed — the takeover path is closed by CoreBundle C-07 (`18e3c1834`): `GuestRegistrationType` no longer calls `findGuestByEmail()` and reuses only the guest already attached to the cart, so a typed e-mail never selects a managed customer and its groups/customer rules never apply. `CustomerManager::persistCustomer()` now sets the parent and key only for a new customer (`getId() === null`), and re-keys/re-parents only new addresses, so an existing customer is never moved into `guest/…` or renamed by a checkout. Not done: an explicit `isGuest()` / customer-type field (needs a class-definition change and migration; tracked with TODO-2 **B-02**) and the Behat regression scenario; the storefront check was not run (no runnable app/vendor on this branch).
 
 - **Where:**
   - Component contract: `Repository/CustomerRepositoryInterface.php:30` `findGuestByEmail()`. "Guest" is not a concept in `Model/CustomerInterface.php`; it only exists implicitly as "customer whose `user` is `null`" (`CustomerBundle/Pimcore/Repository/CustomerRepository.php:47-51`: `user__id IS NULL`, and `Component/Core/{Payment,Shipping,Product}/Rule/Condition/GuestConditionChecker.php`: `null === $customer->getUser()`).

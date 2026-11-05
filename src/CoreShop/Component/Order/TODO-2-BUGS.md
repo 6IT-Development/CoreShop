@@ -149,6 +149,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix:** iterate per adjustment (tracking processed amounts per adjustment) or per distinct type + label; track this run's amounts in memory instead of relying on the runtime cache.
 
 ### B-22 — (verified) `OrderToShipmentTransformer` does not validate item rows; both transformers save empty documents
+- **Status:** fixed — the `Assert::keyExists` / found / belongs-to-the-order / `qty > 0` checks before anything is saved were already added with OrderBundle TODO-1 **C-06** (`8d03c31bc`). Both transformers now also reject an empty item list (`Assert::notEmpty`, "No items given") in the same up-front check, so no number is consumed and no invoice collects the remaining adjustments without items. Checked with stubs: `transform($order, $document, [])` throws for both, and the number generator is not called.
 - **Where:** `Transformer/OrderToShipmentTransformer.php:79-93` (compare `OrderToInvoiceTransformer.php:93-94`).
 - **Problem:** a missing `quantity` / `orderItemId` key → "Undefined array key" (ErrorException in debug); in prod `(int) null = 0` saves a shipment line with quantity 0. In both transformers unknown ids are skipped silently; a document whose ids are all invalid is still saved with a freshly consumed number, and an invoice then collects all remaining adjustments (shipping, discounts) with no items.
 - **Fix:** add the `Assert::keyExists` calls; throw on unknown / foreign items or an empty item list *before* generating the number.

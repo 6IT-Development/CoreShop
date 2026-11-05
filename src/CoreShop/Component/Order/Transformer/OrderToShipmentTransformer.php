@@ -99,13 +99,15 @@ class OrderToShipmentTransformer implements OrderDocumentTransformerInterface
     }
 
     /**
-     * Resolves and validates all items before anything is saved: every item must belong to the order
-     * and have a positive quantity.
+     * Resolves and validates all items before anything is saved or a number is generated: there must be
+     * at least one item, and every item must belong to the order and have a positive quantity.
      *
      * @return array<array-key, OrderItemInterface>
      */
     private function getOrderItemsToTransform(OrderInterface $order, array $itemsToTransform): array
     {
+        Assert::notEmpty($itemsToTransform, 'No items given');
+
         $orderItems = [];
 
         foreach ($itemsToTransform as $index => $item) {

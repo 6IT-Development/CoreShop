@@ -21,6 +21,7 @@ namespace CoreShop\Component\Address\Formatter;
 use CoreShop\Component\Address\Model\AddressInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
+use Twig\Error\Error as TwigError;
 
 class AddressFormatter implements AddressFormatterInterface
 {
@@ -29,10 +30,23 @@ class AddressFormatter implements AddressFormatterInterface
      */
     public const DEFAULT_FORMAT = "{{ company }}\n{{ salutation }} {{ firstname }} {{ lastname }}\n{{ street }} {{ number }}\n{{ postcode }} {{ city }}\n{{ country.name|default }}";
 
+    /**
+     * @param Environment $twig a sandboxed environment, see AddressFormatEnvironment::create();
+     *                          any other environment is replaced by one
+     */
     public function __construct(
         private Environment $twig,
         private TranslatorInterface $translator,
     ) {
+        // address formats are admin input, never render them with the application's environment
+        if (!AddressFormatEnvironment::isSandboxed($this->twig)) {
+            @trigger_error(
+                sprintf('Passing a Twig environment without an enabled sandbox to %s is deprecated, address formats are rendered in %s::create() instead.', self::class, AddressFormatEnvironment::class),
+                \E_USER_DEPRECATED,
+            );
+
+            $this->twig = AddressFormatEnvironment::create();
+        }
     }
 
     public function formatAddress(AddressInterface $address, bool $asHtml = true): string
@@ -57,7 +71,12 @@ class AddressFormatter implements AddressFormatterInterface
             $format = self::DEFAULT_FORMAT;
         }
 
-        $convertedAddress = $this->twig->createTemplate($format)->render($objectVars);
+        try {
+            $convertedAddress = $this->twig->createTemplate($format)->render($objectVars);
+        } catch (TwigError) {
+            // a format with a syntax error or one the sandbox does not allow must not break every page with an address
+            $convertedAddress = $this->twig->createTemplate(self::DEFAULT_FORMAT)->render($objectVars);
+        }
 
         if ($asHtml) {
             $convertedAddress = \nl2br($convertedAddress);

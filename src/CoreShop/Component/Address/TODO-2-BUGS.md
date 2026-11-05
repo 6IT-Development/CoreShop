@@ -55,6 +55,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Packaging
 
 ### CB-06 — The component `composer.json` does not describe its real requirements
+- **Status:** fixed (declarations only) — requires `"php": "^8.4"`, `doctrine/collections` `^1.6 | ^2.0`, `doctrine/orm` `^2.9` (as the root; only for `QueryBuilder` in `CountryRepositoryInterface`, CI-04 can remove it), `symfony/http-foundation` `^7.4`, `symfony/service-contracts` `^3.5` (`ResetInterface`, CB-01), `symfony/translation-contracts` `^3.0` and `twig/twig` `^3.0` (formatter, CC-02), and `six-it/pimcore-source` `^2.1` as in the root. `require-dev` is aligned with the root (`phpstan ^2.1`, `phpstan-doctrine ^2.0`, `phpstan-webmozart-assert ^2.0`). The `4.1-dev` branch alias is kept, as in every package of the monorepo (AddressBundle B-17). `composer validate` passes; the imports were collected with grep, not resolved with a standalone `composer install`.
 - **Where:** `composer.json`
 - **Problems:**
   1. No `"php": "^8.4"` constraint.

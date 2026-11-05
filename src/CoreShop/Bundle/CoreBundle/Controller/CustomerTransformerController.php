@@ -31,6 +31,11 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 
 class CustomerTransformerController extends AdminController
 {
+    /** shorter search terms would match (and hydrate) almost every company */
+    private const DUPLICATE_SEARCH_MIN_LENGTH = 3;
+
+    private const DUPLICATE_SEARCH_LIMIT = 50;
+
     public function checkForNameDuplicatesAction(Request $request): JsonResponse
     {
         $this->checkPermissionsHasOneOf([
@@ -42,11 +47,12 @@ class CustomerTransformerController extends AdminController
         $message = null;
         $objects = [];
         $foundObjects = [];
-        $value = $request->query->get('value', null);
+        $value = trim((string) $request->query->get('value', ''));
 
-        if ($value !== null) {
+        if (mb_strlen($value) >= self::DUPLICATE_SEARCH_MIN_LENGTH) {
             $list = $this->getCompanyRepository()->getList();
-            $list->addConditionParam('name LIKE ?', '%' . $value . '%');
+            $list->addConditionParam('name LIKE ?', '%' . addcslashes($value, '%_\\') . '%');
+            $list->setLimit(self::DUPLICATE_SEARCH_LIMIT);
             $foundObjects = $list->getData();
         }
 
@@ -77,6 +83,14 @@ class CustomerTransformerController extends AdminController
         $message = null;
         $data = null;
 
+        if (!in_array($type, ['customer', 'company'], true)) {
+            return $this->json([
+                'success' => false,
+                'message' => sprintf('Invalid object type "%s".', $type),
+                'data' => null,
+            ]);
+        }
+
         $object = $type === 'customer' ? $this->getCustomerRepository()->find($objectId) : $this->getCompanyRepository()->find($objectId);
 
         if ($type === 'customer') {
@@ -93,7 +107,7 @@ class CustomerTransformerController extends AdminController
         } elseif ($type === 'company') {
             if (!$object instanceof CompanyInterface) {
                 $error = true;
-                $message = 'Invalid Customer Object. Please choose a valid company.';
+                $message = 'Invalid Company Object. Please choose a valid company.';
             } else {
                 $data = [
                     'type' => $type,
@@ -184,11 +198,16 @@ class CustomerTransformerController extends AdminController
         $addressAssignmentType = $this->getParameterFromRequest($request, 'addressAssignmentType');
         $addressAccessType = $this->getParameterFromRequest($request, 'addressAccessType');
 
-        /** @var CustomerInterface $customer */
         $customer = $this->getCustomerRepository()->find($customerId);
-
-        /** @var CompanyInterface $company */
         $company = $this->getCompanyRepository()->find($companyId);
+
+        if (!$customer instanceof CustomerInterface) {
+            return $this->assignmentError('Invalid Customer Object. Please choose a valid customer.', $customerId, $companyId);
+        }
+
+        if (!$company instanceof CompanyInterface) {
+            return $this->assignmentError('Invalid Company Object. Please choose a valid company.', $customerId, $companyId);
+        }
 
         $options = [
             'addressAssignmentType' => $addressAssignmentType,
@@ -201,7 +220,8 @@ class CustomerTransformerController extends AdminController
             $error = true;
             $formError = true;
             $message = $e->getMessage();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // also \Error (e.g. TypeError), so the admin always gets a JSON answer
             $error = true;
             $message = $e->getMessage();
         }
@@ -229,8 +249,11 @@ class CustomerTransformerController extends AdminController
         $addressAccessType = $this->getParameterFromRequest($request, 'addressAccessType');
         $newCompanyName = $this->getParameterFromRequest($request, 'newCompanyName');
 
-        /** @var CustomerInterface $customer */
         $customer = $this->getCustomerRepository()->find($customerId);
+
+        if (!$customer instanceof CustomerInterface) {
+            return $this->assignmentError('Invalid Customer Object. Please choose a valid customer.', $customerId, null);
+        }
 
         $options = [
             'addressAssignmentType' => $addressAssignmentType,
@@ -244,12 +267,13 @@ class CustomerTransformerController extends AdminController
             $this->getCustomerTransformerHelper()->moveCustomerToNewCompany($customer, $options);
 
             $customerId = $customer->getId();
-            $companyId = $customer->getCompany()->getId();
+            $companyId = $customer->getCompany()?->getId();
         } catch (ValidationException $e) {
             $error = true;
             $formError = true;
             $message = $e->getMessage();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // also \Error (e.g. TypeError), so the admin always gets a JSON answer
             $error = true;
             $message = $e->getMessage();
         }
@@ -257,6 +281,17 @@ class CustomerTransformerController extends AdminController
         return $this->json([
             'success' => !$error && !$formError,
             'formError' => $formError,
+            'message' => $message,
+            'customerId' => $customerId,
+            'companyId' => $companyId,
+        ]);
+    }
+
+    private function assignmentError(string $message, int $customerId, ?int $companyId): JsonResponse
+    {
+        return $this->json([
+            'success' => false,
+            'formError' => false,
             'message' => $message,
             'customerId' => $customerId,
             'companyId' => $companyId,

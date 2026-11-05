@@ -108,6 +108,9 @@ coreshop_admin_customer_company_modifier_get_entity_details:
     path: /%coreshop.admin.route.base%/customer-company-modifier/get-entity-details/{type}/{objectId}
     methods: [GET]
     defaults: { _controller: CoreShop\Bundle\CoreBundle\Controller\CustomerTransformerController::getEntityDetailsAction}
+    requirements:
+        type: 'customer|company'
+        objectId: '\d+'
     options:
         expose: true
 

@@ -37,9 +37,29 @@ interface ProductUnitDefinitionsInterface extends ResourceInterface
      */
     public function getDefaultUnitDefinition();
 
+    /**
+     * Makes the definition of that unit the default with conversion rate 1.0; when the default
+     * unit changes to a unit that already has a definition, the other rates are converted to the
+     * new base.
+     *
+     * @throws \InvalidArgumentException when the definition has no unit
+     *
+     * @return ProductUnitDefinitionInterface the definition that is the default now (an existing
+     *                                        definition of the same unit, or the argument)
+     */
     public function setDefaultUnitDefinition(ProductUnitDefinitionInterface $defaultUnitDefinition);
 
+    /**
+     * Definitions are matched by unit (object, id, or name for unsaved units): when one for the
+     * same unit exists, it takes precision and conversion rate (not for the default) of the argument.
+     *
+     * @return ProductUnitDefinitionInterface the definition that is in the collection now
+     */
     public function addUnitDefinition(ProductUnitDefinitionInterface $productUnitDefinition);
+
+    /**
+     * Removing the default definition also clears the default.
+     */
 
     public function removeUnitDefinition(ProductUnitDefinitionInterface $productUnitDefinition);
 
@@ -58,8 +78,16 @@ interface ProductUnitDefinitionsInterface extends ResourceInterface
      */
     public function getUnitDefinition(string $identifier);
 
+    /**
+     * A definition for the default unit is ignored.
+     *
+     * @return ProductUnitDefinitionInterface|null the definition in the collection, or null when ignored
+     */
     public function addAdditionalUnitDefinition(ProductUnitDefinitionInterface $unitDefinition);
 
+    /**
+     * The default definition is never removed this way.
+     */
     public function removeAdditionalUnitDefinition(ProductUnitDefinitionInterface $unitDefinition);
 
     /**

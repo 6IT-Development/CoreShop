@@ -21,9 +21,13 @@ namespace CoreShop\Bundle\FrontendBundle\Command;
 use CoreShop\Bundle\CoreBundle\Command\AbstractInstallCommand;
 use CoreShop\Bundle\CoreBundle\Installer\Checker\CommandDirectoryChecker;
 use CoreShop\Bundle\FrontendBundle\Installer\FrontendInstallerInterface;
+use CoreShop\Bundle\FrontendBundle\Installer\TemplatesInstaller;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final class InstallFrontendCommand extends AbstractInstallCommand
@@ -32,6 +36,7 @@ final class InstallFrontendCommand extends AbstractInstallCommand
         KernelInterface $kernel,
         CommandDirectoryChecker $directoryChecker,
         protected FrontendInstallerInterface $frontendInstaller,
+        private ?string $twigDefaultPath = null,
     ) {
         parent::__construct($kernel, $directoryChecker);
     }
@@ -44,27 +49,59 @@ final class InstallFrontendCommand extends AbstractInstallCommand
             ->setHelp(
                 <<<EOT
 The <info>%command.name%</info> command install CoreShop Frontend Controllers/Templates/Configs.
+
+<info>--templatePath</info> is relative to the project directory (or absolute) and
+must be Twig's default path or a directory inside it. The templates are
+copied to <comment><templatePath>/coreshop</comment>, and a missing
+<comment>core_shop_frontend.view_prefix</comment> is added to
+<comment>config/packages/coreshop_frontend.yaml</comment>. Existing files are kept.
 EOT
             )
-            ->addOption('templatePath', null, InputOption::VALUE_OPTIONAL, 'Path to the template directory', 'templates')
+            ->addOption('templatePath', null, InputOption::VALUE_REQUIRED, 'Path to the template directory (relative to the project directory, inside Twig\'s default path)', 'templates')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $coreBundle = $this->kernel->getBundle('CoreShopFrontendBundle');
-        $frontendBundlePath = $coreBundle->getPath();
+        $io = new SymfonyStyle($input, $output);
 
+        $frontendBundlePath = $this->kernel->getBundle('CoreShopFrontendBundle')->getPath();
         $rootPath = $this->kernel->getProjectDir();
 
-        $templatePath = $rootPath . '/' . $input->getOption('templatePath');
+        $templatePathOption = $input->getOption('templatePath');
 
-        $this->frontendInstaller->installFrontend(
-            $frontendBundlePath,
-            $rootPath,
-            $templatePath,
-        );
+        if (!is_string($templatePathOption) || '' === trim($templatePathOption)) {
+            $io->error('The --templatePath option needs a value.');
 
-        return 0;
+            return Command::INVALID;
+        }
+
+        $templatePath = Path::makeAbsolute($templatePathOption, $rootPath);
+
+        try {
+            $viewPrefix = TemplatesInstaller::resolveViewPrefix(
+                $templatePath,
+                TemplatesInstaller::getDefaultTwigPath($rootPath, $this->twigDefaultPath),
+            );
+
+            $this->frontendInstaller->installFrontend(
+                $frontendBundlePath,
+                $rootPath,
+                $templatePath,
+            );
+        } catch (\Throwable $exception) {
+            $io->error($exception->getMessage());
+
+            return Command::FAILURE;
+        }
+
+        $io->listing([
+            sprintf('Templates: %s (existing files kept)', Path::join($templatePath, TemplatesInstaller::VIEW_PREFIX)),
+            sprintf('view_prefix: %s (in config/packages/coreshop_frontend.yaml, unless already set)', $viewPrefix),
+            'Assets: public/coreshop/static',
+        ]);
+        $io->success('CoreShop frontend installed.');
+
+        return Command::SUCCESS;
     }
 }

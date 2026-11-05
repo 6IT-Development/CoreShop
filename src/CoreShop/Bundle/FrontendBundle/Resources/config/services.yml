@@ -6,6 +6,7 @@ services:
         parent: CoreShop\Bundle\CoreBundle\Command\InstallResourcesCommand
         arguments:
             $frontendInstaller: '@CoreShop\Bundle\FrontendBundle\Installer\FrontendInstallerInterface'
+            $twigDefaultPath: '%twig.default_path%'
         tags:
             - { name: console.command, command: coreshop:frontend:install }
 

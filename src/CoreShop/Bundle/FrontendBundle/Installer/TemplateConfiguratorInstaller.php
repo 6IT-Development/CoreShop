@@ -23,31 +23,86 @@ use Symfony\Component\Yaml\Yaml;
 
 class TemplateConfiguratorInstaller implements FrontendInstallerInterface
 {
+    /**
+     * @param string|null $twigDefaultPath Twig's default_path (null: <project>/templates)
+     */
+    public function __construct(
+        private ?string $twigDefaultPath = null,
+    ) {
+    }
+
+    /**
+     * Adds core_shop_frontend.view_prefix to config/packages/coreshop_frontend.yaml
+     * when it is not set yet. An existing file is only changed by inserting
+     * that one line (or appending the section), so its comments, tags and
+     * formatting are kept.
+     */
     public function installFrontend(string $frontendBundlePath, string $rootPath, string $templatePath): void
     {
         $configFile = $rootPath . '/config/packages/coreshop_frontend.yaml';
 
-        $viewPrefix = TemplatesInstaller::VIEW_PREFIX;
-        $configContent = <<<CONFIG
-core_shop_frontend:
-    view_prefix: '$viewPrefix'
-CONFIG;
+        $viewPrefix = TemplatesInstaller::resolveViewPrefix(
+            $templatePath,
+            TemplatesInstaller::getDefaultTwigPath($rootPath, $this->twigDefaultPath),
+        );
+        $prefixLine = 'view_prefix: ' . Yaml::dump($viewPrefix);
+
         $fs = new Filesystem();
         if (!file_exists($configFile)) {
-            $fs->dumpFile($configFile, $configContent);
+            $fs->dumpFile($configFile, "core_shop_frontend:\n    " . $prefixLine . "\n");
 
             return;
         }
 
-        $configContent = file_get_contents($configFile);
+        $configContent = (string) file_get_contents($configFile);
 
-        $content = Yaml::parse($configContent);
+        // Read only: custom tags (!php/const, ...) must not fail the check.
+        $content = Yaml::parse($configContent, Yaml::PARSE_CUSTOM_TAGS);
+        $section = is_array($content) ? ($content['core_shop_frontend'] ?? null) : null;
 
-        if (!isset($content['core_shop_frontend']['view_prefix'])) {
-            $content['core_shop_frontend']['view_prefix'] = $viewPrefix;
+        if (is_array($section) && array_key_exists('view_prefix', $section)) {
+            return;
         }
 
-        $configContent = Yaml::dump($content, 4, 2);
-        $fs->dumpFile($configFile, $configContent);
+        $fs->dumpFile($configFile, $this->addViewPrefix($configContent, $prefixLine, $configFile));
+    }
+
+    private function addViewPrefix(string $configContent, string $prefixLine, string $configFile): string
+    {
+        $lines = preg_split('/\R/', $configContent);
+
+        foreach ($lines as $index => $line) {
+            if (!preg_match('/^core_shop_frontend:\s*(?<value>[^#]*?)\s*(#.*)?$/', $line, $match)) {
+                continue;
+            }
+
+            if (!in_array($match['value'], ['', '~', 'null', '{}'], true)) {
+                throw new \RuntimeException(sprintf(
+                    'Could not add "core_shop_frontend.%s" to "%s": the section is not a block mapping. Please add it manually.',
+                    $prefixLine,
+                    $configFile,
+                ));
+            }
+
+            $indent = '    ';
+            for ($next = $index + 1, $count = count($lines); $next < $count; ++$next) {
+                if (preg_match('/^(\s+)\S/', $lines[$next], $indentMatch) && !str_starts_with(ltrim($lines[$next]), '#')) {
+                    $indent = $indentMatch[1];
+
+                    break;
+                }
+
+                if ('' !== trim($lines[$next]) && !str_starts_with(ltrim($lines[$next]), '#')) {
+                    break;
+                }
+            }
+
+            $lines[$index] = 'core_shop_frontend:' . (isset($match[2]) ? ' ' . $match[2] : '');
+            array_splice($lines, $index + 1, 0, [$indent . $prefixLine]);
+
+            return implode("\n", $lines);
+        }
+
+        return rtrim($configContent) . ('' === trim($configContent) ? '' : "\n\n") . "core_shop_frontend:\n    " . $prefixLine . "\n";
     }
 }

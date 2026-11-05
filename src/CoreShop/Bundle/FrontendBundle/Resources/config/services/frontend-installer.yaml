@@ -8,10 +8,14 @@ services:
       - { name: coreshop.registry, type_hint: frontendInstallers }
 
   CoreShop\Bundle\FrontendBundle\Installer\TemplatesInstaller:
+    arguments:
+      $twigDefaultPath: '%twig.default_path%'
     tags:
       - { name: coreshop.frontend.installer }
 
   CoreShop\Bundle\FrontendBundle\Installer\TemplateConfiguratorInstaller:
+    arguments:
+      $twigDefaultPath: '%twig.default_path%'
     tags:
       - { name: coreshop.frontend.installer }
 

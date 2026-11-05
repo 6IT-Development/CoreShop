@@ -73,6 +73,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Models
 
 ### B-10 — (reproduced, latent) `AdjustableTrait::getNeutralAdjustmentsTotal(null)` returns the **non-neutral** total
+- **Status:** fixed — `getNeutralAdjustmentsTotal(null)` sums the neutral adjustments instead of returning the stored (non-neutral) totals. Checked: non-neutral −1000 + neutral −500 → −500.
 - **Where:** `Model/AdjustableTrait.php:192-200` (compare `recalculateAdjustmentsTotal()` at `:217-222`).
 - **Problem:** with `$type === null` it returns `getPimcoreAdjustmentTotalGross/Net()`, which is the sum of the non-neutral adjustments. Reproduced: non-neutral −1000 + neutral −500 → returns −1000 (should be −500). The only caller (`Component/Core/CartItem/Rule/Applier/CartItemRuleApplier.php:81-83`) passes a type; any caller adding this to `getTotal()` would count discounts twice.
 - **Fix:** with `null`, iterate `getAdjustments()` and sum only neutral ones. Add a unit test.

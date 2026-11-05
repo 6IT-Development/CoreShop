@@ -191,14 +191,7 @@ trait AdjustableTrait
 
     public function getNeutralAdjustmentsTotal(?string $type = null, bool $withTax = true): int
     {
-        if (null === $type) {
-            if ($withTax) {
-                return $this->getPimcoreAdjustmentTotalGross() ?: 0;
-            }
-
-            return $this->getPimcoreAdjustmentTotalNet() ?: 0;
-        }
-
+        // The stored adjustment totals only hold the non-neutral adjustments, so always sum up
         $total = 0;
         foreach ($this->getAdjustments($type) as $adjustment) {
             if ($adjustment->getNeutral()) {

@@ -197,6 +197,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 ## Context
 
 ### B-29 — (latent) `FixedCartContext` has the highest priority, is a shared service and is never reset
+- **Status:** fixed — `FixedCartContext` implements `ResetInterface` and is tagged `kernel.reset` (`OrderBundle/Resources/config/services/context.yml`), so the cart is cleared between requests / messages; `setCart()` accepts `null` and `clearCart()` was added, as in `FixedCustomerContext` (CustomerBundle TODO-2 **B-04**). `symfony/service-contracts` is now required in the component's `composer.json`. The priority (−100, before session and customer) was not changed. Checked: `reset()` and `setCart(null)` make `getCart()` throw `CartNotFoundException`.
 - **Where:** `Context/FixedCartContext.php:23-45`; `OrderBundle/Resources/config/services/context.yml:5-7` (priority −100, highest in the compiled composite: fixed −100, session −555, customer −777, store −999).
 - **Problem:** nothing calls `setCart()` today. Once project code does (admin order creation, messenger handler, import), that cart wins over session and customer contexts for the rest of the process; under a worker runtime (FrankenPHP / RoadRunner workers, `messenger:consume`) every later request / message in that worker gets that cart → cart takeover across customers. `setCart()` takes a non-null argument, so it cannot be cleared.
 - **Fix:** implement `ResetInterface` (`kernel.reset` tag), allow `setCart(null)` / add `clear()`, document it as request scoped.

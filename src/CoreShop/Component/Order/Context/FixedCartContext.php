@@ -19,8 +19,14 @@ declare(strict_types=1);
 namespace CoreShop\Component\Order\Context;
 
 use CoreShop\Component\Order\Model\OrderInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-final class FixedCartContext implements CartContextInterface
+/**
+ * Holds a cart set explicitly (admin order creation, CLI, workers acting on a cart). It is asked before the
+ * session and customer contexts, so it is request scoped: it is reset between requests (kernel.reset), and a
+ * cart set once does not leak into later requests or messages of the same process.
+ */
+final class FixedCartContext implements CartContextInterface, ResetInterface
 {
     private ?OrderInterface $cart = null;
 
@@ -38,8 +44,18 @@ final class FixedCartContext implements CartContextInterface
         return $this->getCart();
     }
 
-    public function setCart(OrderInterface $cart): void
+    public function setCart(?OrderInterface $cart): void
     {
         $this->cart = $cart;
+    }
+
+    public function clearCart(): void
+    {
+        $this->cart = null;
+    }
+
+    public function reset(): void
+    {
+        $this->clearCart();
     }
 }

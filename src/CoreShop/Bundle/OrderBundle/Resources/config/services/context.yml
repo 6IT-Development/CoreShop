@@ -5,6 +5,7 @@ services:
     CoreShop\Component\Order\Context\FixedCartContext:
         tags:
             - { name: coreshop.context.cart, priority: -100 }
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Component\Order\Context\CartContext:
         decorates: 'coreshop.storage_list.context.factory.order'

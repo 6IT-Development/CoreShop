@@ -54,8 +54,7 @@
                         "permissions": null,
                         "children": [
                             {
-                                "fieldtype": "coreShopRelations",
-                                "height": "400",
+                                "fieldtype": "coreShopRelation",
                                 "width": "",
                                 "relationType": true,
                                 "pathFormatterClass": "",

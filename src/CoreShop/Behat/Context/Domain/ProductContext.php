@@ -24,6 +24,8 @@ use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
 use CoreShop\Component\Core\Product\TaxedProductPriceCalculatorInterface;
 use CoreShop\Component\Product\Calculator\ProductPriceCalculatorInterface;
+use CoreShop\Component\Product\Exception\NoDiscountPriceFoundException;
+use CoreShop\Component\Product\Exception\NoRetailPriceFoundException;
 use CoreShop\Component\Product\Model\ProductUnitInterface;
 use CoreShop\Component\Taxation\Model\TaxRuleGroupInterface;
 use Webmozart\Assert\Assert;
@@ -55,7 +57,14 @@ final class ProductContext implements Context
      */
     public function productsDiscountPriceShouldBe(ProductInterface $product, int $price): void
     {
-        Assert::same($price, $this->productPriceCalculator->getDiscountPrice($product, $this->shopperContext->getContext()));
+        try {
+            $discountPrice = $this->productPriceCalculator->getDiscountPrice($product, $this->shopperContext->getContext());
+        } catch (NoDiscountPriceFoundException) {
+            // "0" in a scenario means "no discount price"
+            $discountPrice = 0;
+        }
+
+        Assert::same($price, $discountPrice);
     }
 
     /**
@@ -65,7 +74,14 @@ final class ProductContext implements Context
      */
     public function productsRetailPriceShouldBe(ProductInterface $product, int $price): void
     {
-        Assert::same($price, $this->productPriceCalculator->getRetailPrice($product, $this->shopperContext->getContext()));
+        try {
+            $retailPrice = $this->productPriceCalculator->getRetailPrice($product, $this->shopperContext->getContext());
+        } catch (NoRetailPriceFoundException) {
+            // "0" in a scenario means "no retail price"
+            $retailPrice = 0;
+        }
+
+        Assert::same($price, $retailPrice);
     }
 
     /**

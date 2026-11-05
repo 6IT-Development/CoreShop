@@ -8,6 +8,8 @@ services:
   CoreShop\Component\Order\OrderEditPossible:
     arguments:
       - '%coreshop.order.allow_edit%'
+      - '@coreshop.repository.order_invoice'
+      - '@coreshop.repository.order_shipment'
 
   CoreShop\Bundle\OrderBundle\Form\Type\OrderType:
     arguments:

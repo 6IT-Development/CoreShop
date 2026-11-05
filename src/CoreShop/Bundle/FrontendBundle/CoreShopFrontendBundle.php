@@ -68,11 +68,11 @@ final class CoreShopFrontendBundle extends AbstractPimcoreBundle implements Depe
 
         if (class_exists(InstalledVersions::class)) {
             if (InstalledVersions::isInstalled('coreshop/core-shop')) {
-                return InstalledVersions::getPrettyVersion('coreshop/core-shop');
+                return InstalledVersions::getPrettyVersion('coreshop/core-shop') ?? '';
             }
 
             if (InstalledVersions::isInstalled($bundleName)) {
-                return InstalledVersions::getPrettyVersion($bundleName);
+                return InstalledVersions::getPrettyVersion($bundleName) ?? '';
             }
         }
 

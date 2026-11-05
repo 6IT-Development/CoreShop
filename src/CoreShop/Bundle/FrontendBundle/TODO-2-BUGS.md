@@ -170,6 +170,7 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Fix direction:** in the custom-service branch, `setAlias($serviceName, $controllerClass)->setPublic(true)` and add the `controller.service_arguments` tag to the custom definition instead of duplicating it. Store an explicit `key => default service id` map instead of building class names. See TODO-3 I-19.
 
 ### B-22 — `CoreShopFrontendBundle::getComposerVersion()` can return `null` from a `string` method
+- **Status:** fixed — both `InstalledVersions::getPrettyVersion()` calls in `getComposerVersion()` fall back to `''` with `?? ''`, so a path or replaced install without a pretty version no longer throws a `TypeError` in the bundle list or in `getVersion()`.
 - **Where:** `CoreShopFrontendBundle.php:65-80`.
 - **Problem:** `InstalledVersions::getPrettyVersion()` returns `?string`. It is `null` for some path or replaced installs, and then the method throws a `TypeError`. That shows up in Pimcore's bundle-list admin view, and in `getVersion()` (`:56-63`), which concatenates the result.
 - **Fix direction:** `return InstalledVersions::getPrettyVersion(...) ?? '';` (in both branches).

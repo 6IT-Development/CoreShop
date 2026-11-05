@@ -23,14 +23,31 @@ use Pimcore\Model\DataObject\Listing;
 
 abstract class Category extends AbstractPimcoreModel implements CategoryInterface
 {
+    /**
+     * The published categories whose parent category is this one (the `parentCategory` relation
+     * that `findChildCategories()` and the first-level lookup use), sorted like the Pimcore tree
+     * of this category. Folders, variants and objects of other classes are not included.
+     */
     public function getChildCategories(): Listing
     {
-        return $this->getChildren();
+        if (null === $this->getId()) {
+            $list = new Listing();
+            $list->setObjects([]);
+
+            return $list;
+        }
+
+        $list = static::getList();
+        $list->setCondition('parentCategory__id = ?', [$this->getId()]);
+        $list->setOrderKey($this->getChildrenSortBy());
+        $list->setOrder($this->getChildrenSortOrder());
+
+        return $list;
     }
 
     public function hasChildCategories(): bool
     {
-        return $this->getChildren()->getTotalCount() > 0;
+        return $this->getChildCategories()->getTotalCount() > 0;
     }
 
     public function getNameForSlug(?string $language = null): ?string
@@ -38,17 +55,26 @@ abstract class Category extends AbstractPimcoreModel implements CategoryInterfac
         return $this->getName($language);
     }
 
+    /**
+     * This category and its published parent categories (by `parentCategory`), root first.
+     * Unpublished parents are skipped; the walk stops at a cycle.
+     */
     public function getHierarchy(): array
     {
-        $hierarchy = [];
+        $hierarchy = [$this];
+        $visited = [self::visitKey($this) => true];
 
-        $category = $this;
+        $category = $this->getParentCategory();
 
-        do {
-            $hierarchy[] = $category;
+        while ($category instanceof CategoryInterface && !isset($visited[self::visitKey($category)])) {
+            $visited[self::visitKey($category)] = true;
 
-            $category = $category->getParent();
-        } while ($category instanceof self);
+            if ($category->isPublished()) {
+                $hierarchy[] = $category;
+            }
+
+            $category = $category->getParentCategory();
+        }
 
         /**
          * @var CategoryInterface[] $hierarchy
@@ -56,5 +82,10 @@ abstract class Category extends AbstractPimcoreModel implements CategoryInterfac
         $hierarchy = array_reverse($hierarchy);
 
         return $hierarchy;
+    }
+
+    private static function visitKey(CategoryInterface $category): string
+    {
+        return null !== $category->getId() ? 'id:' . $category->getId() : 'obj:' . spl_object_id($category);
     }
 }

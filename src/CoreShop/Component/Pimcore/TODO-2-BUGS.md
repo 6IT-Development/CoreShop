@@ -146,6 +146,13 @@ Related files: [TODO-1-CRITICAL.md](TODO-1-CRITICAL.md), [TODO-3-IMPROVEMENTS.md
 - **Latent:** CoreShop's product and category implement `KeyableSluggableInterface`, so the key always saves them; a project class that implements only `SluggableInterface` cannot be created in the admin until a name is entered for **every** valid language (the exception comes from the first language without a name).
 - **Fix:** always fall back to `getKey()` (it is part of `SluggableInterface` anyway, TODO-3 **PI-05**), then id; in the listener / generator skip the language (log at debug level) instead of aborting the save. Put object id, class and locale into the exception message.
 
+### PB-31 — `DataObjectSlugGenerator` reads the stored slugs through the fallback language: a language without a slug of its own keeps the fallback language's slugs and the save fails with a unique constraint violation — (seen in a project, e.g. `Slug "/hu_HU/seiko" is already used by object …`) (not reproduced here) (new)
+- **Status:** fixed (merged from `release/2.0`, commit `87477db17`) — `generateSlugs()` reads `$sluggable->getSlug($language)` with `Localizedfield::setGetFallbackValues(false)` (restored in a `finally`), so only the language's own slugs are taken as existing slugs and a language without a slug gets its generated one. Reading elsewhere (`getSlug()` for the storefront) still falls back.
+- **Where:** `Slug/DataObjectSlugGenerator.php:46-49` (`$existingSlugs = InheritanceHelper::useInheritedValues(fn () => $sluggable->getSlug($language), false)`).
+- **Problem:** with a fallback language configured, `getSlug($language)` returns the fallback language's slugs when `$language` has none. The generator treats them as that language's existing slugs, keeps them and writes them again under the second language, so the same slug (same path, same site) is stored twice.
+- **Impact:** every save of such an object fails with the unique constraint violation of the slug table, so objects without a slug in every language (new languages, imports, objects created in one language) cannot be saved at all.
+- **Fix:** read the existing slugs with the fallback values off (done). Related, not changed: **PB-06** / **PB-12** touch the same `$existingSlugs` lookup, and **PI-05** (the `try/finally` around global Pimcore switches, see also **PB-15**).
+
 ---
 
 # `DataObject/` scan (added 2026-10-29)

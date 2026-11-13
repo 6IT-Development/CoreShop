@@ -21,6 +21,7 @@ namespace CoreShop\Component\Pimcore\Slug;
 use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Data\UrlSlug;
+use Pimcore\Model\DataObject\Localizedfield;
 use Pimcore\Model\Site;
 use Pimcore\Tool;
 
@@ -43,10 +44,19 @@ class DataObjectSlugGenerator implements DataObjectSlugGeneratorInterface
                 new UrlSlug($fallbackSlug, 0),
             ];
             $actualSlugs = [];
-            $existingSlugs = InheritanceHelper::useInheritedValues(
-                fn () => $sluggable->getSlug($language),
-                false,
-            );
+            // the own slugs of the language: through the fallback language a missing slug would be the fallback
+            // language's slug, kept here and saved twice (a unique constraint violation on every save)
+            $getFallbackValues = Localizedfield::getGetFallbackValues();
+            Localizedfield::setGetFallbackValues(false);
+
+            try {
+                $existingSlugs = InheritanceHelper::useInheritedValues(
+                    fn () => $sluggable->getSlug($language),
+                    false,
+                );
+            } finally {
+                Localizedfield::setGetFallbackValues($getFallbackValues);
+            }
 
             foreach ($sites as $site) {
                 $siteSlug = $this->generator->generateSlugsForSite($sluggable, $language, $site);

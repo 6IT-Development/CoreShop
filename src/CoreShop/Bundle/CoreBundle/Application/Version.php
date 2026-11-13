@@ -22,11 +22,11 @@ use Composer\InstalledVersions;
 
 final class Version
 {
-    public const MAJOR_VERSION = '4';
+    public const MAJOR_VERSION = '2';
 
-    public const MINOR_VERSION = '1';
+    public const MINOR_VERSION = '0';
 
-    public const RELEASE_VERSION = '0';
+    public const RELEASE_VERSION = '5';
 
     public const EXTRA_VERSION = '';
 

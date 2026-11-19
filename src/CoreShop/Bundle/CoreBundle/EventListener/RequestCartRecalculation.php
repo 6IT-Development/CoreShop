@@ -21,11 +21,17 @@ namespace CoreShop\Bundle\CoreBundle\EventListener;
 use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
 use CoreShop\Component\Core\Context\ShopperContextInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
+use Doctrine\DBAL\Exception\DriverException;
 use Pimcore\Http\RequestHelper;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 final class RequestCartRecalculation
 {
+    /**
+     * MariaDB: "Record has changed since last read", the row was updated after this transaction's snapshot.
+     */
+    private const RECORD_CHANGED_SINCE_LAST_READ = 1020;
+
     public function __construct(
         private CartManagerInterface $cartManager,
         private ShopperContextInterface $shopperContext,
@@ -61,7 +67,15 @@ final class RequestCartRecalculation
             $updateTime = $this->configurationService->get('SYSTEM.PRICE_RULE.UPDATE');
 
             if (null !== $updateTime && $updateTime > $cart->getModificationDate()) {
-                $this->cartManager->persistCart($cart);
+                try {
+                    $this->cartManager->persistCart($cart);
+                } catch (DriverException $exception) {
+                    if ($exception->getCode() !== self::RECORD_CHANGED_SINCE_LAST_READ) {
+                        throw $exception;
+                    }
+
+                    // A parallel request of the same customer is saving (and so recalculating) this cart.
+                }
             }
         }
     }

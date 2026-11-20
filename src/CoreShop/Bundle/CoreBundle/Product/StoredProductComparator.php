@@ -22,8 +22,11 @@ use CoreShop\Component\Core\Model\ProductInterface;
 use CoreShop\Component\Core\Model\ProductStoreValuesInterface;
 use CoreShop\Component\Pimcore\DataObject\InheritanceHelper;
 use Doctrine\DBAL\Connection;
+use Pimcore\Model\DataObject\ClassDefinition\Data\Relations\AbstractRelations;
 use Pimcore\Model\DataObject\ClassDefinition\Data\ResourcePersistenceAwareInterface;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\Element\ElementInterface;
+use Pimcore\Model\Element\Service as ElementService;
 
 /**
  * Compares a product that is being saved (call it from preUpdate) with what is stored. Pimcore's dirty detection
@@ -93,12 +96,21 @@ final class StoredProductComparator
     }
 
     /**
-     * Fields that are stored in a column of the object_store table (input, numeric, checkbox, select, money, single
-     * relations of CoreShop...). Other field types are ignored, list them in a configuration only if they have one.
+     * Fields that are stored in a column of the object_store table (input, numeric, checkbox, select, money, CoreShop
+     * resources...) and relation fields (categories, manufacturer...). Other field types (localized fields, field
+     * collections...) are ignored, as are fields the product class does not have.
      *
      * @param list<string> $fieldNames
      */
     public function haveFieldsChanged(Concrete $product, array $fieldNames): bool
+    {
+        return $this->haveColumnsChanged($product, $fieldNames) || $this->haveRelationsChanged($product, $fieldNames);
+    }
+
+    /**
+     * @param list<string> $fieldNames
+     */
+    private function haveColumnsChanged(Concrete $product, array $fieldNames): bool
     {
         $current = InheritanceHelper::useInheritedValues(fn () => $this->columnValues($product, $fieldNames), false);
         if ($current === []) {
@@ -120,6 +132,52 @@ final class StoredProductComparator
 
         foreach ($current as $column => $value) {
             if (self::comparable($stored[$column] ?? null) !== self::comparable($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The own relations of the product (an inherited value is stored at the parent), compared as a set of elements:
+     * a new order of the same categories does not change a price.
+     *
+     * @param list<string> $fieldNames
+     */
+    private function haveRelationsChanged(Concrete $product, array $fieldNames): bool
+    {
+        foreach ($fieldNames as $fieldName) {
+            $definition = $product->getClass()->getFieldDefinition($fieldName);
+            if (!$definition instanceof AbstractRelations || !method_exists($product, 'get' . ucfirst($fieldName))) {
+                continue;
+            }
+
+            $value = InheritanceHelper::useInheritedValues(fn () => $product->{'get' . ucfirst($fieldName)}(), false);
+            $current = [];
+            foreach (is_array($value) ? $value : [$value] as $element) {
+                if ($element instanceof ElementInterface) {
+                    $current[] = ElementService::getElementType($element) . ':' . $element->getId();
+                }
+            }
+
+            $stored = array_map(
+                static fn (array $row): string => $row['type'] . ':' . $row['dest_id'],
+                $this->db->createQueryBuilder()
+                    ->select('dest_id', 'type')
+                    ->from('object_relations_' . $product->getClassId())
+                    ->where('src_id = :id')
+                    ->andWhere('fieldname = :fieldName')
+                    ->andWhere('ownertype = :ownerType')
+                    ->setParameter('id', $product->getId())
+                    ->setParameter('fieldName', $fieldName)
+                    ->setParameter('ownerType', 'object')
+                    ->fetchAllAssociative(),
+            );
+
+            sort($current);
+            sort($stored);
+            if ($current !== $stored) {
                 return true;
             }
         }

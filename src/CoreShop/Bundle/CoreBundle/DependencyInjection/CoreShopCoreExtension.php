@@ -76,6 +76,9 @@ final class CoreShopCoreExtension extends AbstractModelExtension implements Prep
         }
 
         $container->setParameter('coreshop.after_logout_redirect_route', $configs['after_logout_redirect_route']);
+        $container->setParameter('coreshop.cart_recalculation.lock', $configs['cart_recalculation']['lock']);
+        $container->setParameter('coreshop.cart_recalculation.product_fields', $configs['cart_recalculation']['product_fields']);
+        $container->setParameter('coreshop.cart_availability.product_fields', $configs['cart_availability']['product_fields']);
 
         $bundles = $container->getParameter('kernel.bundles');
 

@@ -45,8 +45,39 @@ final class Configuration implements ConfigurationInterface
         $this->addModelsSection($rootNode);
         $this->addPimcoreResourcesSection($rootNode);
         $this->addCheckoutConfigurationSection($rootNode);
+        $this->addCartRecalculationSection($rootNode);
 
         return $treeBuilder;
+    }
+
+    private function addCartRecalculationSection(ArrayNodeDefinition $node): void
+    {
+        $node->children()
+            ->arrayNode('cart_recalculation')
+                ->addDefaultsIfNotSet()
+                ->children()
+                    ->booleanNode('lock')
+                        ->info('One request per cart recalculates, a parallel one waits for it (Symfony Lock, lock.factory).')
+                        ->defaultFalse()
+                    ->end()
+                    ->arrayNode('product_fields')
+                        ->info('Product fields (with an object_store column) whose change makes every cart recalculate, besides the published state and the store values.')
+                        ->scalarPrototype()->end()
+                        ->defaultValue(['taxRule'])
+                    ->end()
+                ->end()
+            ->end()
+            ->arrayNode('cart_availability')
+                ->addDefaultsIfNotSet()
+                ->children()
+                    ->arrayNode('product_fields')
+                        ->info('Product fields (with an object_store column) whose change asks CartProductAvailabilityCheckerInterface again, besides the published state.')
+                        ->scalarPrototype()->end()
+                        ->defaultValue([])
+                    ->end()
+                ->end()
+            ->end()
+        ->end();
     }
 
     private function addModelsSection(ArrayNodeDefinition $node): void

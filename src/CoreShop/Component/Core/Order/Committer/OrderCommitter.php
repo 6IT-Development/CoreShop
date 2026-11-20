@@ -21,6 +21,7 @@ namespace CoreShop\Component\Core\Order\Committer;
 use Carbon\Carbon;
 use CoreShop\Bundle\WorkflowBundle\Applier\StateMachineApplierInterface;
 use CoreShop\Component\Address\Model\AddressInterface;
+use CoreShop\Component\Core\Model\NoticeableCartInterface;
 use CoreShop\Component\Order\Committer\OrderCommitterInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
@@ -70,6 +71,11 @@ class OrderCommitter implements OrderCommitterInterface
         $order->setShippingState(OrderShipmentStates::STATE_NEW);
         $order->setPaymentState(OrderPaymentStates::STATE_NEW);
         $order->setInvoiceState(OrderInvoiceStates::STATE_NEW);
+
+        // the changes of the cart were shown to the customer up to here, they do not belong to the order
+        if ($order instanceof NoticeableCartInterface) {
+            $order->setCartNotices(null);
+        }
 
         $this->cartManager->persistCart($order);
 

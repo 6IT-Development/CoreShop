@@ -4290,6 +4290,24 @@
                                 "invisible": true,
                                 "visibleGridView": false,
                                 "visibleSearch": false
+                            },
+                            {
+                                "fieldtype": "coreShopSerializedData",
+                                "phpdocType": null,
+                                "name": "cartNotices",
+                                "title": "coreshop.order.cart_notices",
+                                "tooltip": "",
+                                "mandatory": false,
+                                "noteditable": true,
+                                "index": false,
+                                "locked": false,
+                                "style": "",
+                                "permissions": null,
+                                "datatype": "data",
+                                "relationType": false,
+                                "invisible": true,
+                                "visibleGridView": false,
+                                "visibleSearch": false
                             }
                         ],
                         "locked": false,

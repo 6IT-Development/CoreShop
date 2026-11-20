@@ -23,7 +23,7 @@ use CoreShop\Component\Order\Model\Order as BaseOrder;
 use CoreShop\Component\Resource\Exception\ImplementedByPimcoreException;
 use CoreShop\Component\Shipping\Model\CarrierAwareTrait;
 
-abstract class Order extends BaseOrder implements OrderInterface
+abstract class Order extends BaseOrder implements OrderInterface, NoticeableCartInterface
 {
     use CarrierAwareTrait;
 
@@ -33,6 +33,16 @@ abstract class Order extends BaseOrder implements OrderInterface
     }
 
     public function setName(?string $name)
+    {
+        throw new ImplementedByPimcoreException(__CLASS__, __METHOD__);
+    }
+
+    public function getCartNotices()
+    {
+        throw new ImplementedByPimcoreException(__CLASS__, __METHOD__);
+    }
+
+    public function setCartNotices($cartNotices)
     {
         throw new ImplementedByPimcoreException(__CLASS__, __METHOD__);
     }

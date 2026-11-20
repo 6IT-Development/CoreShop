@@ -19,6 +19,10 @@ services:
             - { name: kernel.event_listener, event: coreshop.cart_price_rule.post_delete, method: storeConfigurationThatPriceRulesChanged }
             - { name: kernel.event_listener, event: coreshop.product_price_rule.post_save, method: storeConfigurationThatPriceRulesChanged }
             - { name: kernel.event_listener, event: coreshop.product_price_rule.post_delete, method: storeConfigurationThatPriceRulesChanged }
+            - { name: kernel.event_listener, event: coreshop.product_specific_price_rule.post_save, method: storeConfigurationThatPriceRulesChanged }
+            - { name: kernel.event_listener, event: coreshop.product_specific_price_rule.post_delete, method: storeConfigurationThatPriceRulesChanged }
+            - { name: kernel.event_listener, event: coreshop.product_quantity_price_rule.post_save, method: storeConfigurationThatPriceRulesChanged }
+            - { name: kernel.event_listener, event: coreshop.product_quantity_price_rule.post_delete, method: storeConfigurationThatPriceRulesChanged }
 
     CoreShop\Bundle\CoreBundle\EventListener\Order\OrderDocumentWkhtmlPrintOptionsListener:
         arguments:
@@ -37,6 +41,10 @@ services:
         arguments:
             - '@doctrine.dbal.default_connection'
 
+    CoreShop\Bundle\CoreBundle\Product\PricingChangeTracker:
+        tags:
+            - { name: doctrine.event_listener, event: onFlush }
+
     CoreShop\Component\Core\Cart\PublishedCartProductAvailabilityChecker: ~
     CoreShop\Component\Core\Cart\CartProductAvailabilityCheckerInterface: '@CoreShop\Component\Core\Cart\PublishedCartProductAvailabilityChecker'
 
@@ -51,6 +59,7 @@ services:
         arguments:
             - '@CoreShop\Component\Core\Configuration\ConfigurationServiceInterface'
             - '@CoreShop\Bundle\CoreBundle\Product\StoredProductComparator'
+            - '@CoreShop\Bundle\CoreBundle\Product\PricingChangeTracker'
             - '%coreshop.cart_recalculation.product_fields%'
         tags:
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: rememberPriceRelevantChange }

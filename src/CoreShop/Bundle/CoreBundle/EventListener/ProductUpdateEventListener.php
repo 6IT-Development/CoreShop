@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
+use CoreShop\Bundle\CoreBundle\Product\PricingChangeTracker;
 use CoreShop\Bundle\CoreBundle\Product\StoredProductComparator;
 use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
 use CoreShop\Component\Order\Model\PurchasableInterface;
@@ -28,7 +29,9 @@ use Pimcore\Model\DataObject\Concrete;
  * Every cart is recalculated on its next request after SYSTEM.PRICE_RULE.UPDATE moved (RequestCartRecalculation).
  * A product save moves it only when something the cart price depends on changed: the published state, the store
  * values (price and tax rule per store) or one of the configured fields
- * (core_shop_core.cart_recalculation.product_fields), compared with the stored product before the save.
+ * (core_shop_core.cart_recalculation.product_fields), compared with the stored product before the save, or the
+ * Doctrine side of its pricing (specific and quantity price rules, unit prices) was written during the save
+ * (PricingChangeTracker).
  */
 final class ProductUpdateEventListener
 {
@@ -41,6 +44,7 @@ final class ProductUpdateEventListener
     public function __construct(
         private ConfigurationServiceInterface $configurationService,
         private StoredProductComparator $storedProductComparator,
+        private PricingChangeTracker $pricingChangeTracker,
         private array $priceFields,
     ) {
     }
@@ -66,7 +70,13 @@ final class ProductUpdateEventListener
     {
         $object = $event->getObject();
 
-        if (!$object instanceof PurchasableInterface || !isset($this->changedProductIds[$object->getId()])) {
+        if (!$object instanceof PurchasableInterface) {
+            return;
+        }
+
+        // always asked, so a pricing write is not left for a later, unrelated product save
+        $pricingWritten = $this->pricingChangeTracker->consumeChange();
+        if (!isset($this->changedProductIds[$object->getId()]) && !$pricingWritten) {
             return;
         }
 

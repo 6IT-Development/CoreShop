@@ -64,6 +64,7 @@ services:
         tags:
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: rememberPriceRelevantChange }
             - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: storeConfigurationThatProductChanged }
+            - { name: kernel.reset, method: reset }
 
     CoreShop\Bundle\CoreBundle\EventListener\ProductAvailabilityEventListener:
         arguments:

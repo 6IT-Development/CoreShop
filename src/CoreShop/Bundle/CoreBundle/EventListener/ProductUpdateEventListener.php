@@ -24,6 +24,7 @@ use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
 use CoreShop\Component\Order\Model\PurchasableInterface;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Model\DataObject\Concrete;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Every cart is recalculated on its next request after SYSTEM.PRICE_RULE.UPDATE moved (RequestCartRecalculation).
@@ -33,7 +34,7 @@ use Pimcore\Model\DataObject\Concrete;
  * Doctrine side of its pricing (specific and quantity price rules, unit prices) was written during the save
  * (PricingChangeTracker).
  */
-final class ProductUpdateEventListener
+final class ProductUpdateEventListener implements ResetInterface
 {
     /** @var array<int, true> */
     private array $changedProductIds = [];
@@ -83,5 +84,14 @@ final class ProductUpdateEventListener
         unset($this->changedProductIds[$object->getId()]);
 
         $this->configurationService->set('SYSTEM.PRICE_RULE.UPDATE', time());
+    }
+
+    /**
+     * An entry is left over when a save fails between preUpdate and postUpdate. PricingChangeTracker keeps its flag
+     * on purpose (a change is never lost), so it is not reset here.
+     */
+    public function reset(): void
+    {
+        $this->changedProductIds = [];
     }
 }

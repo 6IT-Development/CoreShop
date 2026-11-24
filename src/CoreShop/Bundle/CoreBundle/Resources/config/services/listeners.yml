@@ -80,6 +80,10 @@ services:
             - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: postDeleteListener }
             - { name: kernel.reset, method: reset }
 
+    CoreShop\Bundle\CoreBundle\EventListener\StaleCartChangesListener:
+        tags:
+            - { name: kernel.event_listener, event: CoreShop\Component\Order\Event\DeletedCartItemsDroppedEvent, method: onDeletedCartItemsDropped }
+
     CoreShop\Bundle\CoreBundle\EventListener\RequestCartRecalculation:
         arguments:
            - '@CoreShop\Bundle\CoreBundle\Order\CartRecalculator'

@@ -34,6 +34,7 @@ use CoreShop\Component\Order\Cart\Rule\CartPriceRuleProcessorInterface;
 use CoreShop\Component\Order\Cart\Rule\CartPriceRuleUnProcessorInterface;
 use CoreShop\Component\Order\Context\CartContextInterface;
 use CoreShop\Component\Order\Factory\OrderItemFactoryInterface;
+use CoreShop\Component\Order\Manager\CartLockManagerInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleVoucherCodeInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
@@ -106,6 +107,10 @@ class CartController extends FrontendController
         $this->denyAccessUnlessGranted('CORESHOP_CART_SUMMARY');
 
         $cart = $this->getCart();
+        if (in_array($request->getMethod(), ['POST', 'PUT', 'PATCH'])) {
+            $cart = $this->lockCart($cart);
+        }
+
         $form = $this->container->get('form.factory')->createNamed('coreshop', CartType::class, $cart);
         $form->handleRequest($request);
 
@@ -251,7 +256,8 @@ class CartController extends FrontendController
 
         $this->getQuantityModifer()->modify($cartItem, 1);
 
-        $addToCart = $this->createAddToCart($this->getCart(), $cartItem);
+        $cart = $request->isMethod('POST') ? $this->lockCart($this->getCart()) : $this->getCart();
+        $addToCart = $this->createAddToCart($cart, $cartItem);
 
         $form = $this->container->get('form.factory')->createNamed('coreshop-' . $product->getId(), AddToCartType::class, $addToCart);
 
@@ -267,7 +273,7 @@ class CartController extends FrontendController
                 $addToCart = $form->getData();
 
                 $this->getCartModifier()->addToList($addToCart->getCart(), $addToCart->getCartItem());
-                $this->getCartManager()->persistCart($this->getCart());
+                $this->getCartManager()->persistCart($addToCart->getCart());
 
                 $this->container->get(TrackerInterface::class)->trackCartAdd(
                     $addToCart->getCart(),
@@ -360,14 +366,16 @@ class CartController extends FrontendController
             return $this->redirectToRoute('coreshop_index');
         }
 
+        $cart = $this->lockCart($this->getCart());
+
         $this->addFlash('success', $this->container->get('translator')->trans('coreshop.ui.item_removed'));
 
-        $this->getCartModifier()->removeFromList($this->getCart(), $cartItem);
-        $this->getCartManager()->persistCart($this->getCart());
+        $this->getCartModifier()->removeFromList($cart, $cartItem);
+        $this->getCartManager()->persistCart($cart);
 
         $request->attributes->set('product', $cartItem->getProduct());
 
-        $this->container->get(TrackerInterface::class)->trackCartRemove($this->getCart(), $cartItem->getProduct(), $cartItem->getQuantity());
+        $this->container->get(TrackerInterface::class)->trackCartRemove($cart, $cartItem->getProduct(), $cartItem->getQuantity());
 
         return $this->redirectToRoute('coreshop_cart_summary');
     }
@@ -394,6 +402,7 @@ class CartController extends FrontendController
 
         $priceRule = $voucherCode->getCartPriceRule();
 
+        $cart = $this->lockCart($cart);
         $this->getCartPriceRuleUnProcessor()->unProcess($cart, $priceRule, $voucherCode);
         $this->getCartManager()->persistCart($cart);
 
@@ -433,6 +442,17 @@ class CartController extends FrontendController
     protected function getCart(): OrderInterface
     {
         return $this->getCartContext()->getCart();
+    }
+
+    /**
+     * Before a change of the stored cart: waits for a parallel save of the same cart and returns the current copy
+     * (CartLockManagerInterface). persistCart() releases the lock.
+     */
+    protected function lockCart(OrderInterface $cart): OrderInterface
+    {
+        $cartManager = $this->getCartManager();
+
+        return $cartManager instanceof CartLockManagerInterface ? $cartManager->lockCart($cart) : $cart;
     }
 
     protected function getCartContext(): CartContextInterface

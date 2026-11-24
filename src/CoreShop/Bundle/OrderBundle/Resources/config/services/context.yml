@@ -6,6 +6,7 @@ services:
         tags:
             - { name: coreshop.context.cart, priority: -100 }
             - { name: kernel.reset, method: reset }
+            - { name: kernel.event_listener, event: CoreShop\Component\StorageList\Event\StorageListReloadedEvent, method: onStorageListReloaded }
 
     CoreShop\Component\Order\Context\CartContext:
         decorates: 'coreshop.storage_list.context.factory.order'

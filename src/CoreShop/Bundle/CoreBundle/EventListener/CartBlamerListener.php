@@ -23,6 +23,7 @@ use CoreShop\Component\Core\Model\CustomerInterface;
 use CoreShop\Component\Core\Model\UserInterface;
 use CoreShop\Component\Order\Context\CartContextInterface;
 use CoreShop\Component\Order\Context\CartNotFoundException;
+use CoreShop\Component\Order\Manager\CartLockManagerInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Processor\CartProcessorInterface;
@@ -68,6 +69,10 @@ final class CartBlamerListener
             return;
         }
 
+        if ($cart->getId() && $this->cartManager instanceof CartLockManagerInterface) {
+            $cart = $this->cartManager->lockCart($cart);
+        }
+
         $previousCustomer = $cart->getCustomer();
 
         // never take over a cart that belongs to another registered customer
@@ -75,6 +80,11 @@ final class CartBlamerListener
             null !== $previousCustomer->getUser() &&
             $previousCustomer->getId() !== $user->getId()
         ) {
+            // the lock must not be held while the rest of the request takes others (cart recalculation)
+            if ($this->cartManager instanceof CartLockManagerInterface) {
+                $this->cartManager->unlockCart($cart);
+            }
+
             return;
         }
 

@@ -32,6 +32,10 @@ services:
             - '@CoreShop\Component\Order\Processor\CartProcessorInterface'
             - '@CoreShop\Component\Resource\Service\FolderCreationServiceInterface'
             - '@?lock.factory'
+            - '@event_dispatcher'
+        tags:
+            - { name: kernel.reset, method: reset }
+            - { name: kernel.event_listener, event: kernel.response, method: releaseHeldLocks, priority: -1024 }
 
     coreshop.cart_item.quantity_modifier: '@CoreShop\Component\StorageList\StorageListItemQuantityModifier'
     coreshop.cart_item.quantity_modifier.backend: '@CoreShop\Component\StorageList\StorageListItemQuantityModifier'

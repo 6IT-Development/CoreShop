@@ -21,6 +21,7 @@ namespace CoreShop\Component\StorageList\Core\Context;
 use CoreShop\Component\Customer\Model\CustomerAwareInterface;
 use CoreShop\Component\StorageList\Context\StorageListContextInterface;
 use CoreShop\Component\StorageList\Context\StorageListNotFoundException;
+use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\Provider\ContextProviderInterface;
 use CoreShop\Component\Store\Model\StoreAwareInterface;
@@ -73,5 +74,16 @@ final class StoreBasedStorageListContext implements StorageListContextInterface,
     public function reset(): void
     {
         $this->storageList = null;
+    }
+
+    public function onStorageListReloaded(StorageListReloadedEvent $event): void
+    {
+        if (null === $this->storageList || $this->storageList !== $event->getStaleList()) {
+            return;
+        }
+
+        $freshList = $event->getFreshList();
+        $this->contextProvider->provideContextForStorageList($freshList);
+        $this->storageList = $freshList;
     }
 }

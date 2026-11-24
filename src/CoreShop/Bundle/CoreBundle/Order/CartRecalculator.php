@@ -21,6 +21,7 @@ namespace CoreShop\Bundle\CoreBundle\Order;
 use CoreShop\Component\Core\Cart\Notice\CartNotices;
 use CoreShop\Component\Core\Model\NoticeableCartInterface;
 use CoreShop\Component\Core\Model\OrderInterface;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
@@ -85,7 +86,13 @@ final class CartRecalculator
         $pricesBefore = $tracksNotices ? $this->itemPrices($cart) : [];
         $rulesBefore = $tracksNotices ? $this->ruleNames($cart) : [];
 
-        $this->cartManager->persistCart($cart, ['only_changed_items' => true]);
+        try {
+            $this->cartManager->persistCart($cart, ['only_changed_items' => true]);
+        } catch (CartPersistConflictException) {
+            // Another request saved the cart after this copy was loaded: that save processed it already, with the
+            // current prices and rules. This copy is not saved, and the next request loads the stored one.
+            return;
+        }
 
         if (!$tracksNotices) {
             return;

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\StorageList\Context;
 
+use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\Repository\StorageListRepositoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -73,5 +74,12 @@ final class SessionBasedListContext implements StorageListContextInterface, Rese
     public function reset(): void
     {
         $this->storageList = null;
+    }
+
+    public function onStorageListReloaded(StorageListReloadedEvent $event): void
+    {
+        if ($this->storageList === $event->getStaleList()) {
+            $this->storageList = $event->getFreshList();
+        }
     }
 }

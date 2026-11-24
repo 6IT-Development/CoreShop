@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Component\Order\Context;
 
 use CoreShop\Component\Order\Model\OrderInterface;
+use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -57,5 +58,13 @@ final class FixedCartContext implements CartContextInterface, ResetInterface
     public function reset(): void
     {
         $this->clearCart();
+    }
+
+    public function onStorageListReloaded(StorageListReloadedEvent $event): void
+    {
+        $freshCart = $event->getFreshList();
+        if ($this->cart === $event->getStaleList() && $freshCart instanceof OrderInterface) {
+            $this->cart = $freshCart;
+        }
     }
 }

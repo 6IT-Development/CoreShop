@@ -153,6 +153,7 @@ coreshop.ui.customer.address_successfully_deleted: "L'indirizzo è stato rimosso
 coreshop.ui.newsletter_confirmed: 'Grazie. Il tuo indirizzo e-mail è stato confermato.'
 coreshop.ui.newsletter_confirmation_error: 'Errore durante la conferma del tuo indirizzo e-mail.'
 coreshop.ui.global_error.cart_has_changed: 'Alcuni prodotti presenti nel carrello non sono più disponibili, verifica il carrello.'
+coreshop.ui.error.cart_changed_meanwhile: "Il carrello è stato modificato in un'altra finestra. Controllalo e ripeti l'ordine."
 coreshop.ui.product.tax.inc: 'incl. %s%% Imposta'
 coreshop.ui.product_quantity_price_rules.ranges_available: 'Condizioni speciali disponibili'
 coreshop.ui.product_quantity_price_rules.quantity: 'Quantità'

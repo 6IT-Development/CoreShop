@@ -36,6 +36,7 @@ use CoreShop\Component\StorageList\Core\Context\SessionAndStoreBasedStorageListC
 use CoreShop\Component\StorageList\Core\Context\StoreBasedStorageListContext;
 use CoreShop\Component\StorageList\Core\Provider\CoreContextProvider;
 use CoreShop\Component\StorageList\Core\Storage\SessionStorageListStorage;
+use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use CoreShop\Component\StorageList\Expiration\StorageListExpiration;
 use CoreShop\Component\StorageList\Maintenance\ExpireTask;
 use CoreShop\Component\StorageList\Provider\ContextProvider;
@@ -259,6 +260,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                             new Reference('coreshop.storage_list.context_provider.' . $name),
                         );
                         $storeBasedContextDefinition->addTag('kernel.reset', ['method' => 'reset']);
+                        $storeBasedContextDefinition->addTag('kernel.event_listener', ['event' => StorageListReloadedEvent::class, 'method' => 'onStorageListReloaded']);
 
                         $container->setDefinition(
                             'coreshop.storage_list.context.store_based.' . $name,
@@ -362,6 +364,7 @@ final class CoreShopStorageListExtension extends AbstractModelExtension
                 $sessionContext->setArgument('$repository', new Reference($list['resource']['repository']));
                 $sessionContext->setDecoratedService('coreshop.storage_list.context.factory.' . $name);
                 $sessionContext->addTag('kernel.reset', ['method' => 'reset']);
+                $sessionContext->addTag('kernel.event_listener', ['event' => StorageListReloadedEvent::class, 'method' => 'onStorageListReloaded']);
 
                 $container->setDefinition('coreshop.storage_list.context.' . $name . '.session', $sessionContext);
             }

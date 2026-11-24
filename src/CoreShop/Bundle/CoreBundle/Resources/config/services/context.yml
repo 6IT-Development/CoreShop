@@ -50,6 +50,7 @@ services:
             - '@CoreShop\Component\Core\Context\ShopperContextInterface'
         tags:
             - { name: kernel.reset, method: reset }
+            - { name: kernel.event_listener, event: CoreShop\Component\StorageList\Event\StorageListReloadedEvent, method: onStorageListReloaded }
 
     CoreShop\Component\Core\Context\Country\StoreAwareCountryContext:
         decorates: CoreShop\Component\Address\Context\CountryContextInterface

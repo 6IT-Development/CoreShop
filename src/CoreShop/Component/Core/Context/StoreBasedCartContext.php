@@ -26,6 +26,7 @@ use CoreShop\Component\Order\Context\CartContextInterface;
 use CoreShop\Component\Order\Context\CartNotFoundException;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Store\Context\StoreNotFoundException;
+use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use Symfony\Contracts\Service\ResetInterface;
 
 final class StoreBasedCartContext implements CartContextInterface, ResetInterface
@@ -50,7 +51,28 @@ final class StoreBasedCartContext implements CartContextInterface, ResetInterfac
         }
 
         $cart = $this->cartContext->getCart();
+        $this->prepare($cart);
+        $this->cart = $cart;
 
+        return $cart;
+    }
+
+    /**
+     * The rest of the request works with the fresh copy, prepared like the stale one was.
+     */
+    public function onStorageListReloaded(StorageListReloadedEvent $event): void
+    {
+        $cart = $event->getFreshList();
+        if (null === $this->cart || $this->cart !== $event->getStaleList() || !$cart instanceof OrderInterface) {
+            return;
+        }
+
+        $this->prepare($cart);
+        $this->cart = $cart;
+    }
+
+    private function prepare(OrderInterface $cart): void
+    {
         try {
             /** @var StoreInterface $store */
             $store = $this->shopperContext->getStore();
@@ -73,10 +95,6 @@ final class StoreBasedCartContext implements CartContextInterface, ResetInterfac
             $customer = $this->shopperContext->getCustomer();
             $this->setCustomerAndAddressOnCart($cart, $customer);
         }
-
-        $this->cart = $cart;
-
-        return $cart;
     }
 
     /**

@@ -73,6 +73,14 @@ final class CartNotices
         return $this->notices === [];
     }
 
+    /**
+     * The notices of a newer copy of the same cart win: they were stored after this copy was loaded.
+     */
+    public function mergeNewer(self $newer): void
+    {
+        $this->notices = array_replace($this->notices, $newer->notices);
+    }
+
     public function recordRemoval(int $productId, string $name, int $price, int $at): void
     {
         $key = 'product:' . $productId;

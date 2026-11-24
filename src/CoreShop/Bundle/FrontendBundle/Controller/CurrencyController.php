@@ -23,6 +23,7 @@ use CoreShop\Component\Core\Currency\CurrencyStorageInterface;
 use CoreShop\Component\Core\Model\CurrencyInterface;
 use CoreShop\Component\Core\Repository\CurrencyRepositoryInterface;
 use CoreShop\Component\Order\Context\CartContextInterface;
+use CoreShop\Component\Order\Manager\CartLockManagerInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Store\Context\StoreContextInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -72,6 +73,10 @@ class CurrencyController extends FrontendController
         $cart = $cartContext->getCart();
 
         $this->container->get(CurrencyStorageInterface::class)->set($store, $currency);
+
+        if ($cart->hasItems() && $cartManager instanceof CartLockManagerInterface) {
+            $cart = $cartManager->lockCart($cart);
+        }
 
         $cart->setCurrency($currency);
 

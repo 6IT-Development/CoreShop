@@ -28,6 +28,9 @@ use CoreShop\Component\Order\Checkout\ValidationCheckoutStepInterface;
 use CoreShop\Component\Order\CheckoutEvents;
 use CoreShop\Component\Order\Context\CartContextInterface;
 use CoreShop\Component\Order\Event\CheckoutEvent;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
+use CoreShop\Component\Order\Manager\CartLockManagerInterface;
+use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\OrderPaymentTransitions;
 use CoreShop\Component\Order\OrderSaleStates;
 use CoreShop\Component\Order\OrderSaleTransitions;
@@ -61,7 +64,7 @@ class CheckoutController extends FrontendController
         $stepIdentifier = $this->getStringParameterFromRequest($request, 'stepIdentifier');
         $step = $checkoutManager->getStep($stepIdentifier);
         $dataForStep = [];
-        $cart = $this->getCart();
+        $cart = $request->isMethod('POST') ? $this->lockCart() : $this->getCart();
 
         if (!$step instanceof CheckoutStepInterface) {
             return $this->redirectToRoute('coreshop_index');
@@ -160,6 +163,8 @@ class CheckoutController extends FrontendController
             return $this->redirectToRoute('coreshop_cart_summary');
         }
 
+        // Not locked and reloaded (lockCart()): a cart changed in another window is refused below
+        // (CartPersistConflictException), the customer reviews it again instead of ordering what they did not see.
         $cart = $this->getCart();
         $checkoutManager = $this->getCheckoutManagerFactory()->createCheckoutManager($cart);
 
@@ -226,7 +231,13 @@ class CheckoutController extends FrontendController
                 return $this->redirectToRoute('coreshop_cart_summary');
             }
 
-            $workflow->apply($order, OrderSaleTransitions::TRANSITION_ORDER);
+            try {
+                $workflow->apply($order, OrderSaleTransitions::TRANSITION_ORDER);
+            } catch (CartPersistConflictException) {
+                $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.cart_changed_meanwhile'));
+
+                return $this->redirectToRoute('coreshop_cart_summary');
+            }
         }
 
         if ($request->hasSession()) {
@@ -326,6 +337,7 @@ class CheckoutController extends FrontendController
                 TrackerInterface::class => TrackerInterface::class,
                 StateMachineManagerInterface::class,
                 'payum' => '?' . Payum::class,
+                CartManagerInterface::class => '?' . CartManagerInterface::class,
             ],
         );
     }
@@ -394,6 +406,26 @@ class CheckoutController extends FrontendController
         $cart = $this->getCartContext()->getCart();
 
         return $cart;
+    }
+
+    /**
+     * Before the step or the commit changes the stored cart: waits for a parallel save of the same cart and works on
+     * the current copy (CartLockManagerInterface). The cart contexts get that copy too, so getCart() returns it.
+     * persistCart() releases the lock, or the end of the request.
+     */
+    protected function lockCart(): OrderInterface
+    {
+        $cart = $this->getCart();
+        $cartManager = $this->container->has(CartManagerInterface::class) ? $this->container->get(CartManagerInterface::class) : null;
+
+        if (!$cartManager instanceof CartLockManagerInterface) {
+            return $cart;
+        }
+
+        /** @var OrderInterface $lockedCart the same class as the given cart */
+        $lockedCart = $cartManager->lockCart($cart);
+
+        return $lockedCart;
     }
 
     protected function getCartContext(): CartContextInterface

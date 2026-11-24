@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
-use CoreShop\Component\Order\Exception\CartPersistConflictException;
+use CoreShop\Component\StorageList\Exception\StorageListPersistConflictException;
 use Pimcore\Http\RequestHelper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -68,9 +68,9 @@ final class CartPersistConflictExceptionListener
             return;
         }
 
-        $this->logger?->info('Refused a stale save of a cart: {message}', [
+        $this->logger?->info('Refused a stale save of a cart or storage list: {message}', [
             'message' => $conflict->getMessage(),
-            'cart_id' => $conflict->getCartId(),
+            'storage_list_id' => $conflict->getStorageListId(),
             'route' => $request->attributes->get('_route'),
         ]);
 
@@ -105,10 +105,10 @@ final class CartPersistConflictExceptionListener
     /**
      * Also when it was wrapped on the way out (e.g. by Twig while a template rendered).
      */
-    private static function findConflict(\Throwable $throwable): ?CartPersistConflictException
+    private static function findConflict(\Throwable $throwable): ?StorageListPersistConflictException
     {
         for ($current = $throwable; null !== $current; $current = $current->getPrevious()) {
-            if ($current instanceof CartPersistConflictException) {
+            if ($current instanceof StorageListPersistConflictException) {
                 return $current;
             }
         }

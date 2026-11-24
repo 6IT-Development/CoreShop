@@ -33,6 +33,7 @@ use CoreShop\Component\Order\Cart\CartModifierInterface;
 use CoreShop\Component\Order\Cart\Rule\CartPriceRuleProcessorInterface;
 use CoreShop\Component\Order\Cart\Rule\CartPriceRuleUnProcessorInterface;
 use CoreShop\Component\Order\Context\CartContextInterface;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
 use CoreShop\Component\Order\Factory\OrderItemFactoryInterface;
 use CoreShop\Component\Order\Manager\CartLockManagerInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
@@ -94,9 +95,19 @@ class CartController extends FrontendController
             return $this->redirectToRoute('coreshop_cart_summary');
         }
 
+        // Not locked and reloaded (lockCart()), as for an order: a cart changed in another window is refused by
+        // QuoteCommitter (CartPersistConflictException) and the customer reviews it again. Locking here could also
+        // deadlock against the commit lock QuoteCommitter takes before its own saves.
         $order = $this->getCart();
         $workflow = $machineManager->get($order, OrderSaleTransitions::IDENTIFIER);
-        $workflow->apply($order, OrderSaleTransitions::TRANSITION_QUOTE);
+
+        try {
+            $workflow->apply($order, OrderSaleTransitions::TRANSITION_QUOTE);
+        } catch (CartPersistConflictException) {
+            $this->addFlash('error', $this->container->get('translator')->trans('coreshop.ui.error.cart_changed_meanwhile'));
+
+            return $this->redirectToRoute('coreshop_cart_summary');
+        }
 
         return $this->redirectToRoute('coreshop_quote_detail', ['quote' => $order->getId()]);
     }

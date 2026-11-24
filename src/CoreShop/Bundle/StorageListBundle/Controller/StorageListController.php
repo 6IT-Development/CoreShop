@@ -23,6 +23,7 @@ use CoreShop\Component\Resource\Model\ResourceInterface;
 use CoreShop\Component\Resource\Repository\RepositoryInterface;
 use CoreShop\Component\StorageList\Context\StorageListContextInterface;
 use CoreShop\Component\StorageList\DTO\AddToStorageListInterface;
+use CoreShop\Component\StorageList\Exception\StorageListPersistConflictException;
 use CoreShop\Component\StorageList\Factory\AddToStorageListFactoryInterface;
 use CoreShop\Component\StorageList\Factory\StorageListFactoryInterface;
 use CoreShop\Component\StorageList\Factory\StorageListItemFactoryInterface;
@@ -30,6 +31,7 @@ use CoreShop\Component\StorageList\Model\ShareableStorageListInterface;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\Model\StorageListItemInterface;
 use CoreShop\Component\StorageList\Repository\ShareableStorageListRepositoryInterface;
+use CoreShop\Component\StorageList\StorageListLockManagerInterface;
 use CoreShop\Component\StorageList\StorageListManagerInterface;
 use CoreShop\Component\StorageList\StorageListModifierInterface;
 use Psr\Container\ContainerInterface;
@@ -104,6 +106,10 @@ class StorageListController extends AbstractController
 
         $item = $this->storageListItemFactory->createWithStorageListProduct($product);
 
+        if ($request->isMethod('POST')) {
+            $storageList = $this->lockStorageList($storageList);
+        }
+
         $addToStorageList = $this->createAddToStorageList($storageList, $item);
 
         $form = $this->formFactory->createNamed(
@@ -122,7 +128,12 @@ class StorageListController extends AbstractController
                 $addToStorageList = $form->getData();
 
                 $this->modifier->addToList($addToStorageList->getStorageList(), $addToStorageList->getStorageListItem());
-                $this->manager->persist($storageList);
+
+                try {
+                    $this->manager->persist($storageList);
+                } catch (StorageListPersistConflictException) {
+                    return $this->createConflictResponse($request, $redirect);
+                }
 
                 $this->addFlash('success', $this->translator->trans('coreshop.ui.item_added'));
 
@@ -187,10 +198,16 @@ class StorageListController extends AbstractController
             return $this->redirectToRoute($this->indexRoute);
         }
 
-        $this->addFlash('success', $this->translator->trans('coreshop.ui.item_removed'));
-
+        $storageList = $this->lockStorageList($storageList);
         $this->modifier->removeFromList($storageList, $storageListItem);
-        $this->manager->persist($storageList);
+
+        try {
+            $this->manager->persist($storageList);
+        } catch (StorageListPersistConflictException) {
+            return $this->createConflictResponse($request, $this->generateUrl($this->summaryRoute));
+        }
+
+        $this->addFlash('success', $this->translator->trans('coreshop.ui.item_removed'));
 
         $request->attributes->set('product', $storageListItem->getProduct());
 
@@ -226,6 +243,11 @@ class StorageListController extends AbstractController
         ];
 
         if (!$isSharedList) {
+            if (in_array($request->getMethod(), ['POST', 'PUT', 'PATCH'])) {
+                $list = $this->lockStorageList($list);
+                $params['storage_list'] = $list;
+            }
+
             $form = $this->formFactory->createNamed('coreshop', $this->form, $list);
             $form->handleRequest($request);
 
@@ -233,9 +255,13 @@ class StorageListController extends AbstractController
                 if ($form->isValid()) {
                     $list = $form->getData();
 
-                    $this->addFlash('success', $this->translator->trans('coreshop.ui.cart_updated'));
+                    try {
+                        $this->manager->persist($list);
+                    } catch (StorageListPersistConflictException) {
+                        return $this->createConflictResponse($request, $this->generateUrl($this->summaryRoute));
+                    }
 
-                    $this->manager->persist($list);
+                    $this->addFlash('success', $this->translator->trans('coreshop.ui.cart_updated'));
 
                     return $this->redirectToRoute($this->summaryRoute);
                 }
@@ -262,6 +288,33 @@ class StorageListController extends AbstractController
         }
 
         return $this->render($this->templateSummary, $params);
+    }
+
+    /**
+     * Before a change of the stored list: waits for a parallel save of the same list and returns the current copy,
+     * for a manager that guards against concurrent saves (carts). persist() releases the lock.
+     */
+    protected function lockStorageList(StorageListInterface $storageList): StorageListInterface
+    {
+        return $this->manager instanceof StorageListLockManagerInterface
+            ? $this->manager->lockStorageList($storageList)
+            : $storageList;
+    }
+
+    /**
+     * The list was saved by another request meanwhile and was not changed (StorageListPersistConflictException).
+     */
+    protected function createConflictResponse(Request $request, string $redirect): Response
+    {
+        $message = $this->translator->trans('coreshop.ui.error.cart_changed_meanwhile');
+
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse(['success' => false, 'errors' => [$message]], Response::HTTP_CONFLICT);
+        }
+
+        $this->addFlash('error', $message);
+
+        return $this->redirect($redirect);
     }
 
     protected function createAddToStorageList(

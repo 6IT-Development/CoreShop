@@ -18,19 +18,21 @@ declare(strict_types=1);
 
 namespace CoreShop\Component\Order\Exception;
 
+use CoreShop\Component\StorageList\Exception\StorageListPersistConflictException;
+
 /**
  * The cart was saved by another request after this copy was loaded (its persist version is older than the stored
  * one). Saving it would undo that save, so nothing was saved. Load the cart again, under
  * CartLockManagerInterface::lockCart(), and apply the change to the fresh copy.
  */
-final class CartPersistConflictException extends \RuntimeException
+final class CartPersistConflictException extends StorageListPersistConflictException
 {
     public function __construct(
-        private int $cartId,
+        int $cartId,
         private int $loadedVersion,
         private int $storedVersion,
     ) {
-        parent::__construct(sprintf(
+        parent::__construct($cartId, sprintf(
             'Cart %d was saved by another request (version %d) after this copy was loaded (version %d).',
             $cartId,
             $storedVersion,
@@ -40,7 +42,7 @@ final class CartPersistConflictException extends \RuntimeException
 
     public function getCartId(): int
     {
-        return $this->cartId;
+        return $this->getStorageListId();
     }
 
     public function getLoadedVersion(): int

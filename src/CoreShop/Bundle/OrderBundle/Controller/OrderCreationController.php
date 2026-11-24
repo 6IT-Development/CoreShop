@@ -28,6 +28,7 @@ use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Currency\Model\CurrencyInterface;
 use CoreShop\Component\Customer\Model\CustomerInterface;
 use CoreShop\Component\Customer\Repository\CustomerRepositoryInterface;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
 use CoreShop\Component\Order\Model\OrderItemInterface;
@@ -51,6 +52,7 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 class OrderCreationController extends PimcoreController
 {
     use SalePermissionTrait;
+    use CartConflictTrait;
 
     protected AddressFormatterInterface $addressFormatter;
 
@@ -183,6 +185,11 @@ class OrderCreationController extends PimcoreController
             } catch (\Throwable $ex) {
                 if ($db->isTransactionActive()) {
                     $db->rollBack();
+                }
+
+                // OrderCommitter / QuoteCommitter refused a stale copy of the new cart
+                if ($ex instanceof CartPersistConflictException) {
+                    return $this->viewHandler->handle($this->cartConflictResponseData());
                 }
 
                 $logger->error('CoreShop: creating the {saleType} in the admin failed: {message}', [

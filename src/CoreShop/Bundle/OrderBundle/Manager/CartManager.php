@@ -29,6 +29,7 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use CoreShop\Component\StorageList\Event\StorageListReloadedEvent;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
+use CoreShop\Component\StorageList\StorageListLockManagerInterface;
 use CoreShop\Component\StorageList\StorageListManagerInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectFingerprint;
 use Doctrine\DBAL\ArrayParameterType;
@@ -55,7 +56,7 @@ use Webmozart\Assert\Assert;
  * A class without the persistVersion field (migration Version20261124120000 not run yet) is not checked: saves of
  * concurrent copies then overwrite each other, as before.
  */
-final class CartManager implements CartManagerInterface, CartLockManagerInterface, StorageListManagerInterface, ResetInterface
+final class CartManager implements CartManagerInterface, CartLockManagerInterface, StorageListManagerInterface, StorageListLockManagerInterface, ResetInterface
 {
     /**
      * Followed by the cart id. Code that changes a stored cart outside persistCart() takes it as well (e.g.
@@ -101,6 +102,11 @@ final class CartManager implements CartManagerInterface, CartLockManagerInterfac
         $this->eventDispatcher?->dispatch(new StorageListReloadedEvent($cart, $freshCart));
 
         return $freshCart;
+    }
+
+    public function lockStorageList(StorageListInterface $storageList): StorageListInterface
+    {
+        return $storageList instanceof OrderInterface ? $this->lockCart($storageList) : $storageList;
     }
 
     public function unlockCart(OrderInterface $cart): void

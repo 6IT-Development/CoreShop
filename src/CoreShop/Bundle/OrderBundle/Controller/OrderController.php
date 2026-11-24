@@ -30,6 +30,7 @@ use CoreShop\Component\Address\Formatter\AddressFormatterInterface;
 use CoreShop\Component\Address\Model\AddressInterface;
 use CoreShop\Component\Address\Model\CountryInterface;
 use CoreShop\Component\Currency\Model\CurrencyInterface;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
 use CoreShop\Component\Order\InvoiceStates;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\CartPriceRuleInterface;
@@ -73,6 +74,7 @@ use Symfony\Contracts\Service\Attribute\SubscribedService;
 class OrderController extends PimcoreController
 {
     use SalePermissionTrait;
+    use CartConflictTrait;
 
     public function getStatesAction(Request $request): Response
     {
@@ -263,11 +265,16 @@ class OrderController extends PimcoreController
             return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
         }
 
+        $previewOnly = $request->query->getBoolean('preview');
+
+        // a preview is not saved
+        if ($request->getMethod() === 'POST' && !$previewOnly) {
+            $order = $this->lockCartForChange($cartManager, $order);
+        }
+
         $form = $formFactory->createNamed('', OrderType::class, $order, [
             'allow_zero_quantity' => true,
         ]);
-
-        $previewOnly = $request->query->getBoolean('preview');
 
         if ($request->getMethod() === 'POST') {
             $handledForm = $form->handleRequest($request);
@@ -286,59 +293,63 @@ class OrderController extends PimcoreController
 
             $changedOrderItems = [];
 
-            InheritanceHelper::useInheritedValues(
-                function () use ($cartManager, $cartProcessor, $previewOnly, $order, $orderItemRepository, &$changedOrderItems) {
-                    if ($previewOnly) {
-                        $cartProcessor->process($order);
-                    } else {
-                        $commentEntity = $this->container->get(NoteServiceInterface::class)->createPimcoreNoteInstance($order, Notes::NOTE_ORDER_BACKEND_UPDATE_SAVE);
-                        $commentEntity->setTitle('Order Backend Update');
-                        $commentEntity->setDescription('Order has been updated manually from backend');
+            try {
+                InheritanceHelper::useInheritedValues(
+                    function () use ($cartManager, $cartProcessor, $previewOnly, $order, $orderItemRepository, &$changedOrderItems) {
+                        if ($previewOnly) {
+                            $cartProcessor->process($order);
+                        } else {
+                            $commentEntity = $this->container->get(NoteServiceInterface::class)->createPimcoreNoteInstance($order, Notes::NOTE_ORDER_BACKEND_UPDATE_SAVE);
+                            $commentEntity->setTitle('Order Backend Update');
+                            $commentEntity->setDescription('Order has been updated manually from backend');
 
-                        $items = $order->getItems();
+                            $items = $order->getItems();
 
-                        /**
-                         * @var OrderItemInterface&DataObject\Concrete $orderItem
-                         */
-                        foreach ($items as $index => $orderItem) {
-                            $originalCartItem = $orderItemRepository->forceFind($orderItem->getId());
+                            /**
+                             * @var OrderItemInterface&DataObject\Concrete $orderItem
+                             */
+                            foreach ($items as $index => $orderItem) {
+                                $originalCartItem = $orderItemRepository->forceFind($orderItem->getId());
 
-                            if (!$originalCartItem instanceof $orderItem) {
-                                continue;
+                                if (!$originalCartItem instanceof $orderItem) {
+                                    continue;
+                                }
+
+                                if ($originalCartItem->getQuantity() !== $orderItem->getQuantity()) {
+                                    $commentEntity->addData('item_from_' . $index, 'text', $originalCartItem->getQuantity());
+                                    $commentEntity->addData('item_to_' . $index, 'text', $orderItem->getQuantity());
+
+                                    $itemNote = $this->container->get(NoteServiceInterface::class)->createPimcoreNoteInstance($orderItem, Notes::NOTE_ORDER_BACKEND_UPDATE_SAVE);
+                                    $itemNote->setTitle('Order Item Backend Update');
+                                    $itemNote->setDescription('Order Item has been updated manually from backend');
+                                    $itemNote->addData('from', 'text', $originalCartItem->getQuantity());
+                                    $itemNote->addData('to', 'text', $orderItem->getQuantity());
+
+                                    $this->container->get(NoteServiceInterface::class)->storeNote($itemNote, ['item' => $orderItem, 'originalItem' => $originalCartItem]);
+
+                                    $changedOrderItems[] = [
+                                        'orderItem' => $orderItem,
+                                        'originalOrderItem' => $originalCartItem,
+                                        'from' => $originalCartItem->getQuantity(),
+                                        'to' => $orderItem->getQuantity(),
+                                    ];
+                                }
                             }
 
-                            if ($originalCartItem->getQuantity() !== $orderItem->getQuantity()) {
-                                $commentEntity->addData('item_from_' . $index, 'text', $originalCartItem->getQuantity());
-                                $commentEntity->addData('item_to_' . $index, 'text', $orderItem->getQuantity());
+                            /**
+                             * @psalm-suppress TooManyArguments
+                             *
+                             * @phpstan-ignore-next-line
+                             */
+                            $cartManager->persistCart($order, ['enable_versioning' => true]);
 
-                                $itemNote = $this->container->get(NoteServiceInterface::class)->createPimcoreNoteInstance($orderItem, Notes::NOTE_ORDER_BACKEND_UPDATE_SAVE);
-                                $itemNote->setTitle('Order Item Backend Update');
-                                $itemNote->setDescription('Order Item has been updated manually from backend');
-                                $itemNote->addData('from', 'text', $originalCartItem->getQuantity());
-                                $itemNote->addData('to', 'text', $orderItem->getQuantity());
-
-                                $this->container->get(NoteServiceInterface::class)->storeNote($itemNote, ['item' => $orderItem, 'originalItem' => $originalCartItem]);
-
-                                $changedOrderItems[] = [
-                                    'orderItem' => $orderItem,
-                                    'originalOrderItem' => $originalCartItem,
-                                    'from' => $originalCartItem->getQuantity(),
-                                    'to' => $orderItem->getQuantity(),
-                                ];
-                            }
+                            $this->container->get(NoteServiceInterface::class)->storeNote($commentEntity, ['order' => $order]);
                         }
-
-                        /**
-                         * @psalm-suppress TooManyArguments
-                         *
-                         * @phpstan-ignore-next-line
-                         */
-                        $cartManager->persistCart($order, ['enable_versioning' => true]);
-
-                        $this->container->get(NoteServiceInterface::class)->storeNote($commentEntity, ['order' => $order]);
-                    }
-                },
-            );
+                    },
+                );
+            } catch (CartPersistConflictException) {
+                return $this->viewHandler->handle($this->cartConflictResponseData());
+            }
 
             $this->container->get('event_dispatcher')->dispatch(
                 new GenericEvent($order, [

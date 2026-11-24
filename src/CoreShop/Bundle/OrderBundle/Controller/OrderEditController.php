@@ -27,6 +27,7 @@ use CoreShop\Bundle\OrderBundle\Form\Type\EditCartType;
 use CoreShop\Bundle\ResourceBundle\Controller\PimcoreController;
 use CoreShop\Bundle\ResourceBundle\Form\Helper\ErrorSerializer;
 use CoreShop\Component\Order\Cart\CartModifier;
+use CoreShop\Component\Order\Exception\CartPersistConflictException;
 use CoreShop\Component\Order\Factory\OrderItemFactoryInterface;
 use CoreShop\Component\Order\Manager\CartManagerInterface;
 use CoreShop\Component\Order\Model\OrderInterface;
@@ -44,6 +45,7 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 class OrderEditController extends PimcoreController
 {
     use SalePermissionTrait;
+    use CartConflictTrait;
 
     public function editItemsAction(
         Request $request,
@@ -68,11 +70,12 @@ class OrderEditController extends PimcoreController
             return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
         }
 
-        $form = $formFactory->createNamed('', EditCartType::class, $cart);
-
         if (!$request->isMethod('post')) {
             throw new MethodNotAllowedHttpException(['post']);
         }
+
+        $cart = $this->lockCartForChange($cartManager, $cart);
+        $form = $formFactory->createNamed('', EditCartType::class, $cart);
 
         $form->handleRequest($request);
 
@@ -85,7 +88,11 @@ class OrderEditController extends PimcoreController
 
         $cart = $form->getData();
 
-        $cartManager->persistCart($cart);
+        try {
+            $cartManager->persistCart($cart);
+        } catch (CartPersistConflictException) {
+            return $this->viewHandler->handle($this->cartConflictResponseData());
+        }
 
         return $this->viewHandler->handle(['success' => true]);
     }
@@ -116,6 +123,10 @@ class OrderEditController extends PimcoreController
 
         if (!$orderEditPossible->isOrderEditable($cart)) {
             return $this->viewHandler->handle(['success' => false, 'message' => 'This order cannot be edited.']);
+        }
+
+        if ($request->isMethod('POST')) {
+            $cart = $this->lockCartForChange($cartManager, $cart);
         }
 
         $commands = [];
@@ -164,7 +175,11 @@ class OrderEditController extends PimcoreController
                     );
                 }
 
-                $cartManager->persistCart($cart);
+                try {
+                    $cartManager->persistCart($cart);
+                } catch (CartPersistConflictException) {
+                    return $this->viewHandler->handle($this->cartConflictResponseData());
+                }
 
                 return $this->viewHandler->handle(['success' => true]);
             }
@@ -216,8 +231,14 @@ class OrderEditController extends PimcoreController
             );
         }
 
+        $cart = $this->lockCartForChange($cartManager, $cart);
         $cartModifier->removeFromList($cart, $cartItem);
-        $cartManager->persistCart($cart);
+
+        try {
+            $cartManager->persistCart($cart);
+        } catch (CartPersistConflictException) {
+            return $this->viewHandler->handle($this->cartConflictResponseData());
+        }
 
         return $this->viewHandler->handle(['success' => true]);
     }

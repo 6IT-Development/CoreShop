@@ -73,6 +73,7 @@ services:
             - '@CoreShop\Bundle\CoreBundle\Product\StoredProductComparator'
             - '@CoreShop\Component\Core\Cart\CartProductAvailabilityCheckerInterface'
             - '%coreshop.cart_availability.product_fields%'
+            - '@?lock.factory'
         tags:
             - { name: kernel.event_listener, event: pimcore.dataobject.preUpdate, method: preUpdateListener }
             - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: postUpdateListener }

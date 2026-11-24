@@ -27,6 +27,7 @@ use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\StorageListManagerInterface;
 use CoreShop\Component\Pimcore\DataObject\ObjectFingerprint;
+use Doctrine\DBAL\ArrayParameterType;
 use Pimcore\Db;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
@@ -35,6 +36,12 @@ use Webmozart\Assert\Assert;
 
 final class CartManager implements CartManagerInterface, StorageListManagerInterface
 {
+    /**
+     * Followed by the cart id. Code that changes a stored cart outside persistCart() takes it as well (e.g.
+     * ProductAvailabilityEventListener).
+     */
+    public const PERSIST_LOCK_PREFIX = 'coreshop_cart_persist_';
+
     public function __construct(
         private CartProcessorInterface $cartProcessor,
         private FolderCreationServiceInterface $folderCreationService,
@@ -62,7 +69,7 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
         // Concurrent persists of the same cart (double-click, two tabs) are serialized, and
         // the 2N+2 saves of one persist are stored together or not at all.
         $lock = $cart->getId() && $this->lockFactory !== null
-            ? $this->lockFactory->createLock(sprintf('coreshop_cart_persist_%s', $cart->getId()))
+            ? $this->lockFactory->createLock(self::PERSIST_LOCK_PREFIX . $cart->getId())
             : null;
         $lock?->acquire(true);
 
@@ -70,6 +77,10 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
         $db->beginTransaction();
 
         try {
+            if ($cart->getId()) {
+                $this->dropDeletedItems($cart);
+            }
+
             $this->saveCart($cart, $params);
 
             $db->commit();
@@ -82,6 +93,43 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
         } finally {
             $lock?->release();
         }
+    }
+
+    /**
+     * Items deleted since the cart was loaded (e.g. by ProductAvailabilityEventListener while this request ran) are
+     * left out: saving them again would bring the removed product back. Checked under the lock and in the
+     * transaction, so a deletion that finished before is seen. The raw item list is filtered: getItems() and
+     * removeItem() hide the new, not yet saved items.
+     */
+    private function dropDeletedItems(OrderInterface $cart): void
+    {
+        $items = array_values($cart->getObjectVar('items') ?? []);
+
+        $ids = [];
+        foreach ($items as $item) {
+            if ($item instanceof OrderItemInterface && $item->getId()) {
+                $ids[] = (int) $item->getId();
+            }
+        }
+
+        if ($ids === []) {
+            return;
+        }
+
+        $existing = array_flip(array_map('intval', Db::get()->fetchFirstColumn(
+            'SELECT id FROM objects WHERE id IN (?)',
+            [$ids],
+            [ArrayParameterType::INTEGER],
+        )));
+
+        if (count($existing) === count($ids)) {
+            return;
+        }
+
+        $cart->setItems(array_values(array_filter(
+            $items,
+            static fn (mixed $item): bool => !$item instanceof OrderItemInterface || !$item->getId() || isset($existing[(int) $item->getId()]),
+        )));
     }
 
     private function saveCart(OrderInterface $cart, array $params): void

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
 use CoreShop\Bundle\CoreBundle\Product\StoredProductComparator;
+use CoreShop\Bundle\OrderBundle\Manager\CartManager;
 use CoreShop\Component\Core\Cart\CartProductAvailabilityCheckerInterface;
 use CoreShop\Component\Core\Cart\Notice\CartNotices;
 use CoreShop\Component\Core\Model\NoticeableCartInterface;
@@ -31,6 +32,7 @@ use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Model\DataObject\Concrete;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
@@ -38,6 +40,9 @@ use Symfony\Contracts\Service\ResetInterface;
  * its published state or one of the fields in core_shop_core.cart_availability.product_fields changed, or when it is
  * deleted. Each cart keeps a "removed" notice for its customer and is recalculated on its next request
  * (RequestCartAvailability).
+ *
+ * Each cart is changed under the lock CartManager::persistCart() takes, and reloaded under it: a customer request that
+ * saves the cart at the same time is neither overwritten nor overwrites the removal (see CartManager).
  */
 final class ProductAvailabilityEventListener implements ResetInterface
 {
@@ -53,6 +58,7 @@ final class ProductAvailabilityEventListener implements ResetInterface
         private StoredProductComparator $storedProductComparator,
         private CartProductAvailabilityCheckerInterface $availabilityChecker,
         private array $availabilityFields,
+        private ?LockFactory $lockFactory = null,
     ) {
     }
 
@@ -115,41 +121,71 @@ final class ProductAvailabilityEventListener implements ResetInterface
 
     private function removeFromCarts(PurchasableInterface $product): void
     {
-        $itemsByCart = [];
+        $itemIdsByCart = [];
         foreach ($this->findCartItems((int) $product->getId()) as $cartItem) {
             $cart = $cartItem->getOrder();
             if ($cart instanceof OrderInterface && $cart->getSaleState() === OrderSaleStates::STATE_CART) {
-                $itemsByCart[$cart->getId()][] = $cartItem;
+                $itemIdsByCart[(int) $cart->getId()][(int) $cartItem->getId()] = true;
             }
         }
 
+        foreach ($itemIdsByCart as $cartId => $itemIds) {
+            $lock = $this->lockFactory?->createLock(CartManager::PERSIST_LOCK_PREFIX . $cartId);
+            $lock?->acquire(true);
+
+            try {
+                $this->removeFromCart($product, $cartId, $itemIds);
+            } finally {
+                $lock?->release();
+            }
+        }
+    }
+
+    /**
+     * The cart is loaded again under the lock: the copy the items were found with may be older than a save the
+     * customer made meanwhile, its save would undo that one.
+     *
+     * @param array<int, true> $itemIds
+     */
+    private function removeFromCart(PurchasableInterface $product, int $cartId, array $itemIds): void
+    {
+        $cart = $this->orderRepository->forceFind($cartId);
+        if (!$cart instanceof OrderInterface || $cart->getSaleState() !== OrderSaleStates::STATE_CART) {
+            return;
+        }
+
+        $cartItems = array_filter(
+            $cart->getItems() ?? [],
+            static fn (mixed $item): bool => $item instanceof OrderItemInterface && isset($itemIds[(int) $item->getId()]),
+        );
+        if ($cartItems === []) {
+            return;
+        }
+
+        $notices = $cart instanceof NoticeableCartInterface ? CartNotices::fromArray($cart->getCartNotices()) : null;
         $now = time();
-        foreach ($itemsByCart as $cartItems) {
-            $cart = $cartItems[0]->getOrder();
-            $notices = $cart instanceof NoticeableCartInterface ? CartNotices::fromArray($cart->getCartNotices()) : null;
 
-            foreach ($cartItems as $cartItem) {
-                $notices?->recordRemoval(
-                    (int) $product->getId(),
-                    (string) $cartItem->getName($cart->getLocaleCode()),
-                    $cartItem->getItemPrice(true),
-                    $now,
-                );
-                $cart->removeItem($cartItem);
-                $cartItem->delete();
-            }
-
-            VersionHelper::useVersioning(
-                static function () use ($cart, $notices): void {
-                    if ($notices !== null) {
-                        $cart->setCartNotices($notices->toArray());
-                    }
-                    $cart->setNeedsRecalculation(true);
-                    $cart->save();
-                },
-                false,
+        foreach ($cartItems as $cartItem) {
+            $notices?->recordRemoval(
+                (int) $product->getId(),
+                (string) $cartItem->getName($cart->getLocaleCode()),
+                $cartItem->getItemPrice(true),
+                $now,
             );
+            $cart->removeItem($cartItem);
+            $cartItem->delete();
         }
+
+        VersionHelper::useVersioning(
+            static function () use ($cart, $notices): void {
+                if ($notices !== null) {
+                    $cart->setCartNotices($notices->toArray());
+                }
+                $cart->setNeedsRecalculation(true);
+                $cart->save();
+            },
+            false,
+        );
     }
 
     /**

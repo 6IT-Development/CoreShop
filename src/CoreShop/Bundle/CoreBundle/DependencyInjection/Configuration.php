@@ -85,6 +85,10 @@ final class Configuration implements ConfigurationInterface
                         ->scalarPrototype()->end()
                         ->defaultValue([])
                     ->end()
+                    ->booleanNode('flash_message')
+                        ->info('Also add the coreshop.ui.global_error.cart_has_changed flash message when products were removed from the cart, for a project that does not show the cart notices (NoticeableCartInterface). Turn it off once the notices are shown.')
+                        ->defaultTrue()
+                    ->end()
                 ->end()
             ->end()
         ->end();

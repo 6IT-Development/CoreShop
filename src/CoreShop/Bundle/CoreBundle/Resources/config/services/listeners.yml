@@ -93,6 +93,7 @@ services:
            - '@CoreShop\Bundle\CoreBundle\Order\CartRecalculator'
            - '@CoreShop\Component\Core\Context\ShopperContextInterface'
            - '@Pimcore\Http\RequestHelper'
+           - '%coreshop.cart_availability.flash_message%'
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: checkCartAvailability, priority: 7 }
 

@@ -22,12 +22,18 @@ use CoreShop\Bundle\CoreBundle\Order\CartRecalculator;
 use CoreShop\Component\Core\Context\ShopperContextInterface;
 use CoreShop\Component\Core\Model\OrderInterface;
 use Pimcore\Http\RequestHelper;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 /**
  * Recalculates a cart that lost products (ProductAvailabilityEventListener) on its next request. The customer is
- * told by the cart notices, which stay until dismissed: no flash message, no redirect (a redirect turned a POST into
- * a GET and answered an XHR with a redirect, a flash message was gone on the next page).
+ * told by the cart notices, which stay until dismissed, and the project shows them. No redirect: it turned a POST
+ * into a GET and answered an XHR with a redirect.
+ *
+ * As a fallback for a project that does not show the notices, the generic "cart has changed" flash message is added
+ * too (core_shop_core.cart_availability.flash_message, on by default). Without a redirect it is shown by the page
+ * this request renders, or by the next page after an XHR or a redirecting POST.
  */
 final class RequestCartAvailability
 {
@@ -35,6 +41,7 @@ final class RequestCartAvailability
         private CartRecalculator $cartRecalculator,
         private ShopperContextInterface $shopperContext,
         private RequestHelper $pimcoreRequestHelper,
+        private bool $flashMessage = true,
     ) {
     }
 
@@ -69,5 +76,21 @@ final class RequestCartAvailability
 
         $cart->setNeedsRecalculation(false);
         $this->cartRecalculator->recalculate($cart);
+
+        if ($this->flashMessage) {
+            $this->addFlashMessage($event->getRequest());
+        }
+    }
+
+    private function addFlashMessage(Request $request): void
+    {
+        if (!$request->hasSession()) {
+            return;
+        }
+
+        $session = $request->getSession();
+        if ($session instanceof FlashBagAwareSessionInterface) {
+            $session->getFlashBag()->add('coreshop_global_error', 'coreshop.ui.global_error.cart_has_changed');
+        }
     }
 }

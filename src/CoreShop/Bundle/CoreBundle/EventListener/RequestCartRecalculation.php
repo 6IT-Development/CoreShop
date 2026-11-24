@@ -18,16 +18,29 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
+use CoreShop\Bundle\CoreBundle\Order\CartRecalculator;
 use CoreShop\Component\Core\Configuration\ConfigurationServiceInterface;
 use CoreShop\Component\Core\Context\ShopperContextInterface;
-use CoreShop\Component\Order\Manager\CartManagerInterface;
+use CoreShop\Component\Core\Model\OrderInterface;
+use Doctrine\DBAL\Exception\DriverException;
 use Pimcore\Http\RequestHelper;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 final class RequestCartRecalculation
 {
+    /**
+     * A request with this attribute set to true leaves the cart as it is, e.g. a page that fetches the cart widget
+     * after it loaded: that request recalculates, the page does not have to wait for it.
+     */
+    public const SKIP_ATTRIBUTE = '_coreshop_skip_cart_recalculation';
+
+    /**
+     * MariaDB: "Record has changed since last read", the row was updated after this transaction's snapshot.
+     */
+    private const RECORD_CHANGED_SINCE_LAST_READ = 1020;
+
     public function __construct(
-        private CartManagerInterface $cartManager,
+        private CartRecalculator $cartRecalculator,
         private ShopperContextInterface $shopperContext,
         private ConfigurationServiceInterface $configurationService,
         private RequestHelper $pimcoreRequestHelper,
@@ -48,20 +61,32 @@ final class RequestCartRecalculation
             return;
         }
 
+        if ($event->getRequest()->attributes->getBoolean(self::SKIP_ATTRIBUTE)) {
+            return;
+        }
+
         if (!$this->shopperContext->hasStore()) {
             return;
         }
 
         $cart = $this->shopperContext->getCart();
 
-        if ($cart->getId()) {
+        if ($cart instanceof OrderInterface && $cart->getId()) {
             /**
              * @var int|null $updateTime
              */
             $updateTime = $this->configurationService->get('SYSTEM.PRICE_RULE.UPDATE');
 
             if (null !== $updateTime && $updateTime > $cart->getModificationDate()) {
-                $this->cartManager->persistCart($cart);
+                try {
+                    $this->cartRecalculator->recalculate($cart);
+                } catch (DriverException $exception) {
+                    if ($exception->getCode() !== self::RECORD_CHANGED_SINCE_LAST_READ) {
+                        throw $exception;
+                    }
+
+                    // A parallel request of the same customer is saving (and so recalculating) this cart.
+                }
             }
         }
     }

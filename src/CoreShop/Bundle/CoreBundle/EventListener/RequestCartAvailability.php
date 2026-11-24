@@ -18,18 +18,21 @@ declare(strict_types=1);
 
 namespace CoreShop\Bundle\CoreBundle\EventListener;
 
+use CoreShop\Bundle\CoreBundle\Order\CartRecalculator;
 use CoreShop\Component\Core\Context\ShopperContextInterface;
 use CoreShop\Component\Core\Model\OrderInterface;
-use CoreShop\Component\Order\Manager\CartManagerInterface;
 use Pimcore\Http\RequestHelper;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
+/**
+ * Recalculates a cart that lost products (ProductAvailabilityEventListener) on its next request. The customer is
+ * told by the cart notices, which stay until dismissed: no flash message, no redirect (a redirect turned a POST into
+ * a GET and answered an XHR with a redirect, a flash message was gone on the next page).
+ */
 final class RequestCartAvailability
 {
     public function __construct(
-        private CartManagerInterface $cartManager,
+        private CartRecalculator $cartRecalculator,
         private ShopperContextInterface $shopperContext,
         private RequestHelper $pimcoreRequestHelper,
     ) {
@@ -45,18 +48,12 @@ final class RequestCartAvailability
             return;
         }
 
-        $request = $event->getRequest();
-
-        // a redirect would drop the body of a POST and break XHR clients; the next regular page view handles the cart
-        if (!$request->isMethodSafe() || $request->isXmlHttpRequest()) {
+        // the profiler and other internal routes
+        if (str_starts_with((string) $event->getRequest()->attributes->get('_route'), '_')) {
             return;
         }
 
-        if (str_starts_with((string) $request->attributes->get('_route'), '_')) {
-            return;
-        }
-
-        if (!$request->hasSession()) {
+        if ($event->getRequest()->attributes->getBoolean(RequestCartRecalculation::SKIP_ATTRIBUTE)) {
             return;
         }
 
@@ -66,29 +63,11 @@ final class RequestCartAvailability
 
         $cart = $this->shopperContext->getCart();
 
-        if (!$cart instanceof OrderInterface) {
+        if (!$cart instanceof OrderInterface || !$cart->getId() || !$cart->getNeedsRecalculation()) {
             return;
         }
 
-        if (!$cart->getId()) {
-            return;
-        }
-
-        if (!$cart->getNeedsRecalculation()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (!$session instanceof Session) {
-            return;
-        }
-
-        $session->getFlashBag()->add('coreshop_global_error', 'coreshop.ui.global_error.cart_has_changed');
         $cart->setNeedsRecalculation(false);
-        $this->cartManager->persistCart($cart);
-
-        // redirect to same page, otherwise flashbag will show up twice. better solution?
-        $event->setResponse(new RedirectResponse($request->getRequestUri()));
+        $this->cartRecalculator->recalculate($cart);
     }
 }

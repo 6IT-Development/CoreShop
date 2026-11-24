@@ -26,7 +26,9 @@ use CoreShop\Component\Pimcore\DataObject\VersionHelper;
 use CoreShop\Component\Resource\Service\FolderCreationServiceInterface;
 use CoreShop\Component\StorageList\Model\StorageListInterface;
 use CoreShop\Component\StorageList\StorageListManagerInterface;
+use CoreShop\Component\Pimcore\DataObject\ObjectFingerprint;
 use Pimcore\Db;
+use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Symfony\Component\Lock\LockFactory;
 use Webmozart\Assert\Assert;
@@ -52,11 +54,6 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
 
     public function persistCart(OrderInterface $cart/*, array $params = []*/): void
     {
-        $cartsFolder = $this->folderCreationService->createFolderForResource($cart, [
-            'suffix' => date('Y/m/d'),
-            'path' => 'cart',
-        ]);
-
         $params = [];
         if (func_num_args() === 2) {
             $params = func_get_arg(1) ?? [];
@@ -73,7 +70,7 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
         $db->beginTransaction();
 
         try {
-            $this->saveCart($cart, $cartsFolder, $params['enable_versioning'] ?? false);
+            $this->saveCart($cart, $params);
 
             $db->commit();
         } catch (\Throwable $exception) {
@@ -87,9 +84,9 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
         }
     }
 
-    private function saveCart(OrderInterface $cart, Folder $cartsFolder, bool $enableVersioning): void
+    private function saveCart(OrderInterface $cart, array $params): void
     {
-        VersionHelper::useVersioning(function () use ($cart, $cartsFolder) {
+        VersionHelper::useVersioning(function () use ($cart, $params) {
             if (!$cart->getId()) {
                 $tempItems = $cart->getItems();
                 $cart->setItems([]);
@@ -98,29 +95,36 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
                  * @psalm-suppress DocblockTypeContradiction
                  */
                 if (!$cart->getParent()) {
-                    $cart->setParent($cartsFolder);
+                    $cart->setParent($this->folderCreationService->createFolderForResource($cart, [
+                        'suffix' => date('Y/m/d'),
+                        'path' => 'cart',
+                    ]));
                 }
 
                 $cart->save();
                 $cart->setItems($tempItems);
             }
 
-            $items = array_values($cart->getObjectVar('items') ?? []);
+            $itemsFolder = null;
 
             /**
+             * New items are saved before the CartProcessor runs: getItems() hides unsaved, unpublished items, so
+             * the processors would not see them. The saved ones are already visible and are saved once, below.
+             *
              * @var OrderItemInterface $item
              */
-            foreach ($items as $index => $item) {
-                $item->setParent(
-                    $this->folderCreationService->createFolderForResource(
-                        $item,
-                        ['prefix' => $cart->getFullPath()],
-                    ),
-                );
-                $item->setKey(uniqid(sprintf('%s.', $index + 1), true));
+            foreach (array_values($cart->getObjectVar('items') ?? []) as $index => $item) {
+                if ($item->getId() && $item->getPublished()) {
+                    continue;
+                }
+
+                $itemsFolder ??= $this->createItemsFolder($cart, $item);
+                $this->placeItem($item, $itemsFolder, $index);
                 $item->setPublished(true);
                 $item->save();
             }
+
+            $fingerprints = ($params['only_changed_items'] ?? false) ? $this->fingerprintItems($cart) : [];
 
             /**
              * The CartProcessor might add new Items to the Cart (eg. Gift Products)
@@ -132,17 +136,57 @@ final class CartManager implements CartManagerInterface, StorageListManagerInter
              * @var OrderItemInterface $item
              */
             foreach ($cart->getItems() as $index => $item) {
-                $item->setParent(
-                    $this->folderCreationService->createFolderForResource(
-                        $item,
-                        ['prefix' => $cart->getFullPath()],
-                    ),
-                );
-                $item->setKey(uniqid(sprintf('%s.', ((int) $index + 1)), true));
+                $itemsFolder ??= $this->createItemsFolder($cart, $item);
+                $this->placeItem($item, $itemsFolder, (int) $index);
+
+                $fingerprint = $fingerprints[spl_object_id($item)] ?? null;
+                if ($fingerprint !== null && $item instanceof Concrete && $fingerprint === ObjectFingerprint::of($item)) {
+                    continue;
+                }
+
                 $item->save();
             }
 
             $cart->save();
-        }, $enableVersioning);
+        }, $params['enable_versioning'] ?? false);
+    }
+
+    /**
+     * Only for a cart that was loaded and not changed since (the recalculation of a cart): the fingerprint is taken
+     * from the object in memory, a change made before persistCart() would look like the saved state.
+     *
+     * @return array<int, string> fingerprints of the saved items, by spl_object_id()
+     */
+    private function fingerprintItems(OrderInterface $cart): array
+    {
+        $fingerprints = [];
+        foreach ($cart->getItems() as $item) {
+            if ($item instanceof Concrete && $item->getId()) {
+                $fingerprints[spl_object_id($item)] = ObjectFingerprint::of($item);
+            }
+        }
+
+        return $fingerprints;
+    }
+
+    private function createItemsFolder(OrderInterface $cart, OrderItemInterface $item): Folder
+    {
+        return $this->folderCreationService->createFolderForResource($item, ['prefix' => $cart->getFullPath()]);
+    }
+
+    /**
+     * An item keeps its key once it has one: a new key renamed the object on every save (Pimcore then checks the
+     * new path and rewrites it) and made an unchanged item look changed. Only an item that is not in the items
+     * folder of its cart (yet) is moved there.
+     */
+    private function placeItem(OrderItemInterface $item, Folder $itemsFolder, int $index): void
+    {
+        if ($item->getParentId() !== $itemsFolder->getId()) {
+            $item->setParent($itemsFolder);
+        }
+
+        if (!$item->getKey()) {
+            $item->setKey(uniqid(sprintf('%s.', $index + 1), true));
+        }
     }
 }

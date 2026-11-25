@@ -359,26 +359,44 @@ coreshop.resource.list = Class.create({
             // fail silently.
         }
 
-        toolbar.insert(2, [
-            label,
-            {
-                xtype: 'combo',
-                value: 'none',
-                store: this.getFilterStore(),
-                flex: 1,
-                valueField: 'id',
-                displayField: 'name',
-                queryMode: 'local',
-                disabled: false,
-                name: 'coreshopFilter',
-                listeners: {
-                    'change': function (field) {
-                        grid.getStore().getProxy().setExtraParam('coreshop_filter', field.getValue());
-                        this.getGridPaginator().moveFirst();
-                    }.bind(this)
-                }
+        var filterCombo = Ext.create('Ext.form.field.ComboBox', {
+            value: 'none',
+            store: this.getFilterStore(),
+            flex: 1,
+            valueField: 'id',
+            displayField: 'name',
+            queryMode: 'local',
+            disabled: false,
+            name: 'coreshopFilter',
+            listeners: {
+                'change': function (field) {
+                    grid.getStore().getProxy().setExtraParam('coreshop_filter', field.getValue());
+                    this.getGridPaginator().moveFirst();
+
+                    if (this.search && this.search.updateClearFilterButton) {
+                        this.search.updateClearFilterButton();
+                    }
+                }.bind(this)
             }
-        ]);
+        });
+
+        toolbar.insert(2, [label, filterCombo]);
+
+        // show the "clear filters" button of the grid toolbar while a CoreShop filter is selected
+        if (this.search && this.search.registerOuterFilter) {
+            this.search.registerOuterFilter('coreshop_filter', {
+                isActive: function () {
+                    return filterCombo.getValue() && filterCombo.getValue() !== 'none';
+                },
+                clear: function () {
+                    // no change event: the clear button reloads the grid once
+                    filterCombo.suspendEvents(false);
+                    filterCombo.setValue('none');
+                    filterCombo.resumeEvents();
+                    grid.getStore().getProxy().setExtraParam('coreshop_filter', 'none');
+                }
+            });
+        }
 
         coreshop.broker.fireEvent('sales.list.enhancing.toolbar', toolbar, grid);
     },
